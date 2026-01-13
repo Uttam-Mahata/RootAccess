@@ -1,0 +1,18 @@
+<div class="app-container">
+  <mat-toolbar color="primary">
+    <span>CTF Platform</span>
+    <span class="spacer"></span>
+
+    <a mat-button routerLink="/scoreboard">Scoreboard</a>
+    <a mat-button routerLink="/challenges" *ngIf="isLoggedIn()">Challenges</a>
+    <a mat-button routerLink="/admin" *ngIf="isLoggedIn()">Admin</a>
+
+    <a mat-button routerLink="/login" *ngIf="!isLoggedIn()">Login</a>
+    <a mat-button routerLink="/register" *ngIf="!isLoggedIn()">Register</a>
+    <button mat-button (click)="logout()" *ngIf="isLoggedIn()">Logout</button>
+  </mat-toolbar>
+
+  <div class="content">
+    <router-outlet></router-outlet>
+  </div>
+</div>

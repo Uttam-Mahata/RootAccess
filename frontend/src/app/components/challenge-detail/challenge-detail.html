@@ -1,0 +1,32 @@
+<div class="container" *ngIf="challenge">
+  <mat-card>
+    <mat-card-header>
+      <mat-card-title>{{ challenge.title }}</mat-card-title>
+      <mat-card-subtitle>{{ challenge.category }} - {{ challenge.points }} pts</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      <p>{{ challenge.description }}</p>
+
+      <div *ngIf="challenge.files && challenge.files.length > 0">
+        <h3>Files:</h3>
+        <ul>
+          <li *ngFor="let file of challenge.files">
+            <a [href]="file" target="_blank">{{ file }}</a>
+          </li>
+        </ul>
+      </div>
+
+      <form [formGroup]="flagForm" (ngSubmit)="onSubmit()" class="flag-form">
+        <mat-form-field appearance="fill" class="full-width">
+          <mat-label>Flag</mat-label>
+          <input matInput formControlName="flag" placeholder="CTF{...}" required>
+        </mat-form-field>
+        <button mat-raised-button color="primary" type="submit" [disabled]="!flagForm.valid">Submit Flag</button>
+      </form>
+
+      <div *ngIf="message" [ngClass]="{'success': isCorrect, 'error': !isCorrect}" class="message">
+        {{ message }}
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>
