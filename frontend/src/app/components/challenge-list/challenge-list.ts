@@ -1,15 +1,12 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { MatCardModule } from '@angular/material/card';
-import { MatButtonModule } from '@angular/material/button';
-import { MatGridListModule } from '@angular/material/grid-list';
 import { ChallengeService } from '../../services/challenge';
 
 @Component({
   selector: 'app-challenge-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, MatCardModule, MatButtonModule, MatGridListModule],
+  imports: [CommonModule, RouterModule],
   templateUrl: './challenge-list.html',
   styleUrls: ['./challenge-list.scss']
 })

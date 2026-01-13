@@ -1,12 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MatTableModule } from '@angular/material/table';
 import { ScoreboardService } from '../../services/scoreboard';
 
 @Component({
   selector: 'app-scoreboard',
   standalone: true,
-  imports: [CommonModule, MatTableModule],
+  imports: [CommonModule],
   templateUrl: './scoreboard.html',
   styleUrls: ['./scoreboard.scss']
 })

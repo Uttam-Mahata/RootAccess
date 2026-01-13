@@ -2,10 +2,6 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { MatCardModule } from '@angular/material/card';
-import { MatButtonModule } from '@angular/material/button';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
 import { ChallengeService } from '../../services/challenge';
 
 @Component({
@@ -14,11 +10,7 @@ import { ChallengeService } from '../../services/challenge';
   imports: [
     CommonModule,
     RouterModule,
-    ReactiveFormsModule,
-    MatCardModule,
-    MatButtonModule,
-    MatFormFieldModule,
-    MatInputModule
+    ReactiveFormsModule
   ],
   templateUrl: './challenge-detail.html',
   styleUrls: ['./challenge-detail.scss']

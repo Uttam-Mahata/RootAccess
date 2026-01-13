@@ -1,17 +1,69 @@
-<div class="container">
-  <h2>Challenges</h2>
-  <div class="grid">
-    <mat-card *ngFor="let challenge of challenges" class="challenge-card">
-      <mat-card-header>
-        <mat-card-title>{{ challenge.title }}</mat-card-title>
-        <mat-card-subtitle>{{ challenge.category }} - {{ challenge.points }} pts</mat-card-subtitle>
-      </mat-card-header>
-      <mat-card-content>
-        <p>{{ challenge.description | slice:0:100 }}...</p>
-      </mat-card-content>
-      <mat-card-actions>
-        <button mat-button [routerLink]="['/challenges', challenge.id]">View</button>
-      </mat-card-actions>
-    </mat-card>
+<div class="py-8">
+  <!-- Header -->
+  <div class="mb-8">
+    <h1 class="text-4xl font-bold text-slate-900 dark:text-white mb-2 flex items-center transition-colors duration-300">
+      <svg class="w-10 h-10 mr-3 text-red-600 dark:text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+      </svg>
+      Challenges
+    </h1>
+    <p class="text-slate-600 dark:text-slate-400 transition-colors duration-300">Test your skills across various categories</p>
+  </div>
+
+  <!-- Challenges Grid -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div *ngFor="let challenge of challenges" class="group relative">
+      <!-- Glow Effect on Hover -->
+      <div class="absolute -inset-0.5 bg-gradient-to-r from-red-600 to-red-700 rounded-xl blur opacity-0 group-hover:opacity-30 dark:group-hover:opacity-40 transition duration-300"></div>
+      
+      <!-- Challenge Card -->
+      <div class="relative bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-red-600/20 hover:border-red-300 dark:hover:border-red-600/40 transition-all duration-300 overflow-hidden shadow-xl hover:shadow-2xl hover:shadow-red-500/10">
+        <!-- Category Badge -->
+        <div class="absolute top-4 right-4 z-10">
+          <span class="px-3 py-1 text-xs font-semibold rounded-full bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-600/30">
+            {{ challenge.category }}
+          </span>
+        </div>
+
+        <!-- Card Content -->
+        <div class="p-6">
+          <!-- Title -->
+          <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-2 pr-16 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors duration-300">
+            {{ challenge.title }}
+          </h3>
+
+          <!-- Points -->
+          <div class="flex items-center mb-4">
+            <svg class="w-5 h-5 text-yellow-500 dark:text-yellow-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+            </svg>
+            <span class="text-yellow-600 dark:text-yellow-400 font-semibold">{{ challenge.points }} points</span>
+          </div>
+
+          <!-- Description -->
+          <p class="text-slate-600 dark:text-slate-400 text-sm mb-6 line-clamp-3">
+            {{ challenge.description.length > 100 ? (challenge.description | slice:0:100) + '...' : challenge.description }}
+          </p>
+
+          <!-- View Button -->
+          <button 
+            [routerLink]="['/challenges', challenge.id]"
+            class="w-full py-2.5 px-4 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 dark:hover:from-red-500 dark:hover:to-red-600 rounded-lg transition-all duration-200 shadow-lg shadow-red-500/25 hover:shadow-red-500/40 hover:scale-105">
+            View Challenge
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div *ngIf="challenges.length === 0" class="col-span-full py-16">
+      <div class="flex flex-col items-center justify-center text-center">
+        <svg class="w-20 h-20 text-slate-300 dark:text-slate-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        <h3 class="text-xl font-semibold text-slate-600 dark:text-slate-400 mb-2">No Challenges Available</h3>
+        <p class="text-slate-500 dark:text-slate-500">Check back soon for new challenges!</p>
+      </div>
+    </div>
   </div>
 </div>

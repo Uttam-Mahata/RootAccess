@@ -1,44 +1,146 @@
-<div class="container">
-  <mat-card>
-    <mat-card-header>
-      <mat-card-title>Create Challenge</mat-card-title>
-    </mat-card-header>
-    <mat-card-content>
-      <form [formGroup]="challengeForm" (ngSubmit)="onSubmit()">
-        <mat-form-field appearance="fill" class="full-width">
-          <mat-label>Title</mat-label>
-          <input matInput formControlName="title" required>
-        </mat-form-field>
+<div class="py-8">
+  <!-- Header -->
+  <div class="mb-8">
+    <h1 class="text-4xl font-bold text-slate-900 dark:text-white mb-2 flex items-center transition-colors duration-300">
+      <svg class="w-10 h-10 mr-3 text-red-600 dark:text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+      </svg>
+      Admin Dashboard
+    </h1>
+    <p class="text-slate-600 dark:text-slate-400 transition-colors duration-300">Create and manage CTF challenges</p>
+  </div>
 
-        <mat-form-field appearance="fill" class="full-width">
-          <mat-label>Description</mat-label>
-          <textarea matInput formControlName="description" required></textarea>
-        </mat-form-field>
+  <!-- Create Challenge Form -->
+  <div class="max-w-3xl">
+    <div class="relative group">
+      <!-- Glow Effect -->
+      <div class="absolute -inset-0.5 bg-gradient-to-r from-red-600 to-red-700 rounded-2xl blur opacity-20 group-hover:opacity-30 dark:opacity-30 dark:group-hover:opacity-40 transition duration-300"></div>
+      
+      <!-- Form Card -->
+      <div class="relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-red-600/20 p-8 shadow-2xl transition-colors duration-300">
+        <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-6">Create New Challenge</h2>
+        
+        <form [formGroup]="challengeForm" (ngSubmit)="onSubmit()" class="space-y-6">
+          <!-- Title -->
+          <div>
+            <label for="title" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              Challenge Title *
+            </label>
+            <input
+              id="title"
+              type="text"
+              formControlName="title"
+              required
+              class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all duration-200"
+              placeholder="e.g., Reverse Engineering 101"
+            />
+          </div>
 
-        <mat-form-field appearance="fill" class="full-width">
-          <mat-label>Category</mat-label>
-          <input matInput formControlName="category" required>
-        </mat-form-field>
+          <!-- Description -->
+          <div>
+            <label for="description" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              Description *
+            </label>
+            <textarea
+              id="description"
+              formControlName="description"
+              required
+              rows="5"
+              class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all duration-200 resize-none"
+              placeholder="Detailed challenge description..."
+            ></textarea>
+          </div>
 
-        <mat-form-field appearance="fill" class="full-width">
-          <mat-label>Points</mat-label>
-          <input matInput type="number" formControlName="points" required>
-        </mat-form-field>
+          <!-- Category and Points Row -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Category -->
+            <div>
+              <label for="category" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Category *
+              </label>
+              <input
+                id="category"
+                type="text"
+                formControlName="category"
+                required
+                class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all duration-200"
+                placeholder="e.g., Web, Crypto, Reverse"
+              />
+            </div>
 
-        <mat-form-field appearance="fill" class="full-width">
-          <mat-label>Flag</mat-label>
-          <input matInput formControlName="flag" required>
-        </mat-form-field>
+            <!-- Points -->
+            <div>
+              <label for="points" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Points *
+              </label>
+              <input
+                id="points"
+                type="number"
+                formControlName="points"
+                required
+                class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all duration-200"
+                placeholder="100"
+              />
+            </div>
+          </div>
 
-        <mat-form-field appearance="fill" class="full-width">
-          <mat-label>Files (comma separated URLs)</mat-label>
-          <input matInput formControlName="files">
-        </mat-form-field>
+          <!-- Flag -->
+          <div>
+            <label for="flag" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              Flag *
+            </label>
+            <input
+              id="flag"
+              type="text"
+              formControlName="flag"
+              required
+              class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all duration-200 font-mono"
+              placeholder="CTF{example_flag_here}"
+            />
+          </div>
 
-        <div *ngIf="message" class="message">{{ message }}</div>
+          <!-- Files -->
+          <div>
+            <label for="files" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              Files (comma-separated URLs)
+            </label>
+            <input
+              id="files"
+              type="text"
+              formControlName="files"
+              class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all duration-200"
+              placeholder="https://example.com/file1.zip, https://example.com/file2.txt"
+            />
+            <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">Optional: Add downloadable files for this challenge</p>
+          </div>
 
-        <button mat-raised-button color="primary" type="submit" [disabled]="!challengeForm.valid">Create</button>
-      </form>
-    </mat-card-content>
-  </mat-card>
+          <!-- Success/Error Message -->
+          <div *ngIf="message" class="rounded-lg p-4 transition-colors duration-300"
+               [ngClass]="message.includes('success') ? 'bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30' : 'bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30'">
+            <div class="flex items-center space-x-2">
+              <svg *ngIf="message.includes('success')" class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+              </svg>
+              <svg *ngIf="!message.includes('success')" class="w-5 h-5 text-red-600 dark:text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+              </svg>
+              <p class="text-sm font-medium"
+                 [ngClass]="message.includes('success') ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-700 dark:text-red-300'">
+                {{ message }}
+              </p>
+            </div>
+          </div>
+
+          <!-- Submit Button -->
+          <button
+            type="submit"
+            [disabled]="!challengeForm.valid"
+            class="w-full py-3 px-4 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 dark:hover:from-red-500 dark:hover:to-red-600 rounded-lg transition-all duration-200 shadow-lg shadow-red-500/25 hover:shadow-red-500/40 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
+            Create Challenge
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
 </div>

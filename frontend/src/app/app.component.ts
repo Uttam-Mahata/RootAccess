@@ -1,20 +1,20 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterOutlet, RouterModule } from '@angular/router';
-import { MatToolbarModule } from '@angular/material/toolbar';
-import { MatButtonModule } from '@angular/material/button';
 import { CommonModule } from '@angular/common';
 import { AuthService } from './services/auth';
+import { ThemeService } from './services/theme';
 import 'zone.js';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, RouterModule, MatToolbarModule, MatButtonModule, CommonModule],
+  imports: [RouterOutlet, RouterModule, CommonModule],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
 })
 export class AppComponent {
-  constructor(public authService: AuthService) {}
+  public authService = inject(AuthService);
+  public themeService = inject(ThemeService);
 
   isLoggedIn(): boolean {
     return this.authService.isLoggedIn();
@@ -23,5 +23,11 @@ export class AppComponent {
   logout(): void {
     this.authService.logout();
     window.location.reload();
+  }
+
+  toggleTheme(): void {
+    console.log('Toggle theme clicked', this.themeService.isDarkMode());
+    this.themeService.toggleTheme();
+    console.log('After toggle', this.themeService.isDarkMode());
   }
 }
