@@ -4,15 +4,27 @@
 
 echo "Setting up sample data..."
 
-# Create admin user (update existing testuser to admin)
+# Check if user exists, create if not, then set as admin
 docker exec ctf-mongodb mongosh go_ctf --eval '
+const existingUser = db.users.findOne({ username: "testuser" });
+if (!existingUser) {
+  print("User testuser does not exist. Please register the user first through the application.");
+  print("After registering, run this script again to upgrade to admin.");
+  quit(1);
+}
 db.users.updateOne(
   { username: "testuser" },
   { $set: { role: "admin" } }
 )
 '
 
-echo "Made testuser an admin"
+if [ $? -ne 0 ]; then
+  echo "⚠️  Failed to create admin user. Please register 'testuser' through the application first."
+  echo "Then run this script again."
+  exit 1
+fi
+
+echo "✓ Made testuser an admin"
 
 # Create sample challenges
 docker exec ctf-mongodb mongosh go_ctf --eval '

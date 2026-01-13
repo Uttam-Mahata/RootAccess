@@ -65,6 +65,8 @@ A full-stack Capture The Flag (CTF) platform built with Go (Gin framework) for t
 
 5. **Setup Sample Data (optional):**
    ```bash
+   # First, register a user with username 'testuser' through the web interface
+   # Then run the setup script to promote them to admin and add sample challenges
    bash scripts/setup-sample-data.sh
    ```
 
