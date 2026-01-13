@@ -36,7 +36,7 @@ func (s *ScoreboardService) GetScoreboard() ([]UserScore, error) {
 
 	challengePoints := make(map[string]int)
 	for _, c := range challenges {
-		challengePoints[c.ID.Hex()] = c.Points
+		challengePoints[c.ID.Hex()] = c.CurrentPoints()
 	}
 
 	userScores := make(map[string]int)

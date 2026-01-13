@@ -1,6 +1,8 @@
 package routes
 
 import (
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"github.com/go-ctf-platform/backend/internal/config"
 	"github.com/go-ctf-platform/backend/internal/handlers"
@@ -37,6 +39,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	submissionRepo := repositories.NewSubmissionRepository()
 	teamRepo := repositories.NewTeamRepository()
 	teamInvitationRepo := repositories.NewTeamInvitationRepository()
+	notificationRepo := repositories.NewNotificationRepository()
 
 	// Services
 	emailService := services.NewEmailService(cfg)
@@ -44,12 +47,15 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	challengeService := services.NewChallengeService(challengeRepo, submissionRepo, teamRepo)
 	scoreboardService := services.NewScoreboardService(userRepo, submissionRepo, challengeRepo)
 	teamService := services.NewTeamService(teamRepo, teamInvitationRepo, userRepo, emailService)
+	notificationService := services.NewNotificationService(notificationRepo)
 
 	// Handlers
 	authHandler := handlers.NewAuthHandler(authService)
 	challengeHandler := handlers.NewChallengeHandler(challengeService)
 	scoreboardHandler := handlers.NewScoreboardHandler(scoreboardService)
 	teamHandler := handlers.NewTeamHandler(teamService)
+	notificationHandler := handlers.NewNotificationHandler(notificationService)
+	profileHandler := handlers.NewProfileHandler(userRepo, submissionRepo, challengeRepo, teamRepo)
 
 	// Public Routes - Authentication
 	r.POST("/auth/register", authHandler.Register)
@@ -64,6 +70,12 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	// Public Routes - Scoreboard (team scoreboard)
 	r.GET("/scoreboard", scoreboardHandler.GetScoreboard)
 	r.GET("/scoreboard/teams", teamHandler.GetTeamScoreboard)
+
+	// Public Routes - Notifications (active notifications only)
+	r.GET("/notifications", notificationHandler.GetActiveNotifications)
+
+	// Public Routes - User Profiles
+	r.GET("/users/:username/profile", profileHandler.GetUserProfile)
 
 	// Get current user info (checks cookie)
 	r.GET("/auth/me", func(c *gin.Context) {
@@ -103,7 +115,8 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 		protected.POST("/auth/change-password", authHandler.ChangePassword)
 		protected.GET("/challenges", challengeHandler.GetAllChallenges)
 		protected.GET("/challenges/:id", challengeHandler.GetChallengeByID)
-		protected.POST("/challenges/:id/submit", challengeHandler.SubmitFlag)
+		// Flag submission with rate limiting (5 attempts per minute per challenge)
+		protected.POST("/challenges/:id/submit", middleware.RateLimitMiddleware(5, time.Minute), challengeHandler.SubmitFlag)
 
 		// Team Routes
 		teams := protected.Group("/teams")
@@ -138,10 +151,21 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 		}
 
 		// Admin Routes
-		admin := protected.Group("/")
+		admin := protected.Group("/admin")
 		admin.Use(middleware.AdminMiddleware())
 		{
+			// Challenge management
+			admin.GET("/challenges", challengeHandler.GetAllChallengesWithFlags)
 			admin.POST("/challenges", challengeHandler.CreateChallenge)
+			admin.PUT("/challenges/:id", challengeHandler.UpdateChallenge)
+			admin.DELETE("/challenges/:id", challengeHandler.DeleteChallenge)
+
+			// Notification management
+			admin.GET("/notifications", notificationHandler.GetAllNotifications)
+			admin.POST("/notifications", notificationHandler.CreateNotification)
+			admin.PUT("/notifications/:id", notificationHandler.UpdateNotification)
+			admin.DELETE("/notifications/:id", notificationHandler.DeleteNotification)
+			admin.POST("/notifications/:id/toggle", notificationHandler.ToggleNotificationActive)
 		}
 	}
 

@@ -6,12 +6,12 @@
   </div>
 
   <!-- Navigation Bar -->
-  <nav class="relative bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-primary-500/20 shadow-lg dark:shadow-primary-500/5 transition-colors duration-300">
+  <nav class="relative bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-primary-500/20 shadow-lg dark:shadow-primary-500/5 transition-colors duration-300 z-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-16">
         <!-- Logo/Brand -->
         <div class="flex items-center">
-          <a routerLink="/" class="flex items-center space-x-3 group">
+          <a routerLink="/" (click)="closeMobileMenu()" class="flex items-center space-x-3 group">
             <div class="relative">
               <img src="rootaccess.jpg" alt="RootAccess Logo" class="w-10 h-10 rounded-full object-cover transition-transform duration-300 group-hover:scale-110" />
             </div>
@@ -21,18 +21,24 @@
           </a>
         </div>
 
-        <!-- Navigation Links -->
-        <div class="flex items-center space-x-1">
+        <!-- Desktop Navigation Links (hidden on mobile/tablet) -->
+        <div class="hidden lg:flex items-center space-x-1">
+          <a routerLink="/" 
+             *ngIf="isLoggedIn()"
+             class="relative px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-300 hover:bg-slate-100 dark:hover:bg-slate-800/50 rounded-lg transition-all duration-200 group flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+            </svg>
+            <span class="relative z-10">Home</span>
+          </a>
           <a routerLink="/scoreboard" 
              class="relative px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-300 hover:bg-slate-100 dark:hover:bg-slate-800/50 rounded-lg transition-all duration-200 group">
             <span class="relative z-10">Scoreboard</span>
-            <div class="absolute inset-0 bg-primary-500/0 group-hover:bg-primary-500/10 rounded-lg transition-all duration-200"></div>
           </a>
           <a routerLink="/challenges" 
              *ngIf="isLoggedIn()"
              class="relative px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-300 hover:bg-slate-100 dark:hover:bg-slate-800/50 rounded-lg transition-all duration-200 group">
             <span class="relative z-10">Challenges</span>
-            <div class="absolute inset-0 bg-primary-500/0 group-hover:bg-primary-500/10 rounded-lg transition-all duration-200"></div>
           </a>
           <a routerLink="/team" 
              *ngIf="isLoggedIn()"
@@ -41,7 +47,6 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
             </svg>
             <span class="relative z-10">Team</span>
-            <div class="absolute inset-0 bg-primary-500/0 group-hover:bg-primary-500/10 rounded-lg transition-all duration-200"></div>
           </a>
           <a routerLink="/admin" 
              *ngIf="isAdmin()"
@@ -50,7 +55,6 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
             </svg>
             <span class="relative z-10">Admin</span>
-            <div class="absolute inset-0 bg-primary-500/0 group-hover:bg-primary-500/10 rounded-lg transition-all duration-200"></div>
           </a>
           <a routerLink="/settings" 
              *ngIf="isLoggedIn()"
@@ -60,18 +64,15 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
             </svg>
             <span class="relative z-10">Settings</span>
-            <div class="absolute inset-0 bg-primary-500/0 group-hover:bg-primary-500/10 rounded-lg transition-all duration-200"></div>
           </a>
 
-          <!-- Auth Buttons -->
+          <!-- Desktop Auth Buttons -->
           <div class="flex items-center space-x-2 ml-4 pl-4 border-l border-slate-300 dark:border-slate-700/50">
             <!-- Signed Out State -->
             <div *ngIf="!isLoggedIn()" class="flex items-center space-x-2">
-              <span class="text-sm text-slate-600 dark:text-slate-400 mr-2 hidden sm:block">Welcome, Guest!</span>
               <a routerLink="/login" 
                  class="relative px-5 py-2 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 dark:from-red-600 dark:to-red-700 hover:from-red-700 hover:to-red-800 dark:hover:from-red-500 dark:hover:to-red-600 rounded-lg transition-all duration-200 shadow-lg shadow-red-500/25 hover:shadow-red-500/40 hover:scale-105 overflow-hidden group">
                 <span class="relative z-10">Login</span>
-                <div class="absolute inset-0 bg-gradient-to-r from-red-700 to-red-600 opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
               </a>
               <a routerLink="/register" 
                  class="relative px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 border border-red-500 dark:border-red-600/50 hover:border-red-600 dark:hover:border-red-500/70 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-all duration-200">
@@ -80,10 +81,67 @@
             </div>
             
             <!-- Signed In State -->
-            <div *ngIf="isLoggedIn()" class="flex items-center space-x-2">
-              <span class="text-sm text-slate-600 dark:text-slate-400 mr-2 hidden sm:block">
-                Welcome, <span class="font-semibold text-red-600 dark:text-red-400">{{ authService.getCurrentUser()?.username }}</span>!
-              </span>
+            <div *ngIf="isLoggedIn()" class="flex items-center space-x-3">
+              <!-- Notification Bell -->
+              <div class="relative">
+                <button 
+                  (click)="toggleNotificationDropdown()"
+                  class="relative p-2 text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all duration-200">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                  </svg>
+                  <!-- Notification Badge -->
+                  <span *ngIf="notifications.length > 0" 
+                        class="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
+                    {{ notifications.length > 9 ? '9+' : notifications.length }}
+                  </span>
+                </button>
+
+                <!-- Notification Dropdown -->
+                <div *ngIf="showNotificationDropdown" 
+                     class="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 z-50 overflow-hidden">
+                  <div class="px-4 py-3 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+                    <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Notifications</h3>
+                  </div>
+                  
+                  <div class="max-h-80 overflow-y-auto">
+                    <!-- Empty State -->
+                    <div *ngIf="notifications.length === 0" class="px-4 py-8 text-center">
+                      <svg class="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                      </svg>
+                      <p class="text-sm text-slate-500 dark:text-slate-400">No notifications</p>
+                    </div>
+
+                    <!-- Notification Items -->
+                    <div *ngFor="let notification of notifications" 
+                         class="px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 border-b border-slate-100 dark:border-slate-700/50 last:border-0 transition-colors">
+                      <div class="flex items-start gap-3">
+                        <svg [class]="'w-5 h-5 flex-shrink-0 mt-0.5 ' + getNotificationColor(notification.type)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="getNotificationIcon(notification.type)"/>
+                        </svg>
+                        <div class="flex-1 min-w-0">
+                          <p class="text-sm font-medium text-slate-900 dark:text-white truncate">{{ notification.title }}</p>
+                          <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">{{ notification.content }}</p>
+                        </div>
+                        <button 
+                          (click)="dismissNotification(notification.id, $event)"
+                          class="p-1 text-slate-400 hover:text-red-500 transition-colors flex-shrink-0">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Click outside to close -->
+                <div *ngIf="showNotificationDropdown" 
+                     (click)="closeNotificationDropdown()"
+                     class="fixed inset-0 z-40"></div>
+              </div>
+
               <button (click)="logout()" 
                       class="px-5 py-2 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 dark:from-red-600 dark:to-red-700 dark:hover:from-red-500 dark:hover:to-red-600 rounded-lg transition-all duration-200 shadow-lg shadow-red-500/25 hover:shadow-red-500/40 hover:scale-105">
                 Logout
@@ -91,12 +149,193 @@
             </div>
           </div>
         </div>
+
+        <!-- Mobile/Tablet Right Side: Notification + Hamburger -->
+        <div class="flex items-center gap-2 lg:hidden">
+          <!-- Notification Bell (Mobile) -->
+          <div *ngIf="isLoggedIn()" class="relative">
+            <button 
+              (click)="toggleNotificationDropdown()"
+              class="relative p-2 text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all duration-200">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+              </svg>
+              <span *ngIf="notifications.length > 0" 
+                    class="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
+                {{ notifications.length > 9 ? '9+' : notifications.length }}
+              </span>
+            </button>
+
+            <!-- Mobile Notification Dropdown -->
+            <div *ngIf="showNotificationDropdown" 
+                 class="absolute right-0 mt-2 w-72 sm:w-80 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 z-50 overflow-hidden">
+              <div class="px-4 py-3 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+                <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Notifications</h3>
+              </div>
+              <div class="max-h-64 overflow-y-auto">
+                <div *ngIf="notifications.length === 0" class="px-4 py-6 text-center">
+                  <svg class="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                  </svg>
+                  <p class="text-sm text-slate-500 dark:text-slate-400">No notifications</p>
+                </div>
+                <div *ngFor="let notification of notifications" 
+                     class="px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 border-b border-slate-100 dark:border-slate-700/50 last:border-0 transition-colors">
+                  <div class="flex items-start gap-3">
+                    <svg [class]="'w-5 h-5 flex-shrink-0 mt-0.5 ' + getNotificationColor(notification.type)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="getNotificationIcon(notification.type)"/>
+                    </svg>
+                    <div class="flex-1 min-w-0">
+                      <p class="text-sm font-medium text-slate-900 dark:text-white truncate">{{ notification.title }}</p>
+                      <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">{{ notification.content }}</p>
+                    </div>
+                    <button 
+                      (click)="dismissNotification(notification.id, $event)"
+                      class="p-1 text-slate-400 hover:text-red-500 transition-colors flex-shrink-0">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div *ngIf="showNotificationDropdown" 
+                 (click)="closeNotificationDropdown()"
+                 class="fixed inset-0 z-40"></div>
+          </div>
+
+          <!-- Hamburger Menu Button -->
+          <button 
+            (click)="toggleMobileMenu()"
+            class="p-2 text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all duration-200">
+            <!-- Hamburger Icon -->
+            <svg *ngIf="!showMobileMenu" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+            </svg>
+            <!-- Close Icon -->
+            <svg *ngIf="showMobileMenu" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
+
+    <!-- Mobile Menu Panel -->
+    <div *ngIf="showMobileMenu" 
+         class="lg:hidden absolute top-full left-0 right-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 shadow-xl z-40">
+      <div class="px-4 py-4 space-y-1">
+        <!-- Navigation Links -->
+        <a routerLink="/" 
+           *ngIf="isLoggedIn()"
+           (click)="closeMobileMenu()"
+           class="flex items-center gap-3 px-4 py-3 text-slate-700 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all duration-200">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+          </svg>
+          <span class="font-medium">Home</span>
+        </a>
+        
+        <a routerLink="/scoreboard" 
+           (click)="closeMobileMenu()"
+           class="flex items-center gap-3 px-4 py-3 text-slate-700 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all duration-200">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
+          </svg>
+          <span class="font-medium">Scoreboard</span>
+        </a>
+        
+        <a routerLink="/challenges" 
+           *ngIf="isLoggedIn()"
+           (click)="closeMobileMenu()"
+           class="flex items-center gap-3 px-4 py-3 text-slate-700 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all duration-200">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+          </svg>
+          <span class="font-medium">Challenges</span>
+        </a>
+        
+        <a routerLink="/team" 
+           *ngIf="isLoggedIn()"
+           (click)="closeMobileMenu()"
+           class="flex items-center gap-3 px-4 py-3 text-slate-700 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all duration-200">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+          </svg>
+          <span class="font-medium">Team</span>
+        </a>
+        
+        <a routerLink="/admin" 
+           *ngIf="isAdmin()"
+           (click)="closeMobileMenu()"
+           class="flex items-center gap-3 px-4 py-3 text-slate-700 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all duration-200">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+          </svg>
+          <span class="font-medium">Admin</span>
+        </a>
+        
+        <a routerLink="/settings" 
+           *ngIf="isLoggedIn()"
+           (click)="closeMobileMenu()"
+           class="flex items-center gap-3 px-4 py-3 text-slate-700 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all duration-200">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+          </svg>
+          <span class="font-medium">Settings</span>
+        </a>
+
+        <!-- Divider -->
+        <div class="my-3 border-t border-slate-200 dark:border-slate-700"></div>
+
+        <!-- Auth Section -->
+        <div *ngIf="!isLoggedIn()" class="space-y-2 px-2">
+          <a routerLink="/login" 
+             (click)="closeMobileMenu()"
+             class="block w-full py-3 px-4 text-center text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 rounded-lg transition-all duration-200 shadow-lg shadow-red-500/25">
+            Login
+          </a>
+          <a routerLink="/register" 
+             (click)="closeMobileMenu()"
+             class="block w-full py-3 px-4 text-center text-sm font-medium text-red-600 dark:text-red-400 border border-red-500 dark:border-red-600/50 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-all duration-200">
+            Register
+          </a>
+        </div>
+
+        <div *ngIf="isLoggedIn()" class="px-2">
+          <!-- User Info -->
+          <div class="flex items-center gap-3 px-4 py-3 mb-2 bg-slate-50 dark:bg-slate-800 rounded-lg">
+            <div class="w-10 h-10 bg-gradient-to-br from-red-500 to-red-700 rounded-full flex items-center justify-center text-white font-bold">
+              {{ authService.getCurrentUser()?.username?.charAt(0)?.toUpperCase() }}
+            </div>
+            <div>
+              <p class="font-medium text-slate-900 dark:text-white">{{ authService.getCurrentUser()?.username }}</p>
+              <p class="text-sm text-slate-500 dark:text-slate-400">{{ authService.getCurrentUser()?.email }}</p>
+            </div>
+          </div>
+          
+          <button (click)="logout(); closeMobileMenu()" 
+                  class="w-full py-3 px-4 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 rounded-lg transition-all duration-200 shadow-lg shadow-red-500/25">
+            Logout
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Menu Backdrop -->
+    <div *ngIf="showMobileMenu" 
+         (click)="closeMobileMenu()"
+         class="lg:hidden fixed inset-0 bg-black/20 dark:bg-black/40 z-30"
+         style="top: 64px;"></div>
   </nav>
 
   <!-- Main Content -->
   <main class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Notification Banner -->
+    <app-notification-banner></app-notification-banner>
+    
     <router-outlet></router-outlet>
   </main>
 </div>

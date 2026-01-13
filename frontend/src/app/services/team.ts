@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject } from 'rxjs';
 import { tap } from 'rxjs/operators';
+import { environment } from '../../environments/environment';
 
 export interface Team {
   id: string;
@@ -52,7 +53,7 @@ export interface TeamScoreboardResponse {
   providedIn: 'root'
 })
 export class TeamService {
-  private apiUrl = 'http://localhost:8080/teams';
+  private apiUrl = `${environment.apiUrl}/teams`;
   private currentTeamSubject = new BehaviorSubject<Team | null>(null);
   
   currentTeam$ = this.currentTeamSubject.asObservable();
@@ -170,7 +171,7 @@ export class TeamService {
 
   // Scoreboard
   getTeamScoreboard(): Observable<TeamScoreboardResponse> {
-    return this.http.get<TeamScoreboardResponse>('http://localhost:8080/scoreboard/teams', { withCredentials: true });
+    return this.http.get<TeamScoreboardResponse>(`${environment.apiUrl}/scoreboard/teams`, { withCredentials: true });
   }
 
   // Helper methods

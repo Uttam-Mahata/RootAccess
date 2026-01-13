@@ -98,3 +98,40 @@ func (r *SubmissionRepository) GetAllCorrectSubmissions() ([]models.Submission, 
 	}
 	return submissions, nil
 }
+
+// GetUserCorrectSubmissions returns all correct submissions by a specific user
+func (r *SubmissionRepository) GetUserCorrectSubmissions(userID primitive.ObjectID) ([]models.Submission, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	cursor, err := r.collection.Find(ctx, bson.M{
+		"user_id":    userID,
+		"is_correct": true,
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var submissions []models.Submission
+	if err = cursor.All(ctx, &submissions); err != nil {
+		return nil, err
+	}
+	return submissions, nil
+}
+
+// GetUserSubmissionCount returns the total number of submissions by a user
+func (r *SubmissionRepository) GetUserSubmissionCount(userID primitive.ObjectID) (int64, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	return r.collection.CountDocuments(ctx, bson.M{"user_id": userID})
+}
+
+// GetUserCorrectSubmissionCount returns the number of correct submissions by a user
+func (r *SubmissionRepository) GetUserCorrectSubmissionCount(userID primitive.ObjectID) (int64, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	return r.collection.CountDocuments(ctx, bson.M{"user_id": userID, "is_correct": true})
+}
