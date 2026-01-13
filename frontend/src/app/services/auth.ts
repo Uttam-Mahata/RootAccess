@@ -34,9 +34,11 @@ export class AuthService {
   private apiUrl = 'http://localhost:8080/auth';
   private isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
   private currentUserSubject = new BehaviorSubject<UserInfo | null>(null);
+  private authCheckCompleteSubject = new BehaviorSubject<boolean>(false);
 
   isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
   currentUser$ = this.currentUserSubject.asObservable();
+  authCheckComplete$ = this.authCheckCompleteSubject.asObservable();
 
   constructor(private http: HttpClient) {
     // Check authentication status on init
@@ -125,11 +127,17 @@ export class AuthService {
           this.currentUserSubject.next(null);
           this.isAuthenticatedSubject.next(false);
         }
+        this.authCheckCompleteSubject.next(true);
       },
       error: () => {
         this.currentUserSubject.next(null);
         this.isAuthenticatedSubject.next(false);
+        this.authCheckCompleteSubject.next(true);
       }
     });
+  }
+
+  isAuthCheckComplete(): boolean {
+    return this.authCheckCompleteSubject.value;
   }
 }
