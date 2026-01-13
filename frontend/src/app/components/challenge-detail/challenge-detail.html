@@ -22,22 +22,47 @@
           <div class="mb-6">
             <div class="flex items-start justify-between mb-4">
               <h1 class="text-3xl font-bold text-slate-900 dark:text-white">{{ challenge.title }}</h1>
-              <span class="px-3 py-1 text-sm font-semibold rounded-full bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-600/30">
-                {{ challenge.category }}
-              </span>
+              <div class="flex flex-col gap-2">
+                <span class="px-3 py-1 text-sm font-semibold rounded-full bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-600/30">
+                  {{ challenge.category }}
+                </span>
+                <span class="px-3 py-1 text-xs font-semibold rounded-full text-center"
+                      [ngClass]="{
+                        'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400': challenge.difficulty === 'easy',
+                        'bg-yellow-100 dark:bg-yellow-500/20 text-yellow-700 dark:text-yellow-400': challenge.difficulty === 'medium',
+                        'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400': challenge.difficulty === 'hard'
+                      }">
+                  {{ challenge.difficulty | titlecase }}
+                </span>
+              </div>
             </div>
-            <div class="flex items-center">
-              <svg class="w-6 h-6 text-yellow-500 dark:text-yellow-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-              </svg>
-              <span class="text-yellow-600 dark:text-yellow-400 text-xl font-bold">{{ challenge.points }} points</span>
+            
+            <!-- Points & Solves Info -->
+            <div class="flex items-center gap-6">
+              <div class="flex items-center">
+                <svg class="w-6 h-6 text-yellow-500 dark:text-yellow-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                </svg>
+                <span class="text-yellow-600 dark:text-yellow-400 text-xl font-bold">{{ challenge.current_points }} points</span>
+              </div>
+              <div class="flex items-center px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-500/20">
+                <svg class="w-4 h-4 text-blue-600 dark:text-blue-400 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span class="text-blue-700 dark:text-blue-400 text-sm font-medium">{{ challenge.solve_count }} solves</span>
+              </div>
             </div>
+            
+            <!-- Dynamic Scoring Info -->
+            <p class="text-slate-500 dark:text-slate-400 text-sm mt-2">
+              Max: {{ challenge.max_points }} pts • Points decrease as more teams solve
+            </p>
           </div>
 
           <!-- Description -->
           <div class="mb-6">
             <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-3">Description</h2>
-            <p class="text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">{{ challenge.description }}</p>
+            <div class="text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line prose dark:prose-invert max-w-none" [innerHTML]="challenge.description"></div>
           </div>
 
           <!-- Files Section -->
@@ -95,6 +120,18 @@
               Submit Flag
             </h2>
             
+            <!-- Rate Limit Warning -->
+            <div *ngIf="isRateLimited" class="mb-4 p-3 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-lg">
+              <div class="flex items-center gap-2">
+                <svg class="w-5 h-5 text-amber-600 dark:text-amber-400 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+                </svg>
+                <span class="text-amber-700 dark:text-amber-300 text-sm font-medium">
+                  Cooldown: {{ rateLimitSeconds }}s remaining
+                </span>
+              </div>
+            </div>
+
             <form [formGroup]="flagForm" (ngSubmit)="onSubmit()" class="space-y-4">
               <div>
                 <label for="flag" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
@@ -106,15 +143,22 @@
                   formControlName="flag"
                   placeholder="CTF{...}"
                   required
-                  class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all duration-200 font-mono"
+                  [disabled]="isRateLimited"
+                  class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all duration-200 font-mono disabled:opacity-50 disabled:cursor-not-allowed"
                 />
               </div>
 
               <button
                 type="submit"
-                [disabled]="!flagForm.valid"
-                class="w-full py-3 px-4 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 dark:hover:from-red-500 dark:hover:to-red-600 rounded-lg transition-all duration-200 shadow-lg shadow-red-500/25 hover:shadow-red-500/40 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
-                Submit Flag
+                [disabled]="!flagForm.valid || isRateLimited || isSubmitting"
+                class="w-full py-3 px-4 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 dark:hover:from-red-500 dark:hover:to-red-600 rounded-lg transition-all duration-200 shadow-lg shadow-red-500/25 hover:shadow-red-500/40 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2">
+                <svg *ngIf="isSubmitting" class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span *ngIf="isRateLimited">Wait {{ rateLimitSeconds }}s</span>
+                <span *ngIf="!isRateLimited && !isSubmitting">Submit Flag</span>
+                <span *ngIf="!isRateLimited && isSubmitting">Submitting...</span>
               </button>
             </form>
           </div>

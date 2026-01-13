@@ -12,6 +12,7 @@ import { ForgotPasswordComponent } from './components/forgot-password/forgot-pas
 import { ResetPasswordComponent } from './components/reset-password/reset-password';
 import { TeamDashboardComponent } from './components/team-dashboard/team-dashboard';
 import { HomeComponent } from './components/home/home';
+import { UserProfileComponent } from './components/user-profile/user-profile';
 import { inject } from '@angular/core';
 import { AuthService } from './services/auth';
 import { map, filter, take } from 'rxjs/operators';
@@ -81,6 +82,7 @@ export const routes: Routes = [
   { path: 'forgot-password', component: ForgotPasswordComponent },
   { path: 'reset-password', component: ResetPasswordComponent },
   { path: 'scoreboard', component: ScoreboardComponent },
+  { path: 'profile/:username', component: UserProfileComponent },
   
   // Protected routes - require login
   { path: 'home', component: HomeComponent, canActivate: [authGuard] },

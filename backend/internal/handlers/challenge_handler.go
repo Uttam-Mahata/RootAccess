@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-ctf-platform/backend/internal/models"
 	"github.com/go-ctf-platform/backend/internal/services"
+	"github.com/go-ctf-platform/backend/internal/utils"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -23,7 +24,10 @@ type CreateChallengeRequest struct {
 	Title       string   `json:"title" binding:"required"`
 	Description string   `json:"description" binding:"required"`
 	Category    string   `json:"category" binding:"required"`
-	Points      int      `json:"points" binding:"required"`
+	Difficulty  string   `json:"difficulty" binding:"required"`
+	MaxPoints   int      `json:"max_points" binding:"required"`
+	MinPoints   int      `json:"min_points" binding:"required"`
+	Decay       int      `json:"decay" binding:"required"`
 	Flag        string   `json:"flag" binding:"required"`
 	Files       []string `json:"files"`
 }
@@ -35,12 +39,18 @@ func (h *ChallengeHandler) CreateChallenge(c *gin.Context) {
 		return
 	}
 
+	// Hash the flag before storing
+	flagHash := utils.HashFlag(req.Flag)
+
 	challenge := &models.Challenge{
 		Title:       req.Title,
 		Description: req.Description,
 		Category:    req.Category,
-		Points:      req.Points,
-		Flag:        req.Flag,
+		Difficulty:  req.Difficulty,
+		MaxPoints:   req.MaxPoints,
+		MinPoints:   req.MinPoints,
+		Decay:       req.Decay,
+		FlagHash:    flagHash,
 		Files:       req.Files,
 	}
 
@@ -52,6 +62,104 @@ func (h *ChallengeHandler) CreateChallenge(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"message": "Challenge created successfully"})
 }
 
+func (h *ChallengeHandler) UpdateChallenge(c *gin.Context) {
+	id := c.Param("id")
+	var req CreateChallengeRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Hash the flag before storing
+	flagHash := utils.HashFlag(req.Flag)
+
+	challenge := &models.Challenge{
+		Title:       req.Title,
+		Description: req.Description,
+		Category:    req.Category,
+		Difficulty:  req.Difficulty,
+		MaxPoints:   req.MaxPoints,
+		MinPoints:   req.MinPoints,
+		Decay:       req.Decay,
+		FlagHash:    flagHash,
+		Files:       req.Files,
+	}
+
+	if err := h.challengeService.UpdateChallenge(id, challenge); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Challenge updated successfully"})
+}
+
+func (h *ChallengeHandler) DeleteChallenge(c *gin.Context) {
+	id := c.Param("id")
+
+	if err := h.challengeService.DeleteChallenge(id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Challenge deleted successfully"})
+}
+
+// ChallengeResponse is the response struct for challenges (for admin view)
+type ChallengeAdminResponse struct {
+	ID            string   `json:"id"`
+	Title         string   `json:"title"`
+	Description   string   `json:"description"`
+	Category      string   `json:"category"`
+	Difficulty    string   `json:"difficulty"`
+	MaxPoints     int      `json:"max_points"`
+	MinPoints     int      `json:"min_points"`
+	Decay         int      `json:"decay"`
+	SolveCount    int      `json:"solve_count"`
+	CurrentPoints int      `json:"current_points"`
+	Files         []string `json:"files"`
+}
+
+// GetAllChallengesWithFlags returns all challenges for admin (no flag hash exposed)
+func (h *ChallengeHandler) GetAllChallengesWithFlags(c *gin.Context) {
+	challenges, err := h.challengeService.GetAllChallenges()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	var result []ChallengeAdminResponse
+	for _, ch := range challenges {
+		result = append(result, ChallengeAdminResponse{
+			ID:            ch.ID.Hex(),
+			Title:         ch.Title,
+			Description:   ch.Description,
+			Category:      ch.Category,
+			Difficulty:    ch.Difficulty,
+			MaxPoints:     ch.MaxPoints,
+			MinPoints:     ch.MinPoints,
+			Decay:         ch.Decay,
+			SolveCount:    ch.SolveCount,
+			CurrentPoints: ch.CurrentPoints(),
+			Files:         ch.Files,
+		})
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
+// ChallengePublicResponse is the response struct for public challenge view
+type ChallengePublicResponse struct {
+	ID            string   `json:"id"`
+	Title         string   `json:"title"`
+	Description   string   `json:"description"`
+	Category      string   `json:"category"`
+	Difficulty    string   `json:"difficulty"`
+	MaxPoints     int      `json:"max_points"`
+	CurrentPoints int      `json:"current_points"`
+	SolveCount    int      `json:"solve_count"`
+	Files         []string `json:"files"`
+}
+
 func (h *ChallengeHandler) GetAllChallenges(c *gin.Context) {
 	challenges, err := h.challengeService.GetAllChallenges()
 	if err != nil {
@@ -59,7 +167,22 @@ func (h *ChallengeHandler) GetAllChallenges(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, challenges)
+	var result []ChallengePublicResponse
+	for _, ch := range challenges {
+		result = append(result, ChallengePublicResponse{
+			ID:            ch.ID.Hex(),
+			Title:         ch.Title,
+			Description:   ch.Description,
+			Category:      ch.Category,
+			Difficulty:    ch.Difficulty,
+			MaxPoints:     ch.MaxPoints,
+			CurrentPoints: ch.CurrentPoints(),
+			SolveCount:    ch.SolveCount,
+			Files:         ch.Files,
+		})
+	}
+
+	c.JSON(http.StatusOK, result)
 }
 
 func (h *ChallengeHandler) GetChallengeByID(c *gin.Context) {
@@ -70,7 +193,20 @@ func (h *ChallengeHandler) GetChallengeByID(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, challenge)
+	// Return public response (no flag hash)
+	response := ChallengePublicResponse{
+		ID:            challenge.ID.Hex(),
+		Title:         challenge.Title,
+		Description:   challenge.Description,
+		Category:      challenge.Category,
+		Difficulty:    challenge.Difficulty,
+		MaxPoints:     challenge.MaxPoints,
+		CurrentPoints: challenge.CurrentPoints(),
+		SolveCount:    challenge.SolveCount,
+		Files:         challenge.Files,
+	}
+
+	c.JSON(http.StatusOK, response)
 }
 
 type SubmitFlagRequest struct {
@@ -107,9 +243,8 @@ func (h *ChallengeHandler) SubmitFlag(c *gin.Context) {
 
 	if result.IsCorrect {
 		response["message"] = "Flag correct!"
-		if result.Points > 0 {
-			response["points"] = result.Points
-		}
+		response["points"] = result.Points
+		response["solve_count"] = result.SolveCount
 		if result.TeamName != "" {
 			response["team_name"] = result.TeamName
 			response["message"] = "Flag correct! Points awarded to team " + result.TeamName

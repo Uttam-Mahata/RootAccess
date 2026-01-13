@@ -25,6 +25,9 @@ func (r *ChallengeRepository) CreateChallenge(challenge *models.Challenge) error
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
+	// Initialize solve count to 0
+	challenge.SolveCount = 0
+
 	_, err := r.collection.InsertOne(ctx, challenge)
 	return err
 }
@@ -61,4 +64,84 @@ func (r *ChallengeRepository) GetChallengeByID(id string) (*models.Challenge, er
 		return nil, err
 	}
 	return &challenge, nil
+}
+
+func (r *ChallengeRepository) UpdateChallenge(id string, challenge *models.Challenge) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	oid, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+
+	update := bson.M{
+		"$set": bson.M{
+			"title":       challenge.Title,
+			"description": challenge.Description,
+			"category":    challenge.Category,
+			"difficulty":  challenge.Difficulty,
+			"max_points":  challenge.MaxPoints,
+			"min_points":  challenge.MinPoints,
+			"decay":       challenge.Decay,
+			"flag_hash":   challenge.FlagHash,
+			"files":       challenge.Files,
+		},
+	}
+
+	_, err = r.collection.UpdateOne(ctx, bson.M{"_id": oid}, update)
+	return err
+}
+
+func (r *ChallengeRepository) DeleteChallenge(id string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	oid, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+
+	_, err = r.collection.DeleteOne(ctx, bson.M{"_id": oid})
+	return err
+}
+
+// IncrementSolveCount increases the solve count for a challenge by 1
+func (r *ChallengeRepository) IncrementSolveCount(id string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	oid, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+
+	update := bson.M{
+		"$inc": bson.M{
+			"solve_count": 1,
+		},
+	}
+
+	_, err = r.collection.UpdateOne(ctx, bson.M{"_id": oid}, update)
+	return err
+}
+
+// GetFlagHash retrieves only the flag hash for verification (internal use)
+func (r *ChallengeRepository) GetFlagHash(id string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	oid, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return "", err
+	}
+
+	var result struct {
+		FlagHash string `bson:"flag_hash"`
+	}
+	err = r.collection.FindOne(ctx, bson.M{"_id": oid}).Decode(&result)
+	if err != nil {
+		return "", err
+	}
+	return result.FlagHash, nil
 }

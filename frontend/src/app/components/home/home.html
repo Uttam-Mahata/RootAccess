@@ -2,60 +2,60 @@
   <div class="max-w-4xl mx-auto text-center">
     <!-- Welcome Header -->
     <div class="mb-12">
-      <h1 class="text-5xl font-extrabold text-white mb-4">
+      <h1 class="text-5xl font-extrabold text-slate-900 dark:text-white mb-4">
         Welcome back, 
         <span class="bg-gradient-to-r from-red-500 to-red-700 bg-clip-text text-transparent">
           {{ authService.getCurrentUser()?.username }}
         </span>!
       </h1>
-      <p class="text-xl text-slate-400">Ready to hack some challenges?</p>
+      <p class="text-xl text-slate-600 dark:text-slate-400">Ready to hack some challenges?</p>
     </div>
 
     <!-- Quick Actions Grid -->
     <div class="grid md:grid-cols-3 gap-6 mb-12">
       <!-- Challenges Card -->
-      <a routerLink="/challenges" class="group bg-slate-800/50 backdrop-blur-xl rounded-xl shadow-2xl border border-primary-500/20 p-6 hover:border-red-500/40 transition-all duration-300 hover:scale-105">
-        <div class="w-14 h-14 bg-gradient-to-br from-red-500 to-red-700 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+      <a routerLink="/challenges" class="group bg-white dark:bg-slate-800/50 backdrop-blur-xl rounded-xl shadow-xl dark:shadow-2xl border border-slate-200 dark:border-red-500/20 p-6 hover:border-red-400 dark:hover:border-red-500/40 transition-all duration-300 hover:scale-105">
+        <div class="w-14 h-14 bg-gradient-to-br from-red-500 to-red-700 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform shadow-lg shadow-red-500/25">
           <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
           </svg>
         </div>
-        <h3 class="text-lg font-bold text-white mb-2">Challenges</h3>
-        <p class="text-slate-400 text-sm">Solve CTF challenges and earn points</p>
+        <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">Challenges</h3>
+        <p class="text-slate-600 dark:text-slate-400 text-sm">Solve CTF challenges and earn points</p>
       </a>
 
       <!-- Team Card -->
-      <a routerLink="/team" class="group bg-slate-800/50 backdrop-blur-xl rounded-xl shadow-2xl border border-primary-500/20 p-6 hover:border-blue-500/40 transition-all duration-300 hover:scale-105">
-        <div class="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+      <a routerLink="/team" class="group bg-white dark:bg-slate-800/50 backdrop-blur-xl rounded-xl shadow-xl dark:shadow-2xl border border-slate-200 dark:border-blue-500/20 p-6 hover:border-blue-400 dark:hover:border-blue-500/40 transition-all duration-300 hover:scale-105">
+        <div class="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform shadow-lg shadow-blue-500/25">
           <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
           </svg>
         </div>
-        <h3 class="text-lg font-bold text-white mb-2">Team</h3>
-        <p class="text-slate-400 text-sm">Manage your team and invitations</p>
+        <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">Team</h3>
+        <p class="text-slate-600 dark:text-slate-400 text-sm">Manage your team and invitations</p>
       </a>
 
       <!-- Scoreboard Card -->
-      <a routerLink="/scoreboard" class="group bg-slate-800/50 backdrop-blur-xl rounded-xl shadow-2xl border border-primary-500/20 p-6 hover:border-yellow-500/40 transition-all duration-300 hover:scale-105">
-        <div class="w-14 h-14 bg-gradient-to-br from-yellow-500 to-yellow-700 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+      <a routerLink="/scoreboard" class="group bg-white dark:bg-slate-800/50 backdrop-blur-xl rounded-xl shadow-xl dark:shadow-2xl border border-slate-200 dark:border-yellow-500/20 p-6 hover:border-yellow-400 dark:hover:border-yellow-500/40 transition-all duration-300 hover:scale-105">
+        <div class="w-14 h-14 bg-gradient-to-br from-yellow-500 to-yellow-700 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform shadow-lg shadow-yellow-500/25">
           <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
           </svg>
         </div>
-        <h3 class="text-lg font-bold text-white mb-2">Scoreboard</h3>
-        <p class="text-slate-400 text-sm">Check team rankings</p>
+        <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">Scoreboard</h3>
+        <p class="text-slate-600 dark:text-slate-400 text-sm">Check team rankings</p>
       </a>
     </div>
 
     <!-- Team Status -->
-    <div class="bg-slate-800/50 backdrop-blur-xl rounded-xl shadow-2xl border border-primary-500/20 p-6">
+    <div class="bg-white dark:bg-slate-800/50 backdrop-blur-xl rounded-xl shadow-xl dark:shadow-2xl border border-slate-200 dark:border-red-500/20 p-6">
       <div class="flex items-center justify-center gap-3 mb-4">
         <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
         </svg>
-        <h2 class="text-xl font-bold text-white">Quick Start</h2>
+        <h2 class="text-xl font-bold text-slate-900 dark:text-white">Quick Start</h2>
       </div>
-      <p class="text-slate-400 mb-4">
+      <p class="text-slate-600 dark:text-slate-400 mb-4">
         Join or create a team to start competing! Teams earn points together by solving challenges.
       </p>
       <a routerLink="/team" class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold rounded-lg transition-all duration-200 shadow-lg shadow-red-500/25 hover:shadow-red-500/40 hover:scale-105">

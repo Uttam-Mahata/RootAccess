@@ -8,18 +8,93 @@
       </svg>
       Admin Dashboard
     </h1>
-    <p class="text-slate-600 dark:text-slate-400 transition-colors duration-300">Create and manage CTF challenges</p>
+    <p class="text-slate-600 dark:text-slate-400 transition-colors duration-300">Create and manage CTF challenges with dynamic scoring</p>
   </div>
 
-  <!-- Create Challenge Form -->
-  <div class="max-w-3xl">
+  <!-- Tab Navigation -->
+  <div class="mb-6">
+    <div class="flex flex-wrap gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl w-fit">
+      <button 
+        (click)="switchTab('create')"
+        [class]="activeTab === 'create' 
+          ? 'bg-white dark:bg-slate-700 text-red-600 dark:text-red-400 shadow-sm' 
+          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
+        class="px-6 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+        {{ isEditMode ? 'Edit Challenge' : 'Create Challenge' }}
+      </button>
+      <button 
+        (click)="switchTab('manage')"
+        [class]="activeTab === 'manage' 
+          ? 'bg-white dark:bg-slate-700 text-red-600 dark:text-red-400 shadow-sm' 
+          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
+        class="px-6 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+        </svg>
+        Manage Challenges
+        <span class="bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400 text-xs px-2 py-0.5 rounded-full">
+          {{ challenges.length }}
+        </span>
+      </button>
+      <button 
+        (click)="switchTab('notifications')"
+        [class]="activeTab === 'notifications' 
+          ? 'bg-white dark:bg-slate-700 text-red-600 dark:text-red-400 shadow-sm' 
+          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
+        class="px-6 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+        </svg>
+        Notifications
+        <span class="bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400 text-xs px-2 py-0.5 rounded-full">
+          {{ notifications.length }}
+        </span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Global Message -->
+  <div *ngIf="message" class="mb-6 rounded-lg p-4 transition-colors duration-300"
+       [ngClass]="messageType === 'success' 
+         ? 'bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30' 
+         : 'bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30'">
+    <div class="flex items-center space-x-2">
+      <svg *ngIf="messageType === 'success'" class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+      </svg>
+      <svg *ngIf="messageType === 'error'" class="w-5 h-5 text-red-600 dark:text-red-400" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+      </svg>
+      <p class="text-sm font-medium"
+         [ngClass]="messageType === 'success' ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-700 dark:text-red-300'">
+        {{ message }}
+      </p>
+    </div>
+  </div>
+
+  <!-- CREATE TAB -->
+  <div *ngIf="activeTab === 'create'" class="max-w-4xl">
     <div class="relative group">
       <!-- Glow Effect -->
       <div class="absolute -inset-0.5 bg-gradient-to-r from-red-600 to-red-700 rounded-2xl blur opacity-20 group-hover:opacity-30 dark:opacity-30 dark:group-hover:opacity-40 transition duration-300"></div>
       
       <!-- Form Card -->
       <div class="relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-red-600/20 p-8 shadow-2xl transition-colors duration-300">
-        <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-6">Create New Challenge</h2>
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-2xl font-bold text-slate-900 dark:text-white">
+            {{ isEditMode ? 'Edit Challenge' : 'Create New Challenge' }}
+          </h2>
+          <button *ngIf="isEditMode" 
+                  (click)="cancelEdit()"
+                  class="text-slate-500 hover:text-red-500 transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
         
         <form [formGroup]="challengeForm" (ngSubmit)="onSubmit()" class="space-y-6">
           <!-- Title -->
@@ -31,73 +106,138 @@
               id="title"
               type="text"
               formControlName="title"
-              required
               class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all duration-200"
-              placeholder="e.g., Reverse Engineering 101"
+              placeholder="e.g., SQL Injection 101"
             />
           </div>
 
-          <!-- Description -->
+          <!-- Description (Rich Text Editor) -->
           <div>
-            <label for="description" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Description *
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              Description * (Rich Text)
             </label>
-            <textarea
-              id="description"
-              formControlName="description"
-              required
-              rows="5"
-              class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all duration-200 resize-none"
-              placeholder="Detailed challenge description..."
-            ></textarea>
+            <div class="rounded-lg overflow-hidden border border-slate-300 dark:border-slate-700">
+              <editor
+                [init]="editorConfig"
+                [initialValue]="editorContent"
+                (onInit)="onEditorChange($event)"
+                (onChange)="onEditorChange($event)">
+              </editor>
+            </div>
+            <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+              Use the rich text editor to format your challenge description. Supports code blocks, lists, links, and more.
+            </p>
           </div>
 
-          <!-- Category and Points Row -->
+          <!-- Category and Difficulty Row -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Category -->
             <div>
               <label for="category" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                 Category *
               </label>
-              <input
+              <select
                 id="category"
-                type="text"
                 formControlName="category"
-                required
-                class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all duration-200"
-                placeholder="e.g., Web, Crypto, Reverse"
-              />
+                class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all duration-200">
+                <option value="" disabled>Select category</option>
+                <option *ngFor="let cat of categories" [value]="cat.value">{{ cat.label }}</option>
+              </select>
             </div>
 
-            <!-- Points -->
+            <!-- Difficulty -->
             <div>
-              <label for="points" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Points *
+              <label for="difficulty" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Difficulty *
               </label>
-              <input
-                id="points"
-                type="number"
-                formControlName="points"
-                required
-                class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all duration-200"
-                placeholder="100"
-              />
+              <select
+                id="difficulty"
+                formControlName="difficulty"
+                class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all duration-200">
+                <option value="" disabled>Select difficulty</option>
+                <option *ngFor="let diff of difficulties" [value]="diff.value">{{ diff.label }}</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Dynamic Scoring Section -->
+          <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-6 border border-slate-200 dark:border-slate-700">
+            <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+              <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+              </svg>
+              Dynamic Scoring
+            </h3>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">
+              Points decrease as more teams solve the challenge using the CTFd formula.
+            </p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <!-- Max Points -->
+              <div>
+                <label for="max_points" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Max Points *
+                </label>
+                <input
+                  id="max_points"
+                  type="number"
+                  formControlName="max_points"
+                  min="1"
+                  class="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all duration-200"
+                  placeholder="500"
+                />
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Initial points</p>
+              </div>
+
+              <!-- Min Points -->
+              <div>
+                <label for="min_points" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Min Points *
+                </label>
+                <input
+                  id="min_points"
+                  type="number"
+                  formControlName="min_points"
+                  min="1"
+                  class="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all duration-200"
+                  placeholder="100"
+                />
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Floor points</p>
+              </div>
+
+              <!-- Decay -->
+              <div>
+                <label for="decay" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Decay *
+                </label>
+                <input
+                  id="decay"
+                  type="number"
+                  formControlName="decay"
+                  min="1"
+                  class="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all duration-200"
+                  placeholder="10"
+                />
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Solves to reach midpoint</p>
+              </div>
             </div>
           </div>
 
           <!-- Flag -->
           <div>
             <label for="flag" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Flag *
+              Flag * {{ isEditMode ? '(Re-enter to update)' : '' }}
             </label>
             <input
               id="flag"
               type="text"
               formControlName="flag"
-              required
               class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all duration-200 font-mono"
               placeholder="CTF{example_flag_here}"
             />
+            <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+              Flag is stored securely as a SHA-256 hash. Format: <code class="bg-slate-100 dark:bg-slate-800 px-1 rounded">CTF&#123;your_flag&#125;</code>
+            </p>
           </div>
 
           <!-- Files -->
@@ -115,31 +255,317 @@
             <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">Optional: Add downloadable files for this challenge</p>
           </div>
 
-          <!-- Success/Error Message -->
-          <div *ngIf="message" class="rounded-lg p-4 transition-colors duration-300"
-               [ngClass]="message.includes('success') ? 'bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30' : 'bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30'">
-            <div class="flex items-center space-x-2">
-              <svg *ngIf="message.includes('success')" class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-              </svg>
-              <svg *ngIf="!message.includes('success')" class="w-5 h-5 text-red-600 dark:text-red-400" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
-              </svg>
-              <p class="text-sm font-medium"
-                 [ngClass]="message.includes('success') ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-700 dark:text-red-300'">
-                {{ message }}
-              </p>
-            </div>
+          <!-- Submit Buttons -->
+          <div class="flex gap-4">
+            <button
+              type="submit"
+              [disabled]="!challengeForm.valid"
+              class="flex-1 py-3 px-4 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 dark:hover:from-red-500 dark:hover:to-red-600 rounded-lg transition-all duration-200 shadow-lg shadow-red-500/25 hover:shadow-red-500/40 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
+              {{ isEditMode ? 'Update Challenge' : 'Create Challenge' }}
+            </button>
+            <button
+              *ngIf="isEditMode"
+              type="button"
+              (click)="cancelEdit()"
+              class="px-6 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-all duration-200">
+              Cancel
+            </button>
           </div>
+        </form>
+      </div>
+    </div>
+  </div>
 
-          <!-- Submit Button -->
-          <button
-            type="submit"
-            [disabled]="!challengeForm.valid"
-            class="w-full py-3 px-4 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 dark:hover:from-red-500 dark:hover:to-red-600 rounded-lg transition-all duration-200 shadow-lg shadow-red-500/25 hover:shadow-red-500/40 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
+  <!-- MANAGE TAB -->
+  <div *ngIf="activeTab === 'manage'">
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="flex justify-center items-center py-12">
+      <svg class="animate-spin h-8 w-8 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+    </div>
+
+    <!-- Empty State -->
+    <div *ngIf="!isLoading && challenges.length === 0" class="text-center py-12">
+      <div class="relative group inline-block">
+        <div class="absolute -inset-0.5 bg-gradient-to-r from-red-600 to-red-700 rounded-2xl blur opacity-20"></div>
+        <div class="relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-red-600/20 p-12">
+          <svg class="w-16 h-16 text-slate-300 dark:text-slate-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+          </svg>
+          <h3 class="text-xl font-semibold text-slate-900 dark:text-white mb-2">No challenges yet</h3>
+          <p class="text-slate-600 dark:text-slate-400 mb-6">Create your first CTF challenge to get started</p>
+          <button 
+            (click)="switchTab('create')"
+            class="px-6 py-3 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 rounded-lg transition-all duration-200 shadow-lg shadow-red-500/25">
             Create Challenge
           </button>
-        </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Challenges Table -->
+    <div *ngIf="!isLoading && challenges.length > 0" class="relative group">
+      <div class="absolute -inset-0.5 bg-gradient-to-r from-red-600 to-red-700 rounded-2xl blur opacity-10 group-hover:opacity-20 dark:opacity-20 dark:group-hover:opacity-30 transition duration-300"></div>
+      
+      <div class="relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-red-600/20 overflow-hidden shadow-2xl transition-colors duration-300">
+        <div class="overflow-x-auto">
+          <table class="w-full">
+            <thead class="bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+              <tr>
+                <th class="px-6 py-4 text-left text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Title</th>
+                <th class="px-6 py-4 text-left text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Category</th>
+                <th class="px-6 py-4 text-left text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Difficulty</th>
+                <th class="px-6 py-4 text-left text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Points</th>
+                <th class="px-6 py-4 text-left text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Solves</th>
+                <th class="px-6 py-4 text-right text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
+              <tr *ngFor="let challenge of challenges" class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors duration-150">
+                <!-- Title -->
+                <td class="px-6 py-4">
+                  <div class="flex items-center">
+                    <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center text-white font-bold text-sm mr-3 flex-shrink-0">
+                      {{ challenge.title.charAt(0).toUpperCase() }}
+                    </div>
+                    <div>
+                      <p class="text-slate-900 dark:text-white font-medium">{{ challenge.title }}</p>
+                      <p class="text-slate-500 dark:text-slate-400 text-xs truncate max-w-xs">
+                        {{ (challenge.files && challenge.files.length) || 0 }} file(s)
+                      </p>
+                    </div>
+                  </div>
+                </td>
+                
+                <!-- Category -->
+                <td class="px-6 py-4">
+                  <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+                    {{ getCategoryLabel(challenge.category) }}
+                  </span>
+                </td>
+                
+                <!-- Difficulty -->
+                <td class="px-6 py-4">
+                  <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium"
+                        [ngClass]="{
+                          'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400': challenge.difficulty === 'easy',
+                          'bg-yellow-100 dark:bg-yellow-500/20 text-yellow-700 dark:text-yellow-400': challenge.difficulty === 'medium',
+                          'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400': challenge.difficulty === 'hard'
+                        }">
+                    {{ getDifficultyLabel(challenge.difficulty) }}
+                  </span>
+                </td>
+                
+                <!-- Points (Dynamic) -->
+                <td class="px-6 py-4">
+                  <div class="flex flex-col">
+                    <span class="text-slate-900 dark:text-white font-semibold">{{ challenge.current_points }} pts</span>
+                    <span class="text-slate-500 dark:text-slate-400 text-xs">
+                      {{ challenge.max_points }} → {{ challenge.min_points }}
+                    </span>
+                  </div>
+                </td>
+                
+                <!-- Solves -->
+                <td class="px-6 py-4">
+                  <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400">
+                    {{ challenge.solve_count }} solves
+                  </span>
+                </td>
+                
+                <!-- Actions -->
+                <td class="px-6 py-4 text-right">
+                  <div class="flex items-center justify-end gap-2">
+                    <button 
+                      (click)="editChallenge(challenge)"
+                      class="p-2 text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-lg transition-colors"
+                      title="Edit">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                      </svg>
+                    </button>
+                    <button 
+                      (click)="deleteChallenge(challenge)"
+                      class="p-2 text-slate-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
+                      title="Delete">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                      </svg>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOTIFICATIONS TAB -->
+  <div *ngIf="activeTab === 'notifications'">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Create/Edit Notification Form -->
+      <div class="relative group">
+        <div class="absolute -inset-0.5 bg-gradient-to-r from-red-600 to-red-700 rounded-2xl blur opacity-20 group-hover:opacity-30 dark:opacity-30 dark:group-hover:opacity-40 transition duration-300"></div>
+        
+        <div class="relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-red-600/20 p-6 shadow-2xl transition-colors duration-300">
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-xl font-bold text-slate-900 dark:text-white">
+              {{ isEditingNotification ? 'Edit Notification' : 'Create Notification' }}
+            </h2>
+            <button *ngIf="isEditingNotification" 
+                    (click)="cancelEditNotification()"
+                    class="text-slate-500 hover:text-red-500 transition-colors">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+          
+          <form [formGroup]="notificationForm" (ngSubmit)="onSubmitNotification()" class="space-y-4">
+            <!-- Title -->
+            <div>
+              <label for="notif-title" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Title *
+              </label>
+              <input
+                id="notif-title"
+                type="text"
+                formControlName="title"
+                class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all duration-200"
+                placeholder="e.g., Competition starts soon!"
+              />
+            </div>
+
+            <!-- Content -->
+            <div>
+              <label for="notif-content" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Content *
+              </label>
+              <textarea
+                id="notif-content"
+                formControlName="content"
+                rows="3"
+                class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all duration-200 resize-none"
+                placeholder="Enter the notification message..."
+              ></textarea>
+            </div>
+
+            <!-- Type -->
+            <div>
+              <label for="notif-type" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Type *
+              </label>
+              <select
+                id="notif-type"
+                formControlName="type"
+                class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all duration-200">
+                <option *ngFor="let type of notificationTypes" [value]="type.value">{{ type.label }}</option>
+              </select>
+            </div>
+
+            <!-- Submit Button -->
+            <button
+              type="submit"
+              [disabled]="!notificationForm.valid"
+              class="w-full py-3 px-4 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 dark:hover:from-red-500 dark:hover:to-red-600 rounded-lg transition-all duration-200 shadow-lg shadow-red-500/25 hover:shadow-red-500/40 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
+              {{ isEditingNotification ? 'Update Notification' : 'Create Notification' }}
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Notifications List -->
+      <div>
+        <!-- Loading State -->
+        <div *ngIf="isLoadingNotifications" class="flex justify-center items-center py-12">
+          <svg class="animate-spin h-8 w-8 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+        </div>
+
+        <!-- Empty State -->
+        <div *ngIf="!isLoadingNotifications && notifications.length === 0" class="text-center py-12">
+          <div class="relative group inline-block">
+            <div class="absolute -inset-0.5 bg-gradient-to-r from-red-600 to-red-700 rounded-2xl blur opacity-20"></div>
+            <div class="relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-red-600/20 p-8">
+              <svg class="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+              </svg>
+              <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-1">No notifications</h3>
+              <p class="text-slate-600 dark:text-slate-400 text-sm">Create your first announcement</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notifications List -->
+        <div *ngIf="!isLoadingNotifications && notifications.length > 0" class="space-y-4">
+          <div *ngFor="let notification of notifications" class="relative group">
+            <div class="absolute -inset-0.5 bg-gradient-to-r from-red-600/50 to-red-700/50 rounded-xl blur opacity-0 group-hover:opacity-20 transition duration-300"></div>
+            
+            <div class="relative bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-4 transition-colors duration-300"
+                 [ngClass]="{'opacity-50': !notification.is_active}">
+              <div class="flex items-start justify-between gap-4">
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2 mb-1">
+                    <span class="px-2 py-0.5 text-xs font-medium rounded-full"
+                          [ngClass]="{
+                            'bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400': notification.type === 'info',
+                            'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400': notification.type === 'warning',
+                            'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400': notification.type === 'success',
+                            'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400': notification.type === 'error'
+                          }">
+                      {{ getNotificationTypeLabel(notification.type) }}
+                    </span>
+                    <span *ngIf="!notification.is_active" class="px-2 py-0.5 text-xs font-medium rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400">
+                      Inactive
+                    </span>
+                  </div>
+                  <h3 class="text-slate-900 dark:text-white font-semibold truncate">{{ notification.title }}</h3>
+                  <p class="text-slate-600 dark:text-slate-400 text-sm mt-1 line-clamp-2">{{ notification.content }}</p>
+                </div>
+                
+                <div class="flex items-center gap-1 flex-shrink-0">
+                  <!-- Toggle Active -->
+                  <button 
+                    (click)="toggleNotificationActive(notification)"
+                    class="p-2 text-slate-500 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10 rounded-lg transition-colors"
+                    [title]="notification.is_active ? 'Deactivate' : 'Activate'">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path *ngIf="notification.is_active" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                      <path *ngIf="notification.is_active" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                      <path *ngIf="!notification.is_active" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
+                    </svg>
+                  </button>
+                  
+                  <!-- Edit -->
+                  <button 
+                    (click)="editNotification(notification)"
+                    class="p-2 text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-lg transition-colors"
+                    title="Edit">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                    </svg>
+                  </button>
+                  
+                  <!-- Delete -->
+                  <button 
+                    (click)="deleteNotification(notification)"
+                    class="p-2 text-slate-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
+                    title="Delete">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
