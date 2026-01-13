@@ -5,22 +5,29 @@
 echo "Setting up sample data..."
 
 # Check if user exists, create if not, then set as admin
-docker exec ctf-mongodb mongosh go_ctf --eval '
+update_result=$(docker exec ctf-mongodb mongosh go_ctf --quiet --eval '
 const existingUser = db.users.findOne({ username: "testuser" });
 if (!existingUser) {
-  print("User testuser does not exist. Please register the user first through the application.");
-  print("After registering, run this script again to upgrade to admin.");
+  print("USER_NOT_FOUND");
   quit(1);
 }
-db.users.updateOne(
+const result = db.users.updateOne(
   { username: "testuser" },
   { $set: { role: "admin" } }
-)
-'
+);
+print("SUCCESS");
+' 2>&1)
 
-if [ $? -ne 0 ]; then
-  echo "⚠️  Failed to create admin user. Please register 'testuser' through the application first."
-  echo "Then run this script again."
+if echo "$update_result" | grep -q "USER_NOT_FOUND"; then
+  echo ""
+  echo "⚠️  User 'testuser' does not exist in the database."
+  echo ""
+  echo "Please follow these steps:"
+  echo "  1. Open http://localhost:4200 in your browser"
+  echo "  2. Register a new account with username: testuser"
+  echo "  3. Choose a secure password (suggestion: generate with 'openssl rand -base64 12')"
+  echo "  4. Run this script again to promote the user to admin"
+  echo ""
   exit 1
 fi
 
@@ -72,17 +79,19 @@ db.challenges.insertMany([
 ])
 '
 
-echo "Created sample challenges"
-echo "Setup complete!"
+echo "✓ Created sample challenges"
 echo ""
 echo "========================================="
-echo "⚠️  DEVELOPMENT CREDENTIALS (DO NOT USE IN PRODUCTION)"
+echo "✅ Setup Complete!"
 echo "========================================="
-echo "Admin credentials for testing:"
-echo "Username: testuser"
-echo "Password: password123"
 echo ""
-echo "⚠️  WARNING: These are default test credentials!"
-echo "For production, create a secure admin account through"
-echo "the application and remove or change these credentials."
+echo "Sample challenges have been added to the database."
+echo "User 'testuser' has been promoted to admin."
+echo ""
+echo "⚠️  SECURITY NOTICE:"
+echo "This script is for DEVELOPMENT ONLY."
+echo "For production:"
+echo "  • Create admin accounts through secure channels"
+echo "  • Use strong, unique passwords (not 'password123')"
+echo "  • Never use default test credentials"
 echo "========================================="
