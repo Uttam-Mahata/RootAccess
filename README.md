@@ -35,6 +35,43 @@ A full-stack Capture The Flag (CTF) platform built with Go (Gin framework) for t
 
 ## 🛠️ Setup Instructions
 
+### Quick Start (Recommended)
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/Uttam-Mahata/go-ctf-platform.git
+   cd go-ctf-platform
+   ```
+
+2. **Start MongoDB using Docker:**
+   ```bash
+   docker compose up -d
+   ```
+
+3. **Setup Backend:**
+   ```bash
+   cd backend
+   cp .env.example .env
+   go mod download
+   go run cmd/api/main.go
+   ```
+
+4. **Setup Frontend (in a new terminal):**
+   ```bash
+   cd frontend
+   npm install
+   npm start
+   ```
+
+5. **Setup Sample Data (optional):**
+   ```bash
+   bash scripts/setup-sample-data.sh
+   ```
+
+The application will be available at:
+- Frontend: http://localhost:4200
+- Backend API: http://localhost:8080
+
 ### Backend Setup
 
 1. **Navigate to the backend directory:**
@@ -165,8 +202,31 @@ go-ctf-platform/
 │   ├── package.json
 │   └── angular.json
 │
+├── screenshots/                  # Application screenshots
+├── scripts/                      # Helper scripts
+├── docker-compose.yml            # Docker configuration for MongoDB
 └── README.md
 ```
+
+## 📸 Screenshots
+
+### Login Page
+![Login Page](screenshots/01-login-page.png)
+
+### Registration Page
+![Registration Page](screenshots/02-register-page.png)
+
+### Scoreboard
+![Scoreboard](screenshots/03-scoreboard-page.png)
+
+### Challenge List
+![Challenge List](screenshots/04-challenge-list-page.png)
+
+### Challenge Detail
+![Challenge Detail](screenshots/05-challenge-detail-page.png)
+
+### Admin Dashboard
+![Admin Dashboard](screenshots/06-admin-dashboard-page.png)
 
 ## 🧪 Testing
 
