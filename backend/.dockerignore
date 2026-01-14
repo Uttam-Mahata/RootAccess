@@ -1,0 +1,8 @@
+.git
+.gitignore
+.env
+bin/
+dist/
+tmp/
+admin-tool
+admin-tool.exe
