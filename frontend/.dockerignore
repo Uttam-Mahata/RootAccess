@@ -1,7 +1,6 @@
 .git
 .gitignore
 node_modules/
-dist/
 .angular/
 .vscode/
 npm-debug.log

@@ -28,10 +28,8 @@ func (s *EmailService) ValidateEmail(email string) error {
 		return fmt.Errorf("invalid email format: %w", err)
 	}
 
-	// Check if email domain has MX records (mail server)
-	if err := checkmail.ValidateHost(email); err != nil {
-		return fmt.Errorf("email domain does not exist or cannot receive emails: %w", err)
-	}
+	// Skipping ValidateHost because port 25 is often blocked in production environments
+	// checkmail.ValidateHost(email) would try to dial the MX server
 
 	return nil
 }
