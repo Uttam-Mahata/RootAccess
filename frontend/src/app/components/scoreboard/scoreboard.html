@@ -171,9 +171,14 @@
                   <div class="w-10 h-10 rounded-full bg-gradient-to-br from-red-600 to-red-700 flex items-center justify-center text-white font-bold text-sm mr-3">
                     {{user.username.charAt(0).toUpperCase()}}
                   </div>
-                  <span class="text-slate-900 dark:text-white font-medium transition-colors duration-300 group-hover/user:text-red-600 dark:group-hover/user:text-red-400">
-                    {{user.username}}
-                  </span>
+                  <div class="flex flex-col">
+                    <span class="text-slate-900 dark:text-white font-medium transition-colors duration-300 group-hover/user:text-red-600 dark:group-hover/user:text-red-400">
+                      {{user.username}}
+                    </span>
+                    <span *ngIf="user.team_name" class="text-slate-500 dark:text-slate-400 text-xs">
+                      Team: {{user.team_name}}
+                    </span>
+                  </div>
                 </a>
               </td>
               

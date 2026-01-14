@@ -45,8 +45,8 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	emailService := services.NewEmailService(cfg)
 	authService := services.NewAuthService(userRepo, emailService, cfg)
 	challengeService := services.NewChallengeService(challengeRepo, submissionRepo, teamRepo)
-	scoreboardService := services.NewScoreboardService(userRepo, submissionRepo, challengeRepo)
-	teamService := services.NewTeamService(teamRepo, teamInvitationRepo, userRepo, emailService)
+	scoreboardService := services.NewScoreboardService(userRepo, submissionRepo, challengeRepo, teamRepo)
+	teamService := services.NewTeamService(teamRepo, teamInvitationRepo, userRepo, emailService, submissionRepo, challengeRepo)
 	notificationService := services.NewNotificationService(notificationRepo)
 
 	// Handlers
@@ -69,7 +69,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 
 	// Public Routes - Scoreboard (team scoreboard)
 	r.GET("/scoreboard", scoreboardHandler.GetScoreboard)
-	r.GET("/scoreboard/teams", teamHandler.GetTeamScoreboard)
+	r.GET("/scoreboard/teams", scoreboardHandler.GetTeamScoreboard)
 
 	// Public Routes - Notifications (active notifications only)
 	r.GET("/notifications", notificationHandler.GetActiveNotifications)

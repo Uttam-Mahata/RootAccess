@@ -7,6 +7,7 @@ import { ScoreboardService } from '../../services/scoreboard';
 interface UserScore {
   username: string;
   score: number;
+  team_name?: string;
 }
 
 @Component({

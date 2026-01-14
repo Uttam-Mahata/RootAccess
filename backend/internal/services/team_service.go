@@ -1,11 +1,13 @@
 package services
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
 	"time"
 
+	"github.com/go-ctf-platform/backend/internal/database"
 	"github.com/go-ctf-platform/backend/internal/models"
 	"github.com/go-ctf-platform/backend/internal/repositories"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -16,6 +18,8 @@ type TeamService struct {
 	invitationRepo *repositories.TeamInvitationRepository
 	userRepo       *repositories.UserRepository
 	emailService   *EmailService
+	submissionRepo *repositories.SubmissionRepository
+	challengeRepo  *repositories.ChallengeRepository
 }
 
 func NewTeamService(
@@ -23,12 +27,24 @@ func NewTeamService(
 	invitationRepo *repositories.TeamInvitationRepository,
 	userRepo *repositories.UserRepository,
 	emailService *EmailService,
+	submissionRepo *repositories.SubmissionRepository,
+	challengeRepo *repositories.ChallengeRepository,
 ) *TeamService {
 	return &TeamService{
 		teamRepo:       teamRepo,
 		invitationRepo: invitationRepo,
 		userRepo:       userRepo,
 		emailService:   emailService,
+		submissionRepo: submissionRepo,
+		challengeRepo:  challengeRepo,
+	}
+}
+
+func (s *TeamService) invalidateScoreboardCache() {
+	if database.RDB != nil {
+		ctx := context.Background()
+		database.RDB.Del(ctx, "scoreboard")
+		database.RDB.Del(ctx, "team_scoreboard")
 	}
 }
 
@@ -92,14 +108,58 @@ func (s *TeamService) CreateTeam(leaderID, name, description string) (*models.Te
 	return team, nil
 }
 
-// GetTeamByID returns a team by its ID
-func (s *TeamService) GetTeamByID(teamID string) (*models.Team, error) {
-	return s.teamRepo.FindTeamByID(teamID)
+// Helper to calculate real-time dynamic score for a team
+func (s *TeamService) calculateTeamScore(teamID primitive.ObjectID) int {
+	// Get all correct submissions for the team
+	submissions, err := s.submissionRepo.GetTeamSubmissions(teamID)
+	if err != nil {
+		return 0
+	}
+
+	totalScore := 0
+	seenChallenges := make(map[string]bool)
+
+	for _, sub := range submissions {
+		challengeID := sub.ChallengeID.Hex()
+		if seenChallenges[challengeID] {
+			continue
+		}
+		seenChallenges[challengeID] = true
+
+		// Get current challenge state (with up-to-date solve count)
+		challenge, err := s.challengeRepo.GetChallengeByID(challengeID)
+		if err == nil {
+			// Add the CURRENT (decayed) value of the challenge
+			totalScore += challenge.CurrentPoints()
+		}
+	}
+	return totalScore
 }
 
-// GetUserTeam returns the team that a user belongs to
+// GetTeamByID returns a team by its ID with dynamic score
+func (s *TeamService) GetTeamByID(teamID string) (*models.Team, error) {
+	team, err := s.teamRepo.FindTeamByID(teamID)
+	if err != nil {
+		return nil, err
+	}
+	
+	// Recalculate score dynamically
+	team.Score = s.calculateTeamScore(team.ID)
+	
+	return team, nil
+}
+
+// GetUserTeam returns the team that a user belongs to with dynamic score
 func (s *TeamService) GetUserTeam(userID string) (*models.Team, error) {
-	return s.teamRepo.FindTeamByMemberID(userID)
+	team, err := s.teamRepo.FindTeamByMemberID(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Recalculate score dynamically
+	team.Score = s.calculateTeamScore(team.ID)
+
+	return team, nil
 }
 
 // UpdateTeam updates team name and description (leader only)
@@ -128,6 +188,7 @@ func (s *TeamService) UpdateTeam(teamID, leaderID, name, description string) (*m
 		return nil, err
 	}
 
+	s.invalidateScoreboardCache()
 	return team, nil
 }
 
@@ -318,6 +379,8 @@ func (s *TeamService) JoinByInviteCode(userID, inviteCode string) (*models.Team,
 		return nil, err
 	}
 
+	s.invalidateScoreboardCache()
+
 	// Refresh team data
 	return s.teamRepo.FindTeamByID(team.ID.Hex())
 }
@@ -386,6 +449,8 @@ func (s *TeamService) AcceptInvitation(invitationID, userID string) (*models.Tea
 		return nil, err
 	}
 
+	s.invalidateScoreboardCache()
+
 	// Refresh team data
 	return s.teamRepo.FindTeamByID(invitation.TeamID.Hex())
 }
@@ -450,7 +515,11 @@ func (s *TeamService) RemoveMember(teamID, leaderID, memberID string) error {
 		return errors.New("user is not a member of this team")
 	}
 
-	return s.teamRepo.RemoveMemberFromTeam(teamID, memberID)
+	err = s.teamRepo.RemoveMemberFromTeam(teamID, memberID)
+	if err == nil {
+		s.invalidateScoreboardCache()
+	}
+	return err
 }
 
 // LeaveTeam allows a member to leave the team
@@ -486,7 +555,11 @@ func (s *TeamService) LeaveTeam(teamID, userID string) error {
 		return errors.New("you are not a member of this team")
 	}
 
-	return s.teamRepo.RemoveMemberFromTeam(teamID, userID)
+	err = s.teamRepo.RemoveMemberFromTeam(teamID, userID)
+	if err == nil {
+		s.invalidateScoreboardCache()
+	}
+	return err
 }
 
 // RegenerateInviteCode generates a new invite code for the team

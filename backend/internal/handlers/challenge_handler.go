@@ -242,12 +242,14 @@ func (h *ChallengeHandler) SubmitFlag(c *gin.Context) {
 	}
 
 	if result.IsCorrect {
-		response["message"] = "Flag correct!"
+		response["message"] = result.Message
+		if response["message"] == "" {
+			response["message"] = "Flag correct!"
+		}
 		response["points"] = result.Points
 		response["solve_count"] = result.SolveCount
 		if result.TeamName != "" {
 			response["team_name"] = result.TeamName
-			response["message"] = "Flag correct! Points awarded to team " + result.TeamName
 		}
 	} else {
 		response["message"] = "Flag incorrect"
