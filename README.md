@@ -19,6 +19,8 @@ A high-performance, full-stack Capture The Flag (CTF) platform built with Go (Gi
 
 ## 🏗️ Architecture
 
+For details on scaling this platform across multiple nodes, see the [Distributed Cluster Setup guide](./DISTRIBUTED_SETUP.md).
+
 ### Backend
 - **Language**: Go 1.24
 - **Framework**: Gin (HTTP web framework)
