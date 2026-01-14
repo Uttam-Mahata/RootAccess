@@ -13,6 +13,7 @@ func main() {
 
 	// Connect to Database
 	database.ConnectDB(cfg.MongoURI, cfg.DBName)
+	database.ConnectRedis(cfg.RedisAddr, cfg.RedisPassword, cfg.RedisDB)
 
 	r := routes.SetupRouter(cfg)
 

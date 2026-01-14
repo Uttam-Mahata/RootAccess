@@ -19,6 +19,9 @@ type Config struct {
 	SMTPUser     string
 	SMTPPass     string
 	SMTPFrom     string
+	RedisAddr    string
+	RedisPassword string
+	RedisDB      int
 }
 
 func LoadConfig() *Config {
@@ -28,6 +31,7 @@ func LoadConfig() *Config {
 	}
 
 	smtpPort, _ := strconv.Atoi(getEnv("SMTP_PORT", "587"))
+	redisDB, _ := strconv.Atoi(getEnv("REDIS_DB", "0"))
 
 	return &Config{
 		Port:         getEnv("PORT", "8080"),
@@ -40,6 +44,9 @@ func LoadConfig() *Config {
 		SMTPUser:     getEnv("SMTP_USER", ""),
 		SMTPPass:     getEnv("SMTP_PASS", ""),
 		SMTPFrom:     getEnv("SMTP_FROM", "noreply@rootaccess.ctf"),
+		RedisAddr:    getEnv("REDIS_ADDR", "localhost:6379"),
+		RedisPassword: getEnv("REDIS_PASSWORD", ""),
+		RedisDB:      redisDB,
 	}
 }
 

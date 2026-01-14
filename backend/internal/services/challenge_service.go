@@ -1,6 +1,10 @@
 package services
 
 import (
+	"context"
+	"log"
+
+	"github.com/go-ctf-platform/backend/internal/database"
 	"github.com/go-ctf-platform/backend/internal/models"
 	"github.com/go-ctf-platform/backend/internal/repositories"
 	"github.com/go-ctf-platform/backend/internal/utils"
@@ -25,8 +29,21 @@ func NewChallengeService(
 	}
 }
 
+func (s *ChallengeService) invalidateScoreboardCache() {
+	if database.RDB != nil {
+		ctx := context.Background()
+		if err := database.RDB.Del(ctx, "scoreboard").Err(); err != nil {
+			log.Printf("Failed to invalidate scoreboard cache: %v", err)
+		}
+	}
+}
+
 func (s *ChallengeService) CreateChallenge(challenge *models.Challenge) error {
-	return s.challengeRepo.CreateChallenge(challenge)
+	err := s.challengeRepo.CreateChallenge(challenge)
+	if err == nil {
+		s.invalidateScoreboardCache()
+	}
+	return err
 }
 
 func (s *ChallengeService) GetAllChallenges() ([]models.Challenge, error) {
@@ -38,11 +55,19 @@ func (s *ChallengeService) GetChallengeByID(id string) (*models.Challenge, error
 }
 
 func (s *ChallengeService) UpdateChallenge(id string, challenge *models.Challenge) error {
-	return s.challengeRepo.UpdateChallenge(id, challenge)
+	err := s.challengeRepo.UpdateChallenge(id, challenge)
+	if err == nil {
+		s.invalidateScoreboardCache()
+	}
+	return err
 }
 
 func (s *ChallengeService) DeleteChallenge(id string) error {
-	return s.challengeRepo.DeleteChallenge(id)
+	err := s.challengeRepo.DeleteChallenge(id)
+	if err == nil {
+		s.invalidateScoreboardCache()
+	}
+	return err
 }
 
 // SubmitFlagResult contains the result of a flag submission
@@ -117,6 +142,7 @@ func (s *ChallengeService) SubmitFlag(userID primitive.ObjectID, challengeID str
 			
 			// Award points to team
 			s.teamRepo.UpdateTeamScore(team.ID.Hex(), points)
+			s.invalidateScoreboardCache()
 		}
 
 		return result, nil
@@ -156,6 +182,7 @@ func (s *ChallengeService) SubmitFlag(userID primitive.ObjectID, challengeID str
 		
 		result.Points = challenge.CurrentPoints()
 		result.SolveCount = challenge.SolveCount
+		s.invalidateScoreboardCache()
 	}
 
 	return result, nil

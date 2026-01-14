@@ -16,6 +16,10 @@ func ConnectDB(uri, dbName string) {
 	defer cancel()
 
 	clientOptions := options.Client().ApplyURI(uri)
+	// Configure connection pooling
+	clientOptions.SetMinPoolSize(10)
+	clientOptions.SetMaxPoolSize(100)
+
 	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
 		log.Fatal(err)

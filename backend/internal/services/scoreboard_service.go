@@ -1,6 +1,12 @@
 package services
 
 import (
+	"context"
+	"encoding/json"
+	"log"
+	"time"
+
+	"github.com/go-ctf-platform/backend/internal/database"
 	"github.com/go-ctf-platform/backend/internal/repositories"
 )
 
@@ -24,6 +30,21 @@ func NewScoreboardService(userRepo *repositories.UserRepository, submissionRepo 
 }
 
 func (s *ScoreboardService) GetScoreboard() ([]UserScore, error) {
+	ctx := context.Background()
+	cacheKey := "scoreboard"
+
+	// Try to get from Redis
+	if database.RDB != nil {
+		val, err := database.RDB.Get(ctx, cacheKey).Result()
+		if err == nil {
+			var scores []UserScore
+			if err := json.Unmarshal([]byte(val), &scores); err == nil {
+				return scores, nil
+			}
+		}
+	}
+
+	// Calculate scores if not in cache
 	submissions, err := s.submissionRepo.GetAllCorrectSubmissions()
 	if err != nil {
 		return nil, err
@@ -70,6 +91,17 @@ func (s *ScoreboardService) GetScoreboard() ([]UserScore, error) {
 			Username: username,
 			Score:    score,
 		})
+	}
+
+	// Store in Redis
+	if database.RDB != nil {
+		data, err := json.Marshal(scores)
+		if err == nil {
+			err = database.RDB.Set(ctx, cacheKey, data, 1*time.Minute).Err() // Cache for 1 minute
+			if err != nil {
+				log.Printf("Failed to cache scoreboard: %v", err)
+			}
+		}
 	}
 
 	return scores, nil
