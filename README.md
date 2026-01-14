@@ -1,41 +1,47 @@
-# Go CTF Platform
+# RootAccess CTF Platform
 
-A full-stack Capture The Flag (CTF) platform built with Go (Gin framework) for the backend and Angular (v21) with Angular Material for the frontend.
+A high-performance, full-stack Capture The Flag (CTF) platform built with Go (Gin) for the backend and Angular (v21) for the frontend. Designed for scalability with Redis caching and optimized database pooling.
 
 ## 🚀 Features
 
-- **User Authentication**: Secure registration and login system with JWT tokens
-- **Challenge Management**: Browse and solve CTF challenges across different categories
-- **Flag Submission**: Submit flags and earn points for correct solutions
-- **Scoreboard**: Real-time leaderboard tracking user rankings and scores
-- **Admin Dashboard**: Administrative interface for creating and managing challenges
-- **Role-Based Access Control**: Separate permissions for admins and regular users
+- **Dynamic Scoring**: Points for challenges decrease as more teams solve them (CTFd formula).
+- **Team-Based Competition**: Create or join teams to solve challenges and climb the leaderboard together.
+- **Real-time Scoreboard**: Cached global and team rankings.
+- **Admin Management**: Dedicated dashboard for challenge creation, notification broadcasts, and user moderation.
+- **Robust Security**: 
+  - JWT authentication with HTTP-only cookies.
+  - Rate limiting on flag submissions.
+  - Email verification and secure password reset.
+  - Role-based access control (RBAC).
+- **Performance Optimized**: 
+  - **Redis Caching**: Frequently accessed data like the scoreboard is cached in-memory.
+  - **Connection Pooling**: Optimized MongoDB connection management for high concurrency.
 
 ## 🏗️ Architecture
 
 ### Backend
 - **Language**: Go 1.24
 - **Framework**: Gin (HTTP web framework)
-- **Database**: MongoDB
-- **Authentication**: JWT (JSON Web Tokens)
-- **Architecture**: Clean architecture with repositories, services, and handlers
+- **Primary Database**: MongoDB (with connection pooling)
+- **Cache**: Redis 7.x
+- **Email**: SMTP integration for verification and resets.
 
 ### Frontend
 - **Framework**: Angular 21
-- **UI Library**: Angular Material
-- **State Management**: Services with RxJS
-- **Styling**: SCSS
+- **Styling**: Tailwind CSS v4 & SCSS
+- **UX/UI**: Material Design principles with custom dark/light theme support.
 
 ## 📋 Prerequisites
 
-- **Go**: Version 1.24 or higher
-- **Node.js**: Version 18 or higher
-- **npm**: Version 11.6.0 or higher
-- **MongoDB**: Version 4.4 or higher
+- **Docker & Docker Compose** (Recommended for production)
+- **Go**: Version 1.24+ (For local development)
+- **Node.js**: Version 22+ (For local development)
+- **MongoDB**: Version 4.4+
+- **Redis**: Version 6.0+
 
 ## 🛠️ Setup Instructions
 
-### Quick Start (Recommended)
+### Production Deployment (Docker)
 
 1. **Clone the repository:**
    ```bash
@@ -43,268 +49,87 @@ A full-stack Capture The Flag (CTF) platform built with Go (Gin framework) for t
    cd go-ctf-platform
    ```
 
-2. **Start MongoDB using Docker:**
+2. **Configure Environment:**
+   Copy the example compose file and update your credentials:
    ```bash
-   docker compose up -d
+   cp docker-compose.prod.example.yml docker-compose.prod.yml
+   # Edit docker-compose.prod.yml with your SMTP, DB, and JWT secrets
    ```
 
-3. **Setup Backend:**
+3. **Deploy:**
    ```bash
-   cd backend
-   cp .env.example .env
-   go mod download
-   go run cmd/api/main.go
+   docker compose -f docker-compose.prod.yml up -d --build
    ```
 
-4. **Setup Frontend (in a new terminal):**
+### Local Development
+
+#### Backend
+1. `cd backend`
+2. `cp .env.example .env` (Configure your local MongoDB/Redis/SMTP)
+3. `go mod download`
+4. `go run cmd/api/main.go`
+
+#### Frontend
+1. `cd frontend`
+2. `npm install`
+3. `npm start`
+
+## 🔑 Admin Setup
+
+Registered users are regular users by default. To create an initial admin:
+
+1. **Via CLI Tool (Container):**
    ```bash
-   cd frontend
-   npm install
-   npm start
+   docker exec -it go_ctf_backend ./admin-tool
+   # Select option 1 to create a new admin
    ```
 
-5. **Setup Sample Data (optional):**
-   ```bash
-   # First, register a user with username 'testuser' through the web interface
-   # Then run the setup script to promote them to admin and add sample challenges
-   bash scripts/setup-sample-data.sh
+2. **Via MongoDB:**
+   ```javascript
+   db.users.updateOne({ username: "your_user" }, { $set: { role: "admin" } })
    ```
-
-The application will be available at:
-- Frontend: http://localhost:4200
-- Backend API: http://localhost:8080
-
-### Backend Setup
-
-1. **Navigate to the backend directory:**
-   ```bash
-   cd backend
-   ```
-
-2. **Create a `.env` file** based on `.env.example`:
-   ```bash
-   cp .env.example .env
-   ```
-
-3. **Configure environment variables** in `.env`:
-   ```env
-   PORT=8080
-   MONGO_URI=mongodb://localhost:27017
-   DB_NAME=go_ctf
-   JWT_SECRET=your_super_secret_jwt_key_here
-   ```
-
-4. **Install Go dependencies:**
-   ```bash
-   go mod download
-   ```
-
-5. **Run the backend server:**
-   ```bash
-   go run cmd/api/main.go
-   ```
-
-   The backend will be available at `http://localhost:8080`
-
-### Frontend Setup
-
-1. **Navigate to the frontend directory:**
-   ```bash
-   cd frontend
-   ```
-
-2. **Install dependencies:**
-   ```bash
-   npm install
-   ```
-
-3. **Run the development server:**
-   ```bash
-   npm start
-   ```
-
-   The frontend will be available at `http://localhost:4200`
-
-## 🎮 Usage
-
-### For Users
-
-1. **Register**: Create a new account at `/register`
-2. **Login**: Sign in with your credentials at `/login`
-3. **Browse Challenges**: View available challenges at `/challenges`
-4. **Solve Challenges**: Click on a challenge to view details and submit flags
-5. **Check Scoreboard**: View your ranking at `/scoreboard`
-
-### For Admins
-
-1. **Access Admin Dashboard**: Navigate to `/admin` (requires admin role)
-2. **Create Challenges**: Add new challenges with titles, descriptions, categories, points, and flags
-3. **Manage Platform**: Monitor user activity and challenge submissions
-
-## 🔑 Default Admin Setup
-
-To create an admin user, you'll need to manually update the user role in MongoDB:
-
-```javascript
-db.users.updateOne(
-  { username: "your_username" },
-  { $set: { role: "admin" } }
-)
-```
 
 ## 🌐 API Endpoints
 
-### Public Endpoints
-- `POST /register` - User registration
-- `POST /login` - User login
-- `GET /scoreboard` - Get leaderboard
+### Public
+- `POST /auth/register` - User registration
+- `POST /auth/login` - User login (Sets HTTP-only cookie)
+- `GET /scoreboard` - Get cached leaderboard
+- `GET /notifications` - View active admin broadcasts
 
-### Protected Endpoints (Requires Authentication)
-- `GET /challenges` - List all challenges
-- `GET /challenges/:id` - Get challenge details
-- `POST /challenges/:id/submit` - Submit flag for a challenge
+### Protected (User)
+- `POST /challenges/:id/submit` - Submit flag (Rate limited)
+- `POST /teams` - Create a team
+- `POST /teams/join/:code` - Join a team via invite code
 
-### Admin Endpoints (Requires Admin Role)
-- `POST /challenges` - Create a new challenge
+### Admin
+- `POST /admin/challenges` - Create new challenge
+- `POST /admin/notifications` - Broadcast an announcement
+- `POST /admin/notifications/:id/toggle` - Activate/Deactivate broadcasts
 
 ## 📁 Project Structure
 
 ```
 go-ctf-platform/
 ├── backend/
-│   ├── cmd/
-│   │   └── api/
-│   │       └── main.go          # Application entry point
+│   ├── cmd/api/main.go          # API Entry point
+│   ├── cmd/admin/main.go        # Admin CLI tool
 │   ├── internal/
-│   │   ├── config/              # Configuration management
-│   │   ├── database/            # Database connection
-│   │   ├── handlers/            # HTTP request handlers
-│   │   ├── middleware/          # Authentication & authorization
-│   │   ├── models/              # Data models
-│   │   ├── repositories/        # Database operations
-│   │   ├── routes/              # Route definitions
-│   │   └── services/            # Business logic
-│   ├── go.mod
-│   └── go.sum
-│
+│   │   ├── database/            # MongoDB & Redis logic
+│   │   ├── services/            # Business logic (Caching, Auth, etc.)
+│   │   └── handlers/            # HTTP Controllers
 ├── frontend/
-│   ├── src/
-│   │   ├── app/
-│   │   │   ├── components/      # UI components
-│   │   │   │   ├── login/
-│   │   │   │   ├── register/
-│   │   │   │   ├── challenge-list/
-│   │   │   │   ├── challenge-detail/
-│   │   │   │   ├── scoreboard/
-│   │   │   │   └── admin-dashboard/
-│   │   │   ├── services/        # API services
-│   │   │   └── app.routes.ts    # Route configuration
-│   │   ├── index.html
-│   │   └── main.ts
-│   ├── package.json
-│   └── angular.json
-│
-├── screenshots/                  # Application screenshots
-├── scripts/                      # Helper scripts
-├── docker-compose.yml            # Docker configuration for MongoDB
+│   ├── src/app/components/      # Angular UI Components
+│   └── src/app/services/        # Frontend API services
+├── docker-compose.prod.yml      # Production orchestration
 └── README.md
 ```
 
-## 📸 Screenshots
-
-### Login Page
-![Login Page](screenshots/01-login-page.png)
-
-### Registration Page
-![Registration Page](screenshots/02-register-page.png)
-
-### Scoreboard
-![Scoreboard](screenshots/03-scoreboard-page.png)
-
-### Challenge List
-![Challenge List](screenshots/04-challenge-list-page.png)
-
-### Challenge Detail
-![Challenge Detail](screenshots/05-challenge-detail-page.png)
-
-### Admin Dashboard
-![Admin Dashboard](screenshots/06-admin-dashboard-page.png)
-
-## 🧪 Testing
-
-### Backend
-```bash
-cd backend
-go test ./...
-```
-
-### Frontend
-```bash
-cd frontend
-npm test
-```
-
-## 🔨 Building for Production
-
-### Backend
-```bash
-cd backend
-go build -o ctf-server cmd/api/main.go
-./ctf-server
-```
-
-### Frontend
-```bash
-cd frontend
-npm run build
-```
-
-The production build will be stored in the `dist/` directory.
-
 ## 🛡️ Security Considerations
 
-- Always use strong JWT secrets in production (minimum 32 characters)
-  - Generate one using: `openssl rand -base64 32`
-- Never commit `.env` files to version control
-- Use HTTPS in production environments
-- Implement rate limiting for API endpoints
-- Regularly update dependencies for security patches
-- **IMPORTANT**: The sample data script creates a test admin user with default credentials (`testuser/password123`). These are for development only - never use in production!
-- Change all default passwords before deploying to production
-- Consider implementing:
-  - Password complexity requirements
-  - Account lockout after failed login attempts
-  - Email verification for new accounts
-  - Two-factor authentication (2FA)
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📝 License
-
-This project is open source and available under the [MIT License](LICENSE).
-
-## 📧 Support
-
-For issues and questions, please open an issue on the GitHub repository.
-
-## 🎯 Future Enhancements
-
-- [ ] Add hint system for challenges
-- [ ] Implement team-based competitions
-- [ ] Add challenge difficulty ratings
-- [ ] Email verification for registration
-- [ ] Password reset functionality
-- [ ] Challenge tagging and filtering
-- [ ] File upload for challenges
-- [ ] Detailed user statistics
-- [ ] Challenge writeup submissions
-- [ ] Social features (comments, discussions)
+- **Secrets**: Never commit `.env` or `docker-compose.prod.yml` to version control.
+- **JWT**: In production, ensure `JWT_SECRET` is a random 32+ character string.
+- **SMTP**: Port 25 is often blocked by ISPs; use port 587 (STARTTLS) or 465 (SSL).
 
 ---
 
