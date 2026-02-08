@@ -61,6 +61,11 @@ export class AuthService {
     );
   }
 
+  loginWithGoogle(): void {
+    // Redirect to backend OAuth endpoint
+    window.location.href = environment.googleAuthUrl;
+  }
+
   verifyEmail(token: string): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/verify-email`, { token }, { withCredentials: true });
   }

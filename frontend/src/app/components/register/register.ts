@@ -52,4 +52,8 @@ export class RegisterComponent {
       });
     }
   }
+
+  signUpWithGoogle(): void {
+    this.authService.loginWithGoogle();
+  }
 }
