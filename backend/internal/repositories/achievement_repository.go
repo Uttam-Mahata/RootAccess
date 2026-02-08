@@ -100,3 +100,19 @@ func (r *AchievementRepository) Exists(userID primitive.ObjectID, achievementTyp
 	}
 	return count > 0, nil
 }
+
+// ExistsForCategory checks if a category-specific achievement has already been granted to a user
+func (r *AchievementRepository) ExistsForCategory(userID primitive.ObjectID, achievementType string, category string) (bool, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	count, err := r.collection.CountDocuments(ctx, bson.M{
+		"user_id":  userID,
+		"type":     achievementType,
+		"category": category,
+	})
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
