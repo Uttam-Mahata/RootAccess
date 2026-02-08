@@ -52,4 +52,12 @@ export class LoginComponent {
   loginWithGoogle(): void {
     this.authService.loginWithGoogle();
   }
+
+  loginWithGitHub(): void {
+    this.authService.loginWithGitHub();
+  }
+
+  loginWithDiscord(): void {
+    this.authService.loginWithDiscord();
+  }
 }
