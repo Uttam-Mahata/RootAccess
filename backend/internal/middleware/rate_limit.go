@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -77,8 +78,8 @@ func RateLimitMiddleware(maxAttempts int, window time.Duration) gin.HandlerFunc 
 
 		// Add rate limit headers
 		remaining := maxAttempts - len(flagSubmitLimiter.attempts[key])
-		c.Header("X-RateLimit-Limit", string(rune(maxAttempts)))
-		c.Header("X-RateLimit-Remaining", string(rune(remaining)))
+		c.Header("X-RateLimit-Limit", fmt.Sprintf("%d", maxAttempts))
+		c.Header("X-RateLimit-Remaining", fmt.Sprintf("%d", remaining))
 
 		c.Next()
 	}

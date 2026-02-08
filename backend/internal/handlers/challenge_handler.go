@@ -21,15 +21,24 @@ func NewChallengeHandler(challengeService *services.ChallengeService) *Challenge
 }
 
 type CreateChallengeRequest struct {
-	Title       string   `json:"title" binding:"required"`
-	Description string   `json:"description" binding:"required"`
-	Category    string   `json:"category" binding:"required"`
-	Difficulty  string   `json:"difficulty" binding:"required"`
-	MaxPoints   int      `json:"max_points" binding:"required"`
-	MinPoints   int      `json:"min_points" binding:"required"`
-	Decay       int      `json:"decay" binding:"required"`
-	Flag        string   `json:"flag" binding:"required"`
-	Files       []string `json:"files"`
+	Title       string        `json:"title" binding:"required"`
+	Description string        `json:"description" binding:"required"`
+	Category    string        `json:"category" binding:"required"`
+	Difficulty  string        `json:"difficulty" binding:"required"`
+	MaxPoints   int           `json:"max_points" binding:"required"`
+	MinPoints   int           `json:"min_points" binding:"required"`
+	Decay       int           `json:"decay" binding:"required"`
+	ScoringType string        `json:"scoring_type"`
+	Flag        string        `json:"flag" binding:"required"`
+	Files       []string      `json:"files"`
+	Hints       []HintRequest `json:"hints"`
+}
+
+// HintRequest represents a hint in the create/update challenge request
+type HintRequest struct {
+	Content string `json:"content" binding:"required"`
+	Cost    int    `json:"cost" binding:"required"`
+	Order   int    `json:"order"`
 }
 
 func (h *ChallengeHandler) CreateChallenge(c *gin.Context) {
@@ -42,6 +51,27 @@ func (h *ChallengeHandler) CreateChallenge(c *gin.Context) {
 	// Hash the flag before storing
 	flagHash := utils.HashFlag(req.Flag)
 
+	// Set default scoring type
+	scoringType := req.ScoringType
+	if scoringType == "" {
+		scoringType = models.ScoringDynamic
+	}
+
+	// Build hints
+	var hints []models.Hint
+	for i, h := range req.Hints {
+		order := h.Order
+		if order == 0 {
+			order = i + 1
+		}
+		hints = append(hints, models.Hint{
+			ID:      primitive.NewObjectID(),
+			Content: h.Content,
+			Cost:    h.Cost,
+			Order:   order,
+		})
+	}
+
 	challenge := &models.Challenge{
 		Title:       req.Title,
 		Description: req.Description,
@@ -50,8 +80,10 @@ func (h *ChallengeHandler) CreateChallenge(c *gin.Context) {
 		MaxPoints:   req.MaxPoints,
 		MinPoints:   req.MinPoints,
 		Decay:       req.Decay,
+		ScoringType: scoringType,
 		FlagHash:    flagHash,
 		Files:       req.Files,
+		Hints:       hints,
 	}
 
 	if err := h.challengeService.CreateChallenge(challenge); err != nil {
@@ -73,6 +105,27 @@ func (h *ChallengeHandler) UpdateChallenge(c *gin.Context) {
 	// Hash the flag before storing
 	flagHash := utils.HashFlag(req.Flag)
 
+	// Set default scoring type
+	scoringType := req.ScoringType
+	if scoringType == "" {
+		scoringType = models.ScoringDynamic
+	}
+
+	// Build hints
+	var hints []models.Hint
+	for i, hint := range req.Hints {
+		order := hint.Order
+		if order == 0 {
+			order = i + 1
+		}
+		hints = append(hints, models.Hint{
+			ID:      primitive.NewObjectID(),
+			Content: hint.Content,
+			Cost:    hint.Cost,
+			Order:   order,
+		})
+	}
+
 	challenge := &models.Challenge{
 		Title:       req.Title,
 		Description: req.Description,
@@ -81,8 +134,10 @@ func (h *ChallengeHandler) UpdateChallenge(c *gin.Context) {
 		MaxPoints:   req.MaxPoints,
 		MinPoints:   req.MinPoints,
 		Decay:       req.Decay,
+		ScoringType: scoringType,
 		FlagHash:    flagHash,
 		Files:       req.Files,
+		Hints:       hints,
 	}
 
 	if err := h.challengeService.UpdateChallenge(id, challenge); err != nil {
@@ -114,9 +169,11 @@ type ChallengeAdminResponse struct {
 	MaxPoints     int      `json:"max_points"`
 	MinPoints     int      `json:"min_points"`
 	Decay         int      `json:"decay"`
+	ScoringType   string   `json:"scoring_type"`
 	SolveCount    int      `json:"solve_count"`
 	CurrentPoints int      `json:"current_points"`
 	Files         []string `json:"files"`
+	HintCount     int      `json:"hint_count"`
 }
 
 // GetAllChallengesWithFlags returns all challenges for admin (no flag hash exposed)
@@ -138,9 +195,11 @@ func (h *ChallengeHandler) GetAllChallengesWithFlags(c *gin.Context) {
 			MaxPoints:     ch.MaxPoints,
 			MinPoints:     ch.MinPoints,
 			Decay:         ch.Decay,
+			ScoringType:   ch.ScoringType,
 			SolveCount:    ch.SolveCount,
 			CurrentPoints: ch.CurrentPoints(),
 			Files:         ch.Files,
+			HintCount:     len(ch.Hints),
 		})
 	}
 
@@ -156,8 +215,10 @@ type ChallengePublicResponse struct {
 	Difficulty    string   `json:"difficulty"`
 	MaxPoints     int      `json:"max_points"`
 	CurrentPoints int      `json:"current_points"`
+	ScoringType   string   `json:"scoring_type"`
 	SolveCount    int      `json:"solve_count"`
 	Files         []string `json:"files"`
+	HintCount     int      `json:"hint_count"`
 }
 
 func (h *ChallengeHandler) GetAllChallenges(c *gin.Context) {
@@ -177,8 +238,10 @@ func (h *ChallengeHandler) GetAllChallenges(c *gin.Context) {
 			Difficulty:    ch.Difficulty,
 			MaxPoints:     ch.MaxPoints,
 			CurrentPoints: ch.CurrentPoints(),
+			ScoringType:   ch.ScoringType,
 			SolveCount:    ch.SolveCount,
 			Files:         ch.Files,
+			HintCount:     len(ch.Hints),
 		})
 	}
 
@@ -202,8 +265,10 @@ func (h *ChallengeHandler) GetChallengeByID(c *gin.Context) {
 		Difficulty:    challenge.Difficulty,
 		MaxPoints:     challenge.MaxPoints,
 		CurrentPoints: challenge.CurrentPoints(),
+		ScoringType:   challenge.ScoringType,
 		SolveCount:    challenge.SolveCount,
 		Files:         challenge.Files,
+		HintCount:     len(challenge.Hints),
 	}
 
 	c.JSON(http.StatusOK, response)

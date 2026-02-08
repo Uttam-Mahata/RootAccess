@@ -77,15 +77,17 @@ func (r *ChallengeRepository) UpdateChallenge(id string, challenge *models.Chall
 
 	update := bson.M{
 		"$set": bson.M{
-			"title":       challenge.Title,
-			"description": challenge.Description,
-			"category":    challenge.Category,
-			"difficulty":  challenge.Difficulty,
-			"max_points":  challenge.MaxPoints,
-			"min_points":  challenge.MinPoints,
-			"decay":       challenge.Decay,
-			"flag_hash":   challenge.FlagHash,
-			"files":       challenge.Files,
+			"title":        challenge.Title,
+			"description":  challenge.Description,
+			"category":     challenge.Category,
+			"difficulty":   challenge.Difficulty,
+			"max_points":   challenge.MaxPoints,
+			"min_points":   challenge.MinPoints,
+			"decay":        challenge.Decay,
+			"scoring_type": challenge.ScoringType,
+			"flag_hash":    challenge.FlagHash,
+			"files":        challenge.Files,
+			"hints":        challenge.Hints,
 		},
 	}
 

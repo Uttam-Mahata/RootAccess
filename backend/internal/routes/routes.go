@@ -41,6 +41,10 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	teamRepo := repositories.NewTeamRepository()
 	teamInvitationRepo := repositories.NewTeamInvitationRepository()
 	notificationRepo := repositories.NewNotificationRepository()
+	hintRepo := repositories.NewHintRepository()
+	contestRepo := repositories.NewContestRepository()
+	writeupRepo := repositories.NewWriteupRepository()
+	auditLogRepo := repositories.NewAuditLogRepository()
 
 	// Services
 	emailService := services.NewEmailService(cfg)
@@ -50,6 +54,10 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	scoreboardService := services.NewScoreboardService(userRepo, submissionRepo, challengeRepo, teamRepo)
 	teamService := services.NewTeamService(teamRepo, teamInvitationRepo, userRepo, emailService, submissionRepo, challengeRepo)
 	notificationService := services.NewNotificationService(notificationRepo)
+	hintService := services.NewHintService(hintRepo, challengeRepo, teamRepo)
+	contestService := services.NewContestService(contestRepo)
+	writeupService := services.NewWriteupService(writeupRepo, submissionRepo)
+	auditLogService := services.NewAuditLogService(auditLogRepo)
 
 	// Handlers
 	authHandler := handlers.NewAuthHandler(authService)
@@ -59,16 +67,20 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	teamHandler := handlers.NewTeamHandler(teamService)
 	notificationHandler := handlers.NewNotificationHandler(notificationService)
 	profileHandler := handlers.NewProfileHandler(userRepo, submissionRepo, challengeRepo, teamRepo)
+	hintHandler := handlers.NewHintHandler(hintService)
+	contestHandler := handlers.NewContestHandler(contestService)
+	writeupHandler := handlers.NewWriteupHandler(writeupService)
+	auditLogHandler := handlers.NewAuditLogHandler(auditLogService)
 
-	// Public Routes - Authentication
-	r.POST("/auth/register", authHandler.Register)
-	r.POST("/auth/login", authHandler.Login)
+	// Public Routes - Authentication (with IP rate limiting)
+	r.POST("/auth/register", middleware.IPRateLimitMiddleware(10, time.Minute), authHandler.Register)
+	r.POST("/auth/login", middleware.IPRateLimitMiddleware(10, time.Minute), authHandler.Login)
 	r.POST("/auth/logout", authHandler.Logout)
 	r.GET("/auth/verify-email", authHandler.VerifyEmail)
 	r.POST("/auth/verify-email", authHandler.VerifyEmail)
-	r.POST("/auth/resend-verification", authHandler.ResendVerification)
-	r.POST("/auth/forgot-password", authHandler.ForgotPassword)
-	r.POST("/auth/reset-password", authHandler.ResetPassword)
+	r.POST("/auth/resend-verification", middleware.IPRateLimitMiddleware(5, time.Minute), authHandler.ResendVerification)
+	r.POST("/auth/forgot-password", middleware.IPRateLimitMiddleware(5, time.Minute), authHandler.ForgotPassword)
+	r.POST("/auth/reset-password", middleware.IPRateLimitMiddleware(5, time.Minute), authHandler.ResetPassword)
 
 	// OAuth Routes
 	r.GET("/auth/google", oauthHandler.GoogleLogin)
@@ -80,6 +92,9 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 
 	// Public Routes - Notifications (active notifications only)
 	r.GET("/notifications", notificationHandler.GetActiveNotifications)
+
+	// Public Routes - Contest Status
+	r.GET("/contest/status", contestHandler.GetContestStatus)
 
 	// Public Routes - User Profiles
 	r.GET("/users/:username/profile", profileHandler.GetUserProfile)
@@ -125,6 +140,15 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 		// Flag submission with rate limiting (5 attempts per minute per challenge)
 		protected.POST("/challenges/:id/submit", middleware.RateLimitMiddleware(5, time.Minute), challengeHandler.SubmitFlag)
 
+		// Hint routes
+		protected.GET("/challenges/:id/hints", hintHandler.GetHints)
+		protected.POST("/challenges/:id/hints/:hintId/reveal", hintHandler.RevealHint)
+
+		// Writeup routes
+		protected.POST("/challenges/:id/writeups", writeupHandler.CreateWriteup)
+		protected.GET("/challenges/:id/writeups", writeupHandler.GetWriteups)
+		protected.GET("/writeups/my", writeupHandler.GetMyWriteups)
+
 		// Team Routes
 		teams := protected.Group("/teams")
 		{
@@ -160,6 +184,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 		// Admin Routes
 		admin := protected.Group("/admin")
 		admin.Use(middleware.AdminMiddleware())
+		admin.Use(middleware.AuditMiddleware(auditLogService))
 		{
 			// Challenge management
 			admin.GET("/challenges", challengeHandler.GetAllChallengesWithFlags)
@@ -173,6 +198,18 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 			admin.PUT("/notifications/:id", notificationHandler.UpdateNotification)
 			admin.DELETE("/notifications/:id", notificationHandler.DeleteNotification)
 			admin.POST("/notifications/:id/toggle", notificationHandler.ToggleNotificationActive)
+
+			// Contest management
+			admin.GET("/contest", contestHandler.GetContestConfig)
+			admin.PUT("/contest", contestHandler.UpdateContestConfig)
+
+			// Writeup management
+			admin.GET("/writeups", writeupHandler.GetAllWriteups)
+			admin.PUT("/writeups/:id/status", writeupHandler.UpdateWriteupStatus)
+			admin.DELETE("/writeups/:id", writeupHandler.DeleteWriteup)
+
+			// Audit logs
+			admin.GET("/audit-logs", auditLogHandler.GetAuditLogs)
 		}
 	}
 
