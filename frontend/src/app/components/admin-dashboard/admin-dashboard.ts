@@ -8,6 +8,9 @@ import Showdown from 'showdown';
 import { ChallengeService, ChallengeAdmin, ChallengeRequest, HintRequest } from '../../services/challenge';
 import { NotificationService, Notification } from '../../services/notification';
 import { ContestService } from '../../services/contest';
+import { AnalyticsService, AdminAnalytics } from '../../services/analytics';
+import { AdminUserService, AdminUser } from '../../services/admin-user';
+import { BulkChallengeService } from '../../services/bulk-challenge';
 import { environment } from '../../../environments/environment';
 
 @Component({
@@ -32,7 +35,7 @@ export class AdminDashboardComponent implements OnInit {
   messageType: 'success' | 'error' = 'success';
   
   // Tab state
-  activeTab: 'create' | 'manage' | 'notifications' | 'contest' | 'writeups' | 'audit' = 'create';
+  activeTab: 'create' | 'manage' | 'notifications' | 'contest' | 'writeups' | 'audit' | 'analytics' | 'users' = 'create';
   
   // Challenges list
   challenges: ChallengeAdmin[] = [];
@@ -61,6 +64,16 @@ export class AdminDashboardComponent implements OnInit {
   auditTotal = 0;
   auditPage = 1;
   isLoadingAudit = false;
+
+  // Analytics
+  analytics: AdminAnalytics | null = null;
+  analyticsLoading = false;
+  categoryKeys: string[] = [];
+  difficultyKeys: string[] = [];
+
+  // User Management
+  users: AdminUser[] = [];
+  usersLoading = false;
 
   // Scoring types
   scoringTypes = [
@@ -137,6 +150,9 @@ export class AdminDashboardComponent implements OnInit {
     private challengeService: ChallengeService,
     private notificationService: NotificationService,
     private contestService: ContestService,
+    private analyticsService: AnalyticsService,
+    private adminUserService: AdminUserService,
+    private bulkChallengeService: BulkChallengeService,
     private http: HttpClient
   ) {
     this.challengeForm = this.fb.group({
@@ -148,7 +164,8 @@ export class AdminDashboardComponent implements OnInit {
       decay: [10, [Validators.required, Validators.min(1)]],
       scoring_type: ['dynamic', Validators.required],
       flag: ['', Validators.required],
-      files: ['']
+      files: [''],
+      tags: ['']
     });
 
     this.notificationForm = this.fb.group({
@@ -185,7 +202,7 @@ export class AdminDashboardComponent implements OnInit {
     });
   }
 
-  switchTab(tab: 'create' | 'manage' | 'notifications' | 'contest' | 'writeups' | 'audit'): void {
+  switchTab(tab: 'create' | 'manage' | 'notifications' | 'contest' | 'writeups' | 'audit' | 'analytics' | 'users'): void {
     this.activeTab = tab;
     if (tab === 'manage') {
       this.loadChallenges();
@@ -201,6 +218,12 @@ export class AdminDashboardComponent implements OnInit {
     }
     if (tab === 'audit') {
       this.loadAuditLogs();
+    }
+    if (tab === 'analytics') {
+      this.loadAnalytics();
+    }
+    if (tab === 'users') {
+      this.loadUsers();
     }
     if (tab === 'create' && !this.isEditMode) {
       this.resetForm();
@@ -350,6 +373,7 @@ export class AdminDashboardComponent implements OnInit {
         scoring_type: formValue.scoring_type || 'dynamic',
         flag: formValue.flag,
         files: formValue.files ? formValue.files.split(',').map((f: string) => f.trim()).filter((f: string) => f) : [],
+        tags: formValue.tags ? formValue.tags.split(',').map((t: string) => t.trim()).filter((t: string) => t) : [],
         hints: []
       };
 
@@ -402,7 +426,8 @@ export class AdminDashboardComponent implements OnInit {
       decay: challenge.decay,
       scoring_type: challenge.scoring_type || 'dynamic',
       flag: '', // Flag is not returned from API for security
-      files: challenge.files ? challenge.files.join(', ') : ''
+      files: challenge.files ? challenge.files.join(', ') : '',
+      tags: challenge.tags ? challenge.tags.join(', ') : ''
     });
     
     this.switchTab('create');
@@ -437,7 +462,8 @@ export class AdminDashboardComponent implements OnInit {
       decay: 10,
       scoring_type: 'dynamic',
       flag: '',
-      files: ''
+      files: '',
+      tags: ''
     });
     this.message = '';
   }
@@ -606,6 +632,89 @@ export class AdminDashboardComponent implements OnInit {
       this.auditPage--;
       this.loadAuditLogs();
     }
+  }
+
+  // Analytics
+  loadAnalytics(): void {
+    this.analyticsLoading = true;
+    this.analyticsService.getPlatformAnalytics().subscribe({
+      next: (data) => {
+        this.analytics = data;
+        this.categoryKeys = data.category_breakdown ? Object.keys(data.category_breakdown) : [];
+        this.difficultyKeys = data.difficulty_breakdown ? Object.keys(data.difficulty_breakdown) : [];
+        this.analyticsLoading = false;
+      },
+      error: () => {
+        this.analyticsLoading = false;
+        this.showMessage('Failed to load analytics', 'error');
+      }
+    });
+  }
+
+  // User Management
+  loadUsers(): void {
+    this.usersLoading = true;
+    this.adminUserService.listUsers().subscribe({
+      next: (data) => {
+        this.users = data || [];
+        this.usersLoading = false;
+      },
+      error: () => {
+        this.usersLoading = false;
+        this.showMessage('Failed to load users', 'error');
+      }
+    });
+  }
+
+  updateUserStatus(userId: string, status: string): void {
+    let reason = '';
+    if (status === 'banned') {
+      reason = prompt('Enter ban reason:') || '';
+    }
+    this.adminUserService.updateUserStatus(userId, status, reason).subscribe({
+      next: () => {
+        this.showMessage('User status updated', 'success');
+        this.loadUsers();
+      },
+      error: () => this.showMessage('Failed to update user status', 'error')
+    });
+  }
+
+  updateUserRole(userId: string, role: string): void {
+    this.adminUserService.updateUserRole(userId, role).subscribe({
+      next: () => {
+        this.showMessage('User role updated', 'success');
+        this.loadUsers();
+      },
+      error: () => this.showMessage('Failed to update user role', 'error')
+    });
+  }
+
+  // Bulk Challenge operations
+  exportChallenges(): void {
+    this.bulkChallengeService.exportChallenges().subscribe({
+      next: (data) => {
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'challenges.json';
+        a.click();
+        window.URL.revokeObjectURL(url);
+        this.showMessage('Challenges exported', 'success');
+      },
+      error: () => this.showMessage('Failed to export challenges', 'error')
+    });
+  }
+
+  duplicateChallenge(challengeId: string): void {
+    this.bulkChallengeService.duplicateChallenge(challengeId).subscribe({
+      next: () => {
+        this.showMessage('Challenge duplicated', 'success');
+        this.loadChallenges();
+      },
+      error: () => this.showMessage('Failed to duplicate challenge', 'error')
+    });
   }
 
   private get apiUrl(): string {
