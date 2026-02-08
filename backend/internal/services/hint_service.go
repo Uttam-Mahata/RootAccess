@@ -92,10 +92,9 @@ func (s *HintService) RevealHint(challengeID string, hintID string, userID primi
 
 	// Find the hint in the challenge
 	var targetHint *models.Hint
-	for _, h := range challenge.Hints {
-		if h.ID == hintOID {
-			hint := h
-			targetHint = &hint
+	for i := range challenge.Hints {
+		if challenge.Hints[i].ID == hintOID {
+			targetHint = &challenge.Hints[i]
 			break
 		}
 	}

@@ -51,11 +51,12 @@ func (c *Challenge) dynamicPoints() int {
 		return c.MaxPoints
 	}
 
-	if c.Decay <= 0 {
-		c.Decay = 10 // Default decay
+	decay := c.Decay
+	if decay <= 0 {
+		decay = 10 // Default decay
 	}
 
-	decaySquared := float64(c.Decay * c.Decay)
+	decaySquared := float64(decay * decay)
 	solvesSquared := float64(c.SolveCount * c.SolveCount)
 
 	value := ((float64(c.MinPoints) - float64(c.MaxPoints)) / decaySquared) * solvesSquared + float64(c.MaxPoints)
@@ -75,11 +76,12 @@ func (c *Challenge) linearPoints() int {
 		return c.MaxPoints
 	}
 
-	if c.Decay <= 0 {
-		c.Decay = 10
+	decay := c.Decay
+	if decay <= 0 {
+		decay = 10
 	}
 
-	decrease := float64(c.MaxPoints-c.MinPoints) * float64(c.SolveCount) / float64(c.Decay)
+	decrease := float64(c.MaxPoints-c.MinPoints) * float64(c.SolveCount) / float64(decay)
 	points := int(math.Round(float64(c.MaxPoints) - decrease))
 
 	if points < c.MinPoints {
