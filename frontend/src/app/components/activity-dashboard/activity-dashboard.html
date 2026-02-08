@@ -1,0 +1,103 @@
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+  <div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-white">📊 Activity Dashboard</h1>
+      <p class="text-gray-600 dark:text-gray-400 mt-2">Track your progress and achievements</p>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="loading" class="text-center py-12">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto"></div>
+      <p class="mt-4 text-gray-600 dark:text-gray-400">Loading your activity...</p>
+    </div>
+
+    <!-- Error -->
+    <div *ngIf="error" class="bg-red-100 dark:bg-red-900/30 border border-red-400 text-red-700 dark:text-red-300 px-4 py-3 rounded mb-6">
+      {{ error }}
+    </div>
+
+    <div *ngIf="activity && !loading">
+      <!-- Stats Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <div class="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{{ activity.total_solves }}</div>
+          <div class="text-gray-600 dark:text-gray-400 text-sm">Total Solves</div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <div class="text-2xl font-bold text-green-600 dark:text-green-400">{{ activity.total_points }}</div>
+          <div class="text-gray-600 dark:text-gray-400 text-sm">Total Points</div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <div class="text-2xl font-bold text-yellow-600 dark:text-yellow-400">#{{ activity.rank || '—' }}</div>
+          <div class="text-gray-600 dark:text-gray-400 text-sm">Current Rank</div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <div class="text-2xl font-bold text-orange-600 dark:text-orange-400">🔥 {{ activity.solve_streak }}</div>
+          <div class="text-gray-600 dark:text-gray-400 text-sm">Day Streak</div>
+        </div>
+      </div>
+
+      <!-- Category Progress -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-8" *ngIf="categoryKeys.length > 0">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Category Progress</h2>
+        <div class="space-y-4">
+          <div *ngFor="let key of categoryKeys" class="flex items-center gap-4">
+            <span class="w-24 text-sm font-medium text-gray-700 dark:text-gray-300 capitalize">{{ key }}</span>
+            <div class="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-4">
+              <div class="bg-indigo-600 h-4 rounded-full transition-all duration-500"
+                   [style.width.%]="getCategoryProgress(key)"></div>
+            </div>
+            <span class="text-sm text-gray-600 dark:text-gray-400 w-20 text-right">
+              {{ activity.category_progress[key].solved }}/{{ activity.category_progress[key].total }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Achievements -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-8" *ngIf="activity.achievements && activity.achievements.length > 0">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">🏅 Achievements</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div *ngFor="let achievement of activity.achievements" 
+               class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex items-center gap-3">
+            <span class="text-2xl">{{ getAchievementIcon(achievement.type) }}</span>
+            <div>
+              <div class="font-medium text-gray-900 dark:text-white">{{ achievement.name }}</div>
+              <div class="text-sm text-gray-500 dark:text-gray-400">{{ achievement.description }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Solves -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6" *ngIf="activity.recent_solves && activity.recent_solves.length > 0">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Recent Solves</h2>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left">
+            <thead>
+              <tr class="text-gray-500 dark:text-gray-400 text-sm border-b border-gray-200 dark:border-gray-700">
+                <th class="pb-3">Challenge</th>
+                <th class="pb-3">Category</th>
+                <th class="pb-3">Points</th>
+                <th class="pb-3">Solved At</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let solve of activity.recent_solves" class="border-b border-gray-100 dark:border-gray-700/50">
+                <td class="py-3 text-gray-900 dark:text-white font-medium">{{ solve.challenge_title }}</td>
+                <td class="py-3">
+                  <span class="px-2 py-1 text-xs rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 capitalize">
+                    {{ solve.category }}
+                  </span>
+                </td>
+                <td class="py-3 text-green-600 dark:text-green-400 font-medium">+{{ solve.points }}</td>
+                <td class="py-3 text-gray-500 dark:text-gray-400 text-sm">{{ solve.solved_at | date:'medium' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

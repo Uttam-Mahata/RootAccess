@@ -137,3 +137,19 @@ func (r *UserRepository) GetAllUsers() ([]models.User, error) {
 	}
 	return users, nil
 }
+
+func (r *UserRepository) UpdateFields(userID primitive.ObjectID, fields bson.M) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	_, err := r.collection.UpdateByID(ctx, userID, bson.M{"$set": fields})
+	return err
+}
+
+// CountUsers returns the total number of users
+func (r *UserRepository) CountUsers() (int64, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	return r.collection.CountDocuments(ctx, bson.M{})
+}

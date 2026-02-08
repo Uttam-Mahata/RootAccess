@@ -18,6 +18,9 @@ type User struct {
 	ResetPasswordToken  string             `bson:"reset_password_token,omitempty" json:"-"`
 	ResetPasswordExpiry time.Time          `bson:"reset_password_expiry,omitempty" json:"-"`
 	OAuth               *OAuth             `bson:"oauth,omitempty" json:"oauth,omitempty"`
+	Status              string             `bson:"status" json:"status"`                                   // "active", "banned", "suspended"
+	BanReason           string             `bson:"ban_reason,omitempty" json:"ban_reason,omitempty"`
+	SuspendedUntil      *time.Time         `bson:"suspended_until,omitempty" json:"suspended_until,omitempty"`
 	CreatedAt           time.Time          `bson:"created_at" json:"created_at"`
 	UpdatedAt           time.Time          `bson:"updated_at" json:"updated_at"`
 }

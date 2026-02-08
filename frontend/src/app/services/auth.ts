@@ -66,6 +66,14 @@ export class AuthService {
     window.location.href = environment.googleAuthUrl;
   }
 
+  loginWithGitHub(): void {
+    window.location.href = `${this.apiUrl}/auth/github`;
+  }
+
+  loginWithDiscord(): void {
+    window.location.href = `${this.apiUrl}/auth/discord`;
+  }
+
   verifyEmail(token: string): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/verify-email`, { token }, { withCredentials: true });
   }

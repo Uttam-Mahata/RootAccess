@@ -12,6 +12,7 @@ import { ForgotPasswordComponent } from './components/forgot-password/forgot-pas
 import { ResetPasswordComponent } from './components/reset-password/reset-password';
 import { TeamDashboardComponent } from './components/team-dashboard/team-dashboard';
 import { HomeComponent } from './components/home/home';
+import { ActivityDashboardComponent } from './components/activity-dashboard/activity-dashboard';
 import { UserProfileComponent } from './components/user-profile/user-profile';
 import { OAuthCallbackComponent } from './components/oauth-callback/oauth-callback';
 import { inject } from '@angular/core';
@@ -92,6 +93,7 @@ export const routes: Routes = [
   { path: 'team', component: TeamDashboardComponent, canActivate: [authGuard] },
   { path: 'challenges', component: ChallengeListComponent, canActivate: [authGuard] },
   { path: 'challenges/:id', component: ChallengeDetailComponent, canActivate: [authGuard] },
+  { path: 'activity', component: ActivityDashboardComponent, canActivate: [authGuard] },
   
   // Admin routes
   { path: 'admin', component: AdminDashboardComponent, canActivate: [adminGuard] },

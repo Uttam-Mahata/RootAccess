@@ -13,5 +13,6 @@ type Submission struct {
 	ChallengeID primitive.ObjectID `bson:"challenge_id" json:"challenge_id"`
 	Flag        string             `bson:"flag" json:"flag"`
 	IsCorrect   bool               `bson:"is_correct" json:"is_correct"`
+	IPAddress   string             `bson:"ip_address,omitempty" json:"ip_address,omitempty"`
 	Timestamp   time.Time          `bson:"timestamp" json:"timestamp"`
 }

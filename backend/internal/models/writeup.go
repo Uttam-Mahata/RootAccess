@@ -14,6 +14,8 @@ type Writeup struct {
 	Username    string             `bson:"username" json:"username"`
 	Content     string             `bson:"content" json:"content"` // Markdown content
 	Status      string             `bson:"status" json:"status"`   // pending, approved, rejected
+	Upvotes     int                `bson:"upvotes" json:"upvotes"`
+	UpvotedBy   []primitive.ObjectID `bson:"upvoted_by,omitempty" json:"upvoted_by,omitempty"`
 	CreatedAt   time.Time          `bson:"created_at" json:"created_at"`
 	UpdatedAt   time.Time          `bson:"updated_at" json:"updated_at"`
 }

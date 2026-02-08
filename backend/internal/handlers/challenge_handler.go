@@ -11,12 +11,16 @@ import (
 )
 
 type ChallengeHandler struct {
-	challengeService *services.ChallengeService
+	challengeService   *services.ChallengeService
+	achievementService *services.AchievementService
+	wsHub              interface{ BroadcastMessage(string, interface{}) }
 }
 
-func NewChallengeHandler(challengeService *services.ChallengeService) *ChallengeHandler {
+func NewChallengeHandler(challengeService *services.ChallengeService, achievementService *services.AchievementService, wsHub interface{ BroadcastMessage(string, interface{}) }) *ChallengeHandler {
 	return &ChallengeHandler{
-		challengeService: challengeService,
+		challengeService:   challengeService,
+		achievementService: achievementService,
+		wsHub:              wsHub,
 	}
 }
 
@@ -31,6 +35,7 @@ type CreateChallengeRequest struct {
 	ScoringType string        `json:"scoring_type"`
 	Flag        string        `json:"flag" binding:"required"`
 	Files       []string      `json:"files"`
+	Tags        []string      `json:"tags"`
 	Hints       []HintRequest `json:"hints"`
 }
 
@@ -83,7 +88,9 @@ func (h *ChallengeHandler) CreateChallenge(c *gin.Context) {
 		ScoringType: scoringType,
 		FlagHash:    flagHash,
 		Files:       req.Files,
+		Tags:        req.Tags,
 		Hints:       hints,
+		IsPublished: true,
 	}
 
 	if err := h.challengeService.CreateChallenge(challenge); err != nil {
@@ -137,6 +144,7 @@ func (h *ChallengeHandler) UpdateChallenge(c *gin.Context) {
 		ScoringType: scoringType,
 		FlagHash:    flagHash,
 		Files:       req.Files,
+		Tags:        req.Tags,
 		Hints:       hints,
 	}
 
@@ -173,6 +181,7 @@ type ChallengeAdminResponse struct {
 	SolveCount    int      `json:"solve_count"`
 	CurrentPoints int      `json:"current_points"`
 	Files         []string `json:"files"`
+	Tags          []string `json:"tags"`
 	HintCount     int      `json:"hint_count"`
 }
 
@@ -199,6 +208,7 @@ func (h *ChallengeHandler) GetAllChallengesWithFlags(c *gin.Context) {
 			SolveCount:    ch.SolveCount,
 			CurrentPoints: ch.CurrentPoints(),
 			Files:         ch.Files,
+			Tags:          ch.Tags,
 			HintCount:     len(ch.Hints),
 		})
 	}
@@ -218,6 +228,7 @@ type ChallengePublicResponse struct {
 	ScoringType   string   `json:"scoring_type"`
 	SolveCount    int      `json:"solve_count"`
 	Files         []string `json:"files"`
+	Tags          []string `json:"tags"`
 	HintCount     int      `json:"hint_count"`
 }
 
@@ -241,6 +252,7 @@ func (h *ChallengeHandler) GetAllChallenges(c *gin.Context) {
 			ScoringType:   ch.ScoringType,
 			SolveCount:    ch.SolveCount,
 			Files:         ch.Files,
+			Tags:          ch.Tags,
 			HintCount:     len(ch.Hints),
 		})
 	}
@@ -268,6 +280,7 @@ func (h *ChallengeHandler) GetChallengeByID(c *gin.Context) {
 		ScoringType:   challenge.ScoringType,
 		SolveCount:    challenge.SolveCount,
 		Files:         challenge.Files,
+		Tags:          challenge.Tags,
 		HintCount:     len(challenge.Hints),
 	}
 
@@ -316,8 +329,29 @@ func (h *ChallengeHandler) SubmitFlag(c *gin.Context) {
 		if result.TeamName != "" {
 			response["team_name"] = result.TeamName
 		}
-	} else {
-		response["message"] = "Flag incorrect"
+
+		// Broadcast solve event via WebSocket
+		if h.wsHub != nil {
+			challengeObjID, _ := primitive.ObjectIDFromHex(challengeID)
+			username, _ := c.Get("username")
+			h.wsHub.BroadcastMessage("solve_feed", gin.H{
+				"user_id":      userIDStr,
+				"username":     username,
+				"challenge_id": challengeID,
+				"points":       result.Points,
+				"solve_count":  result.SolveCount,
+				"team_name":    result.TeamName,
+			})
+			h.wsHub.BroadcastMessage("scoreboard_update", gin.H{
+				"updated": true,
+			})
+
+			// Check and award achievements
+			if h.achievementService != nil {
+				teamID := primitive.NilObjectID
+				go h.achievementService.CheckAndAwardAchievements(userID, teamID, challengeObjID)
+			}
+		}
 	}
 
 	c.JSON(http.StatusOK, response)

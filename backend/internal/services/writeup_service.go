@@ -87,3 +87,20 @@ func (s *WriteupService) DeleteWriteup(id string) error {
 func (s *WriteupService) GetMyWriteups(userID primitive.ObjectID) ([]models.Writeup, error) {
 	return s.writeupRepo.GetWriteupsByUser(userID)
 }
+
+// UpdateWriteupContent allows authors to edit their own writeup content
+func (s *WriteupService) UpdateWriteupContent(writeupID string, userID primitive.ObjectID, content string) error {
+	writeup, err := s.writeupRepo.GetWriteupByID(writeupID)
+	if err != nil {
+		return errors.New("writeup not found")
+	}
+	if writeup.UserID != userID {
+		return errors.New("you can only edit your own writeups")
+	}
+	return s.writeupRepo.UpdateWriteupContent(writeupID, content)
+}
+
+// ToggleUpvote toggles a user's upvote on a writeup
+func (s *WriteupService) ToggleUpvote(writeupID string, userID primitive.ObjectID) (bool, error) {
+	return s.writeupRepo.ToggleUpvote(writeupID, userID)
+}
