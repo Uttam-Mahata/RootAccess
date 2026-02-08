@@ -216,6 +216,14 @@ func (r *TeamRepository) GetAllTeamsWithScores() ([]models.Team, error) {
 	return teams, nil
 }
 
+// CountTeams returns the total number of teams
+func (r *TeamRepository) CountTeams() (int64, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	return r.collection.CountDocuments(ctx, bson.M{})
+}
+
 func (r *TeamRepository) GetTeamMemberCount(teamID string) (int, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

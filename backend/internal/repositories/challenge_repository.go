@@ -147,3 +147,11 @@ func (r *ChallengeRepository) GetFlagHash(id string) (string, error) {
 	}
 	return result.FlagHash, nil
 }
+
+// CountChallenges returns the total number of challenges
+func (r *ChallengeRepository) CountChallenges() (int64, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	return r.collection.CountDocuments(ctx, bson.M{})
+}

@@ -9,6 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type SubmissionRepository struct {
@@ -134,4 +135,83 @@ func (r *SubmissionRepository) GetUserCorrectSubmissionCount(userID primitive.Ob
 	defer cancel()
 
 	return r.collection.CountDocuments(ctx, bson.M{"user_id": userID, "is_correct": true})
+}
+
+// CountSubmissions returns the total number of submissions
+func (r *SubmissionRepository) CountSubmissions() (int64, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	return r.collection.CountDocuments(ctx, bson.M{})
+}
+
+// CountCorrectSubmissions returns the total number of correct submissions
+func (r *SubmissionRepository) CountCorrectSubmissions() (int64, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	return r.collection.CountDocuments(ctx, bson.M{"is_correct": true})
+}
+
+// GetAllSubmissions returns all submissions
+func (r *SubmissionRepository) GetAllSubmissions() ([]models.Submission, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	cursor, err := r.collection.Find(ctx, bson.M{})
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var submissions []models.Submission
+	if err = cursor.All(ctx, &submissions); err != nil {
+		return nil, err
+	}
+	return submissions, nil
+}
+
+// GetRecentSubmissions returns the most recent submissions, limited by count
+func (r *SubmissionRepository) GetRecentSubmissions(limit int64) ([]models.Submission, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	opts := options.Find().
+		SetSort(bson.D{{Key: "timestamp", Value: -1}}).
+		SetLimit(limit)
+
+	cursor, err := r.collection.Find(ctx, bson.M{}, opts)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var submissions []models.Submission
+	if err = cursor.All(ctx, &submissions); err != nil {
+		return nil, err
+	}
+	return submissions, nil
+}
+
+// GetCorrectSubmissionsSince returns correct submissions since a given time
+func (r *SubmissionRepository) GetCorrectSubmissionsSince(since time.Time) ([]models.Submission, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	filter := bson.M{
+		"is_correct": true,
+		"timestamp":  bson.M{"$gte": since},
+	}
+
+	cursor, err := r.collection.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var submissions []models.Submission
+	if err = cursor.All(ctx, &submissions); err != nil {
+		return nil, err
+	}
+	return submissions, nil
 }

@@ -137,3 +137,11 @@ func (r *UserRepository) GetAllUsers() ([]models.User, error) {
 	}
 	return users, nil
 }
+
+// CountUsers returns the total number of users
+func (r *UserRepository) CountUsers() (int64, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	return r.collection.CountDocuments(ctx, bson.M{})
+}
