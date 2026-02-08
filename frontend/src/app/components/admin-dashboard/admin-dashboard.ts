@@ -1,11 +1,14 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormArray } from '@angular/forms';
 import { EditorModule, TINYMCE_SCRIPT_SRC } from '@tinymce/tinymce-angular';
 import TurndownService from 'turndown';
 import Showdown from 'showdown';
-import { ChallengeService, ChallengeAdmin, ChallengeRequest } from '../../services/challenge';
+import { ChallengeService, ChallengeAdmin, ChallengeRequest, HintRequest } from '../../services/challenge';
 import { NotificationService, Notification } from '../../services/notification';
+import { ContestService } from '../../services/contest';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -24,11 +27,12 @@ import { NotificationService, Notification } from '../../services/notification';
 export class AdminDashboardComponent implements OnInit {
   challengeForm: FormGroup;
   notificationForm: FormGroup;
+  contestForm: FormGroup;
   message = '';
   messageType: 'success' | 'error' = 'success';
   
   // Tab state
-  activeTab: 'create' | 'manage' | 'notifications' = 'create';
+  activeTab: 'create' | 'manage' | 'notifications' | 'contest' | 'writeups' | 'audit' = 'create';
   
   // Challenges list
   challenges: ChallengeAdmin[] = [];
@@ -43,6 +47,27 @@ export class AdminDashboardComponent implements OnInit {
   // Edit mode
   isEditMode = false;
   editingChallengeId: string | null = null;
+
+  // Contest
+  contestConfig: any = null;
+  isLoadingContest = false;
+
+  // Writeups
+  writeups: any[] = [];
+  isLoadingWriteups = false;
+
+  // Audit logs
+  auditLogs: any[] = [];
+  auditTotal = 0;
+  auditPage = 1;
+  isLoadingAudit = false;
+
+  // Scoring types
+  scoringTypes = [
+    { value: 'dynamic', label: 'Dynamic (CTFd Formula)' },
+    { value: 'linear', label: 'Linear Decay' },
+    { value: 'static', label: 'Static (Fixed Points)' }
+  ];
   
   // Rich text editor content (HTML)
   editorContent = '';
@@ -110,7 +135,9 @@ export class AdminDashboardComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private challengeService: ChallengeService,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private contestService: ContestService,
+    private http: HttpClient
   ) {
     this.challengeForm = this.fb.group({
       title: ['', Validators.required],
@@ -119,6 +146,7 @@ export class AdminDashboardComponent implements OnInit {
       max_points: [500, [Validators.required, Validators.min(1)]],
       min_points: [100, [Validators.required, Validators.min(1)]],
       decay: [10, [Validators.required, Validators.min(1)]],
+      scoring_type: ['dynamic', Validators.required],
       flag: ['', Validators.required],
       files: ['']
     });
@@ -127,6 +155,13 @@ export class AdminDashboardComponent implements OnInit {
       title: ['', Validators.required],
       content: ['', Validators.required],
       type: ['info', Validators.required]
+    });
+
+    this.contestForm = this.fb.group({
+      title: ['', Validators.required],
+      start_time: ['', Validators.required],
+      end_time: ['', Validators.required],
+      is_active: [false]
     });
   }
 
@@ -150,13 +185,22 @@ export class AdminDashboardComponent implements OnInit {
     });
   }
 
-  switchTab(tab: 'create' | 'manage' | 'notifications'): void {
+  switchTab(tab: 'create' | 'manage' | 'notifications' | 'contest' | 'writeups' | 'audit'): void {
     this.activeTab = tab;
     if (tab === 'manage') {
       this.loadChallenges();
     }
     if (tab === 'notifications') {
       this.loadNotifications();
+    }
+    if (tab === 'contest') {
+      this.loadContestConfig();
+    }
+    if (tab === 'writeups') {
+      this.loadWriteups();
+    }
+    if (tab === 'audit') {
+      this.loadAuditLogs();
     }
     if (tab === 'create' && !this.isEditMode) {
       this.resetForm();
@@ -303,8 +347,10 @@ export class AdminDashboardComponent implements OnInit {
         max_points: formValue.max_points,
         min_points: formValue.min_points,
         decay: formValue.decay,
+        scoring_type: formValue.scoring_type || 'dynamic',
         flag: formValue.flag,
-        files: formValue.files ? formValue.files.split(',').map((f: string) => f.trim()).filter((f: string) => f) : []
+        files: formValue.files ? formValue.files.split(',').map((f: string) => f.trim()).filter((f: string) => f) : [],
+        hints: []
       };
 
       if (this.isEditMode && this.editingChallengeId) {
@@ -354,6 +400,7 @@ export class AdminDashboardComponent implements OnInit {
       max_points: challenge.max_points,
       min_points: challenge.min_points,
       decay: challenge.decay,
+      scoring_type: challenge.scoring_type || 'dynamic',
       flag: '', // Flag is not returned from API for security
       files: challenge.files ? challenge.files.join(', ') : ''
     });
@@ -388,6 +435,7 @@ export class AdminDashboardComponent implements OnInit {
       max_points: 500,
       min_points: 100,
       decay: 10,
+      scoring_type: 'dynamic',
       flag: '',
       files: ''
     });
@@ -426,5 +474,141 @@ export class AdminDashboardComponent implements OnInit {
         }
       }, 5000);
     }
+  }
+
+  // Contest management
+  loadContestConfig(): void {
+    this.isLoadingContest = true;
+    this.contestService.getContestConfig().subscribe({
+      next: (data) => {
+        this.contestConfig = data.config || null;
+        if (this.contestConfig) {
+          this.contestForm.patchValue({
+            title: this.contestConfig.title,
+            start_time: this.formatDateForInput(this.contestConfig.start_time),
+            end_time: this.formatDateForInput(this.contestConfig.end_time),
+            is_active: this.contestConfig.is_active
+          });
+        }
+        this.isLoadingContest = false;
+      },
+      error: () => {
+        this.contestConfig = null;
+        this.isLoadingContest = false;
+      }
+    });
+  }
+
+  onSubmitContest(): void {
+    if (this.contestForm.valid) {
+      const formValue = this.contestForm.value;
+      const startTime = new Date(formValue.start_time).toISOString();
+      const endTime = new Date(formValue.end_time).toISOString();
+
+      this.contestService.updateContestConfig(
+        formValue.title,
+        startTime,
+        endTime,
+        formValue.is_active
+      ).subscribe({
+        next: () => {
+          this.showMessage('Contest configuration updated', 'success');
+          this.loadContestConfig();
+        },
+        error: (err) => {
+          this.showMessage(err.error?.error || 'Error updating contest config', 'error');
+        }
+      });
+    }
+  }
+
+  formatDateForInput(dateStr: string): string {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    return d.toISOString().slice(0, 16);
+  }
+
+  getScoringTypeLabel(value: string): string {
+    const type = this.scoringTypes.find(t => t.value === value);
+    return type ? type.label : value || 'Dynamic';
+  }
+
+  // Writeup management
+  loadWriteups(): void {
+    this.isLoadingWriteups = true;
+    this.http.get<any[]>(`${this.apiUrl}/admin/writeups`).subscribe({
+      next: (data) => {
+        this.writeups = data || [];
+        this.isLoadingWriteups = false;
+      },
+      error: () => {
+        this.writeups = [];
+        this.isLoadingWriteups = false;
+      }
+    });
+  }
+
+  approveWriteup(id: string): void {
+    this.http.put<any>(`${this.apiUrl}/admin/writeups/${id}/status`, { status: 'approved' }).subscribe({
+      next: () => {
+        this.showMessage('Writeup approved', 'success');
+        this.loadWriteups();
+      },
+      error: () => this.showMessage('Error approving writeup', 'error')
+    });
+  }
+
+  rejectWriteup(id: string): void {
+    this.http.put<any>(`${this.apiUrl}/admin/writeups/${id}/status`, { status: 'rejected' }).subscribe({
+      next: () => {
+        this.showMessage('Writeup rejected', 'success');
+        this.loadWriteups();
+      },
+      error: () => this.showMessage('Error rejecting writeup', 'error')
+    });
+  }
+
+  deleteWriteup(id: string): void {
+    if (confirm('Are you sure you want to delete this writeup?')) {
+      this.http.delete<any>(`${this.apiUrl}/admin/writeups/${id}`).subscribe({
+        next: () => {
+          this.showMessage('Writeup deleted', 'success');
+          this.loadWriteups();
+        },
+        error: () => this.showMessage('Error deleting writeup', 'error')
+      });
+    }
+  }
+
+  // Audit log
+  loadAuditLogs(): void {
+    this.isLoadingAudit = true;
+    this.http.get<any>(`${this.apiUrl}/admin/audit-logs?page=${this.auditPage}&limit=50`).subscribe({
+      next: (data) => {
+        this.auditLogs = data.logs || [];
+        this.auditTotal = data.total || 0;
+        this.isLoadingAudit = false;
+      },
+      error: () => {
+        this.auditLogs = [];
+        this.isLoadingAudit = false;
+      }
+    });
+  }
+
+  nextAuditPage(): void {
+    this.auditPage++;
+    this.loadAuditLogs();
+  }
+
+  prevAuditPage(): void {
+    if (this.auditPage > 1) {
+      this.auditPage--;
+      this.loadAuditLogs();
+    }
+  }
+
+  private get apiUrl(): string {
+    return environment.apiUrl;
   }
 }

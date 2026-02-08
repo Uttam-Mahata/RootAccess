@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { ChallengeService } from '../../services/challenge';
+import { ChallengeService, HintResponse } from '../../services/challenge';
 
 @Component({
   selector: 'app-challenge-detail',
@@ -18,9 +18,20 @@ import { ChallengeService } from '../../services/challenge';
 export class ChallengeDetailComponent implements OnInit, OnDestroy {
   challenge: any;
   flagForm: FormGroup;
+  writeupForm: FormGroup;
   message = '';
   isCorrect = false;
   isSubmitting = false;
+  
+  // Hints
+  hints: HintResponse[] = [];
+  revealingHint: string | null = null;
+
+  // Writeups
+  writeups: any[] = [];
+  showWriteupForm = false;
+  writeupMessage = '';
+  isSubmittingWriteup = false;
   
   // Rate limiting
   isRateLimited = false;
@@ -35,13 +46,20 @@ export class ChallengeDetailComponent implements OnInit, OnDestroy {
     this.flagForm = this.fb.group({
       flag: ['', Validators.required]
     });
+    this.writeupForm = this.fb.group({
+      content: ['', [Validators.required, Validators.minLength(50)]]
+    });
   }
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
       this.challengeService.getChallenge(id).subscribe({
-        next: (data) => this.challenge = data,
+        next: (data) => {
+          this.challenge = data;
+          this.loadHints();
+          this.loadWriteups();
+        },
         error: (err) => console.error(err)
       });
     }
@@ -51,6 +69,64 @@ export class ChallengeDetailComponent implements OnInit, OnDestroy {
     if (this.rateLimitInterval) {
       clearInterval(this.rateLimitInterval);
     }
+  }
+
+  loadHints(): void {
+    if (!this.challenge) return;
+    this.challengeService.getHints(this.challenge.id).subscribe({
+      next: (hints) => this.hints = hints || [],
+      error: () => this.hints = []
+    });
+  }
+
+  revealHint(hintId: string): void {
+    if (!this.challenge || this.revealingHint) return;
+    
+    const hint = this.hints.find(h => h.id === hintId);
+    if (!hint || hint.revealed) return;
+
+    if (!confirm(`Revealing this hint will cost ${hint.cost} points. Are you sure?`)) return;
+
+    this.revealingHint = hintId;
+    this.challengeService.revealHint(this.challenge.id, hintId).subscribe({
+      next: (revealed) => {
+        const index = this.hints.findIndex(h => h.id === hintId);
+        if (index !== -1) {
+          this.hints[index] = revealed;
+        }
+        this.revealingHint = null;
+      },
+      error: (err) => {
+        console.error('Error revealing hint:', err);
+        this.revealingHint = null;
+      }
+    });
+  }
+
+  loadWriteups(): void {
+    if (!this.challenge) return;
+    this.challengeService.getWriteups(this.challenge.id).subscribe({
+      next: (writeups) => this.writeups = writeups || [],
+      error: () => this.writeups = []
+    });
+  }
+
+  submitWriteup(): void {
+    if (!this.writeupForm.valid || !this.challenge || this.isSubmittingWriteup) return;
+
+    this.isSubmittingWriteup = true;
+    this.challengeService.submitWriteup(this.challenge.id, this.writeupForm.value.content).subscribe({
+      next: (res) => {
+        this.writeupMessage = res.message || 'Writeup submitted for review!';
+        this.showWriteupForm = false;
+        this.writeupForm.reset();
+        this.isSubmittingWriteup = false;
+      },
+      error: (err) => {
+        this.writeupMessage = err.error?.error || 'Error submitting writeup';
+        this.isSubmittingWriteup = false;
+      }
+    });
   }
 
   onSubmit(): void {

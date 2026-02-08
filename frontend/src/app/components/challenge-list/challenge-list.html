@@ -10,9 +10,52 @@
     <p class="text-slate-600 dark:text-slate-400 transition-colors duration-300">Test your skills across various categories. Points decrease as more teams solve!</p>
   </div>
 
+  <!-- Search & Filter Bar -->
+  <div class="mb-6 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-4 shadow-lg">
+    <div class="flex flex-col md:flex-row gap-4">
+      <!-- Search -->
+      <div class="flex-1">
+        <input type="text"
+               [(ngModel)]="searchQuery"
+               (ngModelChange)="applyFilters()"
+               placeholder="Search challenges..."
+               class="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-red-500 focus:border-transparent transition-colors duration-200">
+      </div>
+      <!-- Category Filter -->
+      <select [(ngModel)]="selectedCategory" (ngModelChange)="applyFilters()"
+              class="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-red-500 transition-colors duration-200">
+        <option value="">All Categories</option>
+        <option *ngFor="let cat of categories" [value]="cat">{{ cat }}</option>
+      </select>
+      <!-- Difficulty Filter -->
+      <select [(ngModel)]="selectedDifficulty" (ngModelChange)="applyFilters()"
+              class="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-red-500 transition-colors duration-200">
+        <option value="">All Difficulties</option>
+        <option *ngFor="let diff of difficulties" [value]="diff">{{ diff | titlecase }}</option>
+      </select>
+      <!-- Sort -->
+      <select [(ngModel)]="sortBy" (ngModelChange)="applyFilters()"
+              class="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-red-500 transition-colors duration-200">
+        <option value="title">Sort: Name</option>
+        <option value="points-desc">Sort: Points ↓</option>
+        <option value="points-asc">Sort: Points ↑</option>
+        <option value="solves">Sort: Most Solved</option>
+      </select>
+      <!-- Clear Filters -->
+      <button *ngIf="searchQuery || selectedCategory || selectedDifficulty"
+              (click)="clearFilters()"
+              class="px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors duration-200">
+        Clear
+      </button>
+    </div>
+    <div *ngIf="filteredChallenges.length !== challenges.length" class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+      Showing {{ filteredChallenges.length }} of {{ challenges.length }} challenges
+    </div>
+  </div>
+
   <!-- Challenges Grid -->
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" *ngIf="challenges">
-    <div *ngFor="let challenge of challenges" class="group relative">
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" *ngIf="filteredChallenges">
+    <div *ngFor="let challenge of filteredChallenges" class="group relative">
       <!-- Glow Effect on Hover -->
       <div class="absolute -inset-0.5 bg-gradient-to-r from-red-600 to-red-700 rounded-xl blur opacity-0 group-hover:opacity-30 dark:group-hover:opacity-40 transition duration-300"></div>
       
@@ -57,6 +100,14 @@
               </svg>
               <span class="text-slate-500 dark:text-slate-400 text-sm">{{ challenge.solve_count }} solves</span>
             </div>
+
+            <!-- Hint indicator -->
+            <div *ngIf="challenge.hint_count > 0" class="flex items-center">
+              <svg class="w-4 h-4 text-amber-500 dark:text-amber-400 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+              </svg>
+              <span class="text-amber-500 dark:text-amber-400 text-sm">{{ challenge.hint_count }} hints</span>
+            </div>
           </div>
 
           <!-- Description -->
@@ -75,13 +126,15 @@
     </div>
 
     <!-- Empty State -->
-    <div *ngIf="challenges.length === 0" class="col-span-full py-16">
+    <div *ngIf="filteredChallenges.length === 0" class="col-span-full py-16">
       <div class="flex flex-col items-center justify-center text-center">
         <svg class="w-20 h-20 text-slate-300 dark:text-slate-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
         </svg>
-        <h3 class="text-xl font-semibold text-slate-600 dark:text-slate-400 mb-2">No Challenges Available</h3>
-        <p class="text-slate-500 dark:text-slate-500">Check back soon for new challenges!</p>
+        <h3 class="text-xl font-semibold text-slate-600 dark:text-slate-400 mb-2">No Challenges Found</h3>
+        <p class="text-slate-500 dark:text-slate-500">
+          {{ challenges.length > 0 ? 'Try adjusting your filters' : 'Check back soon for new challenges!' }}
+        </p>
       </div>
     </div>
   </div>

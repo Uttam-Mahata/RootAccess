@@ -12,8 +12,10 @@ export interface Challenge {
   difficulty: string;
   max_points: number;
   current_points: number;
+  scoring_type: string;
   solve_count: number;
   files: string[];
+  hint_count: number;
 }
 
 // Challenge interface for admin view
@@ -26,9 +28,26 @@ export interface ChallengeAdmin {
   max_points: number;
   min_points: number;
   decay: number;
+  scoring_type: string;
   solve_count: number;
   current_points: number;
   files: string[];
+  hint_count: number;
+}
+
+// Hint interfaces
+export interface HintResponse {
+  id: string;
+  cost: number;
+  order: number;
+  content?: string;
+  revealed: boolean;
+}
+
+export interface HintRequest {
+  content: string;
+  cost: number;
+  order: number;
 }
 
 // Request interface for creating/updating challenges
@@ -40,8 +59,10 @@ export interface ChallengeRequest {
   max_points: number;
   min_points: number;
   decay: number;
+  scoring_type: string;
   flag: string;
   files: string[];
+  hints: HintRequest[];
 }
 
 // Response interface for flag submission
@@ -90,5 +111,27 @@ export class ChallengeService {
 
   deleteChallenge(id: string): Observable<any> {
     return this.http.delete<any>(`${this.apiUrl}/admin/challenges/${id}`);
+  }
+
+  // Hint methods
+  getHints(challengeId: string): Observable<HintResponse[]> {
+    return this.http.get<HintResponse[]>(`${this.apiUrl}/challenges/${challengeId}/hints`);
+  }
+
+  revealHint(challengeId: string, hintId: string): Observable<HintResponse> {
+    return this.http.post<HintResponse>(`${this.apiUrl}/challenges/${challengeId}/hints/${hintId}/reveal`, {});
+  }
+
+  // Writeup methods
+  submitWriteup(challengeId: string, content: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/challenges/${challengeId}/writeups`, { content });
+  }
+
+  getWriteups(challengeId: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/challenges/${challengeId}/writeups`);
+  }
+
+  getMyWriteups(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/writeups/my`);
   }
 }
