@@ -11,6 +11,7 @@ type Team struct {
 	ID          primitive.ObjectID   `bson:"_id,omitempty" json:"id"`
 	Name        string               `bson:"name" json:"name"`
 	Description string               `bson:"description" json:"description"`
+	Avatar      string               `bson:"avatar,omitempty" json:"avatar,omitempty"`
 	LeaderID    primitive.ObjectID   `bson:"leader_id" json:"leader_id"`
 	MemberIDs   []primitive.ObjectID `bson:"member_ids" json:"member_ids"`
 	InviteCode  string               `bson:"invite_code" json:"invite_code"`

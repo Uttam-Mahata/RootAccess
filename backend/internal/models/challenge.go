@@ -2,6 +2,7 @@ package models
 
 import (
 	"math"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -26,6 +27,9 @@ type Challenge struct {
 	SolveCount  int                `bson:"solve_count" json:"solve_count"`
 	FlagHash    string             `bson:"flag_hash" json:"-"` // SHA-256 hashed flag (hidden from API)
 	Files       []string           `bson:"files" json:"files"`
+	Tags        []string           `bson:"tags" json:"tags"`
+	ScheduledAt *time.Time         `bson:"scheduled_at,omitempty" json:"scheduled_at,omitempty"`
+	IsPublished bool               `bson:"is_published" json:"is_published"`
 	Hints       []Hint             `bson:"hints,omitempty" json:"hints,omitempty"` // Embedded hints
 }
 
