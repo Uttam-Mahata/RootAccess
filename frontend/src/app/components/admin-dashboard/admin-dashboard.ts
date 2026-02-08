@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormArray } from '@angular/forms';
@@ -11,6 +11,7 @@ import { ContestService } from '../../services/contest';
 import { AnalyticsService, AdminAnalytics } from '../../services/analytics';
 import { AdminUserService, AdminUser } from '../../services/admin-user';
 import { BulkChallengeService } from '../../services/bulk-challenge';
+import { ThemeService } from '../../services/theme';
 import { environment } from '../../../environments/environment';
 
 @Component({
@@ -36,6 +37,10 @@ export class AdminDashboardComponent implements OnInit {
   
   // Tab state
   activeTab: 'create' | 'manage' | 'notifications' | 'contest' | 'writeups' | 'audit' | 'analytics' | 'users' = 'create';
+  
+  // Sidebar state
+  sidebarOpen = true;
+  mobileMenuOpen = false;
   
   // Challenges list
   challenges: ChallengeAdmin[] = [];
@@ -86,32 +91,9 @@ export class AdminDashboardComponent implements OnInit {
   editorContent = '';
   
   // TinyMCE configuration
-  editorConfig: any = {
-    base_url: '/tinymce',
-    suffix: '.min',
-    height: 400,
-    menubar: false,
-    plugins: [
-      'advlist', 'autolink', 'lists', 'link', 'image', 'charmap',
-      'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-      'insertdatetime', 'media', 'table', 'preview', 'help', 'wordcount'
-    ],
-    toolbar: 'undo redo | blocks | bold italic forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | code | help',
-    content_style: `
-      body { 
-        font-family: 'Space Grotesk', Arial, sans-serif; 
-        font-size: 14px; 
-        background-color: #1e293b;
-        color: #e2e8f0;
-        padding: 10px;
-      }
-      a { color: #f87171; }
-      code { background-color: #0f172a; padding: 2px 6px; border-radius: 4px; }
-      pre { background-color: #0f172a; padding: 12px; border-radius: 8px; overflow-x: auto; }
-    `,
-    skin: 'oxide-dark',
-    content_css: 'dark'
-  };
+  editorConfig: any = {};
+  editorKey = 0; // Used to force re-render when theme changes
+  showEditor = true; // Used to control editor visibility during theme transitions
   
   // Predefined categories
   categories = [
@@ -153,7 +135,8 @@ export class AdminDashboardComponent implements OnInit {
     private analyticsService: AnalyticsService,
     private adminUserService: AdminUserService,
     private bulkChallengeService: BulkChallengeService,
-    private http: HttpClient
+    private http: HttpClient,
+    private themeService: ThemeService
   ) {
     this.challengeForm = this.fb.group({
       title: ['', Validators.required],
@@ -180,6 +163,128 @@ export class AdminDashboardComponent implements OnInit {
       end_time: ['', Validators.required],
       is_active: [false]
     });
+
+    // Initialize editor config
+    this.updateEditorConfig();
+
+    // Watch for theme changes and update editor config
+    effect(() => {
+      this.themeService.isDarkMode();
+      this.updateEditorConfig();
+    });
+  }
+
+  private updateEditorConfig(): void {
+    const isDark = this.themeService.isDarkMode();
+    
+    // Temporarily hide editor to force re-render with new theme
+    this.showEditor = false;
+    
+    // Increment key to track theme changes
+    this.editorKey++;
+    
+    this.editorConfig = {
+      base_url: '/tinymce',
+      suffix: '.min',
+      height: 550,
+      menubar: false,
+      branding: false,
+      promotion: false,
+      plugins: [
+        'advlist', 'autolink', 'lists', 'link', 'image', 'charmap',
+        'anchor', 'searchreplace', 'visualblocks', 'code', 'codesample', 'fullscreen',
+        'insertdatetime', 'media', 'table', 'preview', 'help', 'wordcount'
+      ],
+      toolbar: 'undo redo | blocks | bold italic forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | codesample code | removeformat | fullscreen | help',
+      codesample_languages: [
+        { text: 'HTML/XML', value: 'markup' },
+        { text: 'JavaScript', value: 'javascript' },
+        { text: 'TypeScript', value: 'typescript' },
+        { text: 'CSS', value: 'css' },
+        { text: 'Python', value: 'python' },
+        { text: 'Java', value: 'java' },
+        { text: 'C', value: 'c' },
+        { text: 'C++', value: 'cpp' },
+        { text: 'C#', value: 'csharp' },
+        { text: 'PHP', value: 'php' },
+        { text: 'Ruby', value: 'ruby' },
+        { text: 'Go', value: 'go' },
+        { text: 'Rust', value: 'rust' },
+        { text: 'SQL', value: 'sql' },
+        { text: 'Bash', value: 'bash' },
+        { text: 'PowerShell', value: 'powershell' },
+        { text: 'JSON', value: 'json' },
+        { text: 'YAML', value: 'yaml' }
+      ],
+      content_style: isDark ? `
+        body { 
+          font-family: 'Space Grotesk', Arial, sans-serif; 
+          font-size: 14px; 
+          background-color: #1e293b;
+          color: #e2e8f0;
+          padding: 10px;
+        }
+        a { color: #f87171; text-decoration: underline; }
+        code { 
+          background-color: #0f172a; 
+          padding: 3px 8px; 
+          border-radius: 4px; 
+          color: #fbbf24;
+          font-family: 'Courier New', Courier, monospace;
+          font-size: 13px;
+        }
+        pre { 
+          background-color: #0f172a; 
+          padding: 16px; 
+          border-radius: 8px; 
+          overflow-x: auto; 
+          color: #e2e8f0;
+          border: 1px solid #334155;
+        }
+        pre code { 
+          background-color: transparent; 
+          padding: 0; 
+          color: #fbbf24; 
+        }
+      ` : `
+        body { 
+          font-family: 'Space Grotesk', Arial, sans-serif; 
+          font-size: 14px; 
+          background-color: #ffffff;
+          color: #1e293b;
+          padding: 10px;
+        }
+        a { color: #dc2626; text-decoration: underline; }
+        code { 
+          background-color: #f1f5f9; 
+          padding: 3px 8px; 
+          border-radius: 4px; 
+          color: #b91c1c;
+          font-family: 'Courier New', Courier, monospace;
+          font-size: 13px;
+        }
+        pre { 
+          background-color: #f1f5f9; 
+          padding: 16px; 
+          border-radius: 8px; 
+          overflow-x: auto; 
+          color: #1e293b;
+          border: 1px solid #e2e8f0;
+        }
+        pre code { 
+          background-color: transparent; 
+          padding: 0; 
+          color: #b91c1c; 
+        }
+      `,
+      skin: isDark ? 'oxide-dark' : 'oxide',
+      content_css: isDark ? 'dark' : 'default'
+    };
+    
+    // Show editor again after a brief delay to ensure re-initialization
+    setTimeout(() => {
+      this.showEditor = true;
+    }, 0);
   }
 
   ngOnInit(): void {
@@ -204,6 +309,7 @@ export class AdminDashboardComponent implements OnInit {
 
   switchTab(tab: 'create' | 'manage' | 'notifications' | 'contest' | 'writeups' | 'audit' | 'analytics' | 'users'): void {
     this.activeTab = tab;
+    this.mobileMenuOpen = false; // Close mobile menu on tab switch
     if (tab === 'manage') {
       this.loadChallenges();
     }
@@ -228,6 +334,14 @@ export class AdminDashboardComponent implements OnInit {
     if (tab === 'create' && !this.isEditMode) {
       this.resetForm();
     }
+  }
+
+  toggleSidebar(): void {
+    this.sidebarOpen = !this.sidebarOpen;
+  }
+
+  toggleMobileMenu(): void {
+    this.mobileMenuOpen = !this.mobileMenuOpen;
   }
 
   // Notification methods
