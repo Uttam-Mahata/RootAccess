@@ -15,6 +15,7 @@ export interface Challenge {
   scoring_type: string;
   solve_count: number;
   files: string[];
+  tags: string[];
   hint_count: number;
 }
 
@@ -32,6 +33,7 @@ export interface ChallengeAdmin {
   solve_count: number;
   current_points: number;
   files: string[];
+  tags: string[];
   hint_count: number;
 }
 
@@ -62,6 +64,7 @@ export interface ChallengeRequest {
   scoring_type: string;
   flag: string;
   files: string[];
+  tags: string[];
   hints: HintRequest[];
 }
 
@@ -133,5 +136,13 @@ export class ChallengeService {
 
   getMyWriteups(): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/writeups/my`);
+  }
+
+  updateWriteup(writeupId: string, content: string): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/writeups/${writeupId}`, { content });
+  }
+
+  toggleWriteupUpvote(writeupId: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/writeups/${writeupId}/upvote`, {});
   }
 }
