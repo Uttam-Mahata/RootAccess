@@ -189,33 +189,30 @@ func (r *WriteupRepository) ToggleUpvote(id string, userID primitive.ObjectID) (
 		return false, err
 	}
 
-	// Check if user already upvoted
-	writeup, err := r.GetWriteupByID(id)
+	// Try to add the upvote atomically using $addToSet (prevents duplicates)
+	addResult, err := r.collection.UpdateOne(ctx, bson.M{
+		"_id":        oid,
+		"upvoted_by": bson.M{"$ne": userID},
+	}, bson.M{
+		"$addToSet": bson.M{"upvoted_by": userID},
+		"$inc":      bson.M{"upvotes": 1},
+	})
 	if err != nil {
 		return false, err
 	}
 
-	hasUpvoted := false
-	for _, uid := range writeup.UpvotedBy {
-		if uid == userID {
-			hasUpvoted = true
-			break
-		}
+	// If the add succeeded, user was not previously in the list
+	if addResult.ModifiedCount > 0 {
+		return true, nil
 	}
 
-	var update bson.M
-	if hasUpvoted {
-		update = bson.M{
-			"$pull": bson.M{"upvoted_by": userID},
-			"$inc":  bson.M{"upvotes": -1},
-		}
-	} else {
-		update = bson.M{
-			"$push": bson.M{"upvoted_by": userID},
-			"$inc":  bson.M{"upvotes": 1},
-		}
-	}
-
-	_, err = r.collection.UpdateOne(ctx, bson.M{"_id": oid}, update)
-	return !hasUpvoted, err
+	// User already upvoted, so remove the upvote
+	_, err = r.collection.UpdateOne(ctx, bson.M{
+		"_id":        oid,
+		"upvoted_by": userID,
+	}, bson.M{
+		"$pull": bson.M{"upvoted_by": userID},
+		"$inc":  bson.M{"upvotes": -1},
+	})
+	return false, err
 }

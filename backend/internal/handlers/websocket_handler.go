@@ -7,27 +7,32 @@ import (
 	"github.com/gin-gonic/gin"
 	ws "github.com/gorilla/websocket"
 
+	"github.com/go-ctf-platform/backend/internal/config"
 	websocketPkg "github.com/go-ctf-platform/backend/internal/websocket"
 )
 
-var upgrader = ws.Upgrader{
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	},
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-}
-
 type WebSocketHandler struct {
-	hub *websocketPkg.Hub
+	hub      *websocketPkg.Hub
+	upgrader ws.Upgrader
 }
 
-func NewWebSocketHandler(hub *websocketPkg.Hub) *WebSocketHandler {
-	return &WebSocketHandler{hub: hub}
+func NewWebSocketHandler(hub *websocketPkg.Hub, cfg *config.Config) *WebSocketHandler {
+	allowedOrigin := cfg.FrontendURL
+	return &WebSocketHandler{
+		hub: hub,
+		upgrader: ws.Upgrader{
+			CheckOrigin: func(r *http.Request) bool {
+				origin := r.Header.Get("Origin")
+				return origin == "" || origin == allowedOrigin
+			},
+			ReadBufferSize:  1024,
+			WriteBufferSize: 1024,
+		},
+	}
 }
 
 func (h *WebSocketHandler) HandleWebSocket(c *gin.Context) {
-	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+	conn, err := h.upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		log.Printf("WebSocket upgrade error: %v", err)
 		return

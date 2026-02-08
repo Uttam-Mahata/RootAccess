@@ -47,6 +47,18 @@ func (h *BulkChallengeHandler) ImportChallenges(c *gin.Context) {
 			errors = append(errors, fmt.Sprintf("Challenge %d: missing title or flag", i))
 			continue
 		}
+		if ch.MaxPoints <= 0 {
+			errors = append(errors, fmt.Sprintf("Challenge %d (%s): max_points must be positive", i, ch.Title))
+			continue
+		}
+		if ch.MinPoints < 0 {
+			errors = append(errors, fmt.Sprintf("Challenge %d (%s): min_points must be non-negative", i, ch.Title))
+			continue
+		}
+		if ch.MinPoints > ch.MaxPoints {
+			errors = append(errors, fmt.Sprintf("Challenge %d (%s): min_points cannot exceed max_points", i, ch.Title))
+			continue
+		}
 		scoringType := ch.ScoringType
 		if scoringType == "" {
 			scoringType = models.ScoringDynamic

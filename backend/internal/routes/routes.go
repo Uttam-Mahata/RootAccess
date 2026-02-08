@@ -83,7 +83,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	achievementHandler := handlers.NewAchievementHandler(achievementService)
 	analyticsHandler := handlers.NewAnalyticsHandler(analyticsService)
 	activityHandler := handlers.NewActivityHandler(activityService)
-	wsHandler := handlers.NewWebSocketHandler(wsHub)
+	wsHandler := handlers.NewWebSocketHandler(wsHub, cfg)
 	bulkChallengeHandler := handlers.NewBulkChallengeHandler(challengeService)
 	leaderboardHandler := handlers.NewLeaderboardHandler(scoreboardService)
 	adminUserHandler := handlers.NewAdminUserHandler(userRepo)

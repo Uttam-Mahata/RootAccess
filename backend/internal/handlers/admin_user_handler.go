@@ -80,6 +80,14 @@ func (h *AdminUserHandler) UpdateUserRole(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return
 	}
+
+	// Prevent admins from modifying their own role
+	currentUserID, _ := c.Get("user_id")
+	if currentUserID.(string) == id {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Cannot modify your own role"})
+		return
+	}
+
 	var req UpdateUserRoleRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
