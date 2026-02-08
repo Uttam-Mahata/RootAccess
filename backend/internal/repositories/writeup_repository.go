@@ -158,3 +158,64 @@ func (r *WriteupRepository) FindByUserAndChallenge(userID, challengeID primitive
 	}
 	return &writeup, nil
 }
+
+// UpdateWriteupContent updates the content of a writeup
+func (r *WriteupRepository) UpdateWriteupContent(id string, content string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	oid, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+
+	update := bson.M{
+		"$set": bson.M{
+			"content":    content,
+			"updated_at": time.Now(),
+		},
+	}
+	_, err = r.collection.UpdateOne(ctx, bson.M{"_id": oid}, update)
+	return err
+}
+
+// ToggleUpvote adds or removes a user's upvote on a writeup
+func (r *WriteupRepository) ToggleUpvote(id string, userID primitive.ObjectID) (bool, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	oid, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return false, err
+	}
+
+	// Check if user already upvoted
+	writeup, err := r.GetWriteupByID(id)
+	if err != nil {
+		return false, err
+	}
+
+	hasUpvoted := false
+	for _, uid := range writeup.UpvotedBy {
+		if uid == userID {
+			hasUpvoted = true
+			break
+		}
+	}
+
+	var update bson.M
+	if hasUpvoted {
+		update = bson.M{
+			"$pull": bson.M{"upvoted_by": userID},
+			"$inc":  bson.M{"upvotes": -1},
+		}
+	} else {
+		update = bson.M{
+			"$push": bson.M{"upvoted_by": userID},
+			"$inc":  bson.M{"upvotes": 1},
+		}
+	}
+
+	_, err = r.collection.UpdateOne(ctx, bson.M{"_id": oid}, update)
+	return !hasUpvoted, err
+}

@@ -141,3 +141,46 @@ func (h *WriteupHandler) DeleteWriteup(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Writeup deleted"})
 }
+
+// UpdateWriteup allows authors to edit their writeup
+func (h *WriteupHandler) UpdateWriteup(c *gin.Context) {
+	id := c.Param("id")
+	userIDStr, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	userID, _ := primitive.ObjectIDFromHex(userIDStr.(string))
+
+	var req CreateWriteupRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := h.writeupService.UpdateWriteupContent(id, userID, req.Content); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Writeup updated"})
+}
+
+// ToggleUpvote toggles a user's upvote on a writeup
+func (h *WriteupHandler) ToggleUpvote(c *gin.Context) {
+	id := c.Param("id")
+	userIDStr, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	userID, _ := primitive.ObjectIDFromHex(userIDStr.(string))
+
+	upvoted, err := h.writeupService.ToggleUpvote(id, userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"upvoted": upvoted})
+}

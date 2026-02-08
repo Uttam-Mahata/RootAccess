@@ -10,6 +10,7 @@ import (
 	"github.com/go-ctf-platform/backend/internal/middleware"
 	"github.com/go-ctf-platform/backend/internal/repositories"
 	"github.com/go-ctf-platform/backend/internal/services"
+	websocketPkg "github.com/go-ctf-platform/backend/internal/websocket"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -45,6 +46,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	contestRepo := repositories.NewContestRepository()
 	writeupRepo := repositories.NewWriteupRepository()
 	auditLogRepo := repositories.NewAuditLogRepository()
+	achievementRepo := repositories.NewAchievementRepository()
 
 	// Services
 	emailService := services.NewEmailService(cfg)
@@ -58,11 +60,18 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	contestService := services.NewContestService(contestRepo)
 	writeupService := services.NewWriteupService(writeupRepo, submissionRepo)
 	auditLogService := services.NewAuditLogService(auditLogRepo)
+	achievementService := services.NewAchievementService(achievementRepo, submissionRepo, challengeRepo)
+	analyticsService := services.NewAnalyticsService(userRepo, submissionRepo, challengeRepo, teamRepo)
+	activityService := services.NewActivityService(userRepo, submissionRepo, challengeRepo, achievementRepo, teamRepo)
+
+	// WebSocket hub
+	wsHub := websocketPkg.NewHub()
+	go wsHub.Run()
 
 	// Handlers
 	authHandler := handlers.NewAuthHandler(authService)
 	oauthHandler := handlers.NewOAuthHandler(oauthService, database.RDB, cfg)
-	challengeHandler := handlers.NewChallengeHandler(challengeService)
+	challengeHandler := handlers.NewChallengeHandler(challengeService, achievementService, wsHub)
 	scoreboardHandler := handlers.NewScoreboardHandler(scoreboardService)
 	teamHandler := handlers.NewTeamHandler(teamService)
 	notificationHandler := handlers.NewNotificationHandler(notificationService)
@@ -71,6 +80,13 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	contestHandler := handlers.NewContestHandler(contestService)
 	writeupHandler := handlers.NewWriteupHandler(writeupService)
 	auditLogHandler := handlers.NewAuditLogHandler(auditLogService)
+	achievementHandler := handlers.NewAchievementHandler(achievementService)
+	analyticsHandler := handlers.NewAnalyticsHandler(analyticsService)
+	activityHandler := handlers.NewActivityHandler(activityService)
+	wsHandler := handlers.NewWebSocketHandler(wsHub)
+	bulkChallengeHandler := handlers.NewBulkChallengeHandler(challengeService)
+	leaderboardHandler := handlers.NewLeaderboardHandler(scoreboardService)
+	adminUserHandler := handlers.NewAdminUserHandler(userRepo)
 
 	// Public Routes - Authentication (with IP rate limiting)
 	r.POST("/auth/register", middleware.IPRateLimitMiddleware(10, time.Minute), authHandler.Register)
@@ -129,6 +145,13 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 		})
 	})
 
+	// WebSocket endpoint
+	r.GET("/ws", wsHandler.HandleWebSocket)
+
+	// Enhanced leaderboard
+	r.GET("/leaderboard/category", leaderboardHandler.GetCategoryLeaderboard)
+	r.GET("/leaderboard/time", leaderboardHandler.GetTimeBasedLeaderboard)
+
 	// Protected Routes
 	protected := r.Group("/")
 	protected.Use(middleware.AuthMiddleware(cfg))
@@ -148,6 +171,14 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 		protected.POST("/challenges/:id/writeups", writeupHandler.CreateWriteup)
 		protected.GET("/challenges/:id/writeups", writeupHandler.GetWriteups)
 		protected.GET("/writeups/my", writeupHandler.GetMyWriteups)
+
+		// Activity & achievements
+		protected.GET("/activity/me", activityHandler.GetMyActivity)
+		protected.GET("/achievements/me", achievementHandler.GetMyAchievements)
+
+		// Writeup enhancements
+		protected.PUT("/writeups/:id", writeupHandler.UpdateWriteup)
+		protected.POST("/writeups/:id/upvote", writeupHandler.ToggleUpvote)
 
 		// Team Routes
 		teams := protected.Group("/teams")
@@ -210,6 +241,19 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 
 			// Audit logs
 			admin.GET("/audit-logs", auditLogHandler.GetAuditLogs)
+
+			// Analytics
+			admin.GET("/analytics", analyticsHandler.GetPlatformAnalytics)
+
+			// Bulk challenge management
+			admin.POST("/challenges/import", bulkChallengeHandler.ImportChallenges)
+			admin.GET("/challenges/export", bulkChallengeHandler.ExportChallenges)
+			admin.POST("/challenges/:id/duplicate", bulkChallengeHandler.DuplicateChallenge)
+
+			// User management
+			admin.GET("/users", adminUserHandler.ListUsers)
+			admin.PUT("/users/:id/status", adminUserHandler.UpdateUserStatus)
+			admin.PUT("/users/:id/role", adminUserHandler.UpdateUserRole)
 		}
 	}
 
