@@ -22,6 +22,9 @@ type Config struct {
 	RedisAddr    string
 	RedisPassword string
 	RedisDB      int
+	GoogleClientID     string
+	GoogleClientSecret string
+	GoogleRedirectURL  string
 }
 
 func LoadConfig() *Config {
@@ -47,6 +50,9 @@ func LoadConfig() *Config {
 		RedisAddr:    getEnv("REDIS_ADDR", "localhost:6379"),
 		RedisPassword: getEnv("REDIS_PASSWORD", ""),
 		RedisDB:      redisDB,
+		GoogleClientID:     getEnv("GOOGLE_CLIENT_ID", ""),
+		GoogleClientSecret: getEnv("GOOGLE_CLIENT_SECRET", ""),
+		GoogleRedirectURL:  getEnv("GOOGLE_REDIRECT_URL", "http://localhost:8080/auth/google/callback"),
 	}
 }
 

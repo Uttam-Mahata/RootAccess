@@ -13,6 +13,7 @@ import { ResetPasswordComponent } from './components/reset-password/reset-passwo
 import { TeamDashboardComponent } from './components/team-dashboard/team-dashboard';
 import { HomeComponent } from './components/home/home';
 import { UserProfileComponent } from './components/user-profile/user-profile';
+import { OAuthCallbackComponent } from './components/oauth-callback/oauth-callback';
 import { inject } from '@angular/core';
 import { AuthService } from './services/auth';
 import { map, filter, take } from 'rxjs/operators';
@@ -81,6 +82,7 @@ export const routes: Routes = [
   { path: 'verify-email', component: VerifyEmailComponent },
   { path: 'forgot-password', component: ForgotPasswordComponent },
   { path: 'reset-password', component: ResetPasswordComponent },
+  { path: 'auth/callback', component: OAuthCallbackComponent },
   { path: 'scoreboard', component: ScoreboardComponent },
   { path: 'profile/:username', component: UserProfileComponent },
   

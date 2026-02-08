@@ -106,6 +106,21 @@ func (r *UserRepository) FindByResetToken(token string) (*models.User, error) {
 	return &user, nil
 }
 
+func (r *UserRepository) FindByProviderID(provider, providerID string) (*models.User, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	var user models.User
+	err := r.collection.FindOne(ctx, bson.M{
+		"oauth.provider":    provider,
+		"oauth.provider_id": providerID,
+	}).Decode(&user)
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
 func (r *UserRepository) GetAllUsers() ([]models.User, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

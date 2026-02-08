@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-ctf-platform/backend/internal/config"
+	"github.com/go-ctf-platform/backend/internal/database"
 	"github.com/go-ctf-platform/backend/internal/handlers"
 	"github.com/go-ctf-platform/backend/internal/middleware"
 	"github.com/go-ctf-platform/backend/internal/repositories"
@@ -44,6 +45,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	// Services
 	emailService := services.NewEmailService(cfg)
 	authService := services.NewAuthService(userRepo, emailService, cfg)
+	oauthService := services.NewOAuthService(userRepo, cfg)
 	challengeService := services.NewChallengeService(challengeRepo, submissionRepo, teamRepo)
 	scoreboardService := services.NewScoreboardService(userRepo, submissionRepo, challengeRepo, teamRepo)
 	teamService := services.NewTeamService(teamRepo, teamInvitationRepo, userRepo, emailService, submissionRepo, challengeRepo)
@@ -51,6 +53,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 
 	// Handlers
 	authHandler := handlers.NewAuthHandler(authService)
+	oauthHandler := handlers.NewOAuthHandler(oauthService, database.RDB, cfg)
 	challengeHandler := handlers.NewChallengeHandler(challengeService)
 	scoreboardHandler := handlers.NewScoreboardHandler(scoreboardService)
 	teamHandler := handlers.NewTeamHandler(teamService)
@@ -66,6 +69,10 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	r.POST("/auth/resend-verification", authHandler.ResendVerification)
 	r.POST("/auth/forgot-password", authHandler.ForgotPassword)
 	r.POST("/auth/reset-password", authHandler.ResetPassword)
+
+	// OAuth Routes
+	r.GET("/auth/google", oauthHandler.GoogleLogin)
+	r.GET("/auth/google/callback", oauthHandler.GoogleCallback)
 
 	// Public Routes - Scoreboard (team scoreboard)
 	r.GET("/scoreboard", scoreboardHandler.GetScoreboard)
