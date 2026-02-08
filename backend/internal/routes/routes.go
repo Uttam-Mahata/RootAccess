@@ -102,6 +102,14 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	r.GET("/auth/google", oauthHandler.GoogleLogin)
 	r.GET("/auth/google/callback", oauthHandler.GoogleCallback)
 
+	// GitHub OAuth Routes
+	r.GET("/auth/github", oauthHandler.GitHubLogin)
+	r.GET("/auth/github/callback", oauthHandler.GitHubCallback)
+
+	// Discord OAuth Routes
+	r.GET("/auth/discord", oauthHandler.DiscordLogin)
+	r.GET("/auth/discord/callback", oauthHandler.DiscordCallback)
+
 	// Public Routes - Scoreboard (team scoreboard)
 	r.GET("/scoreboard", scoreboardHandler.GetScoreboard)
 	r.GET("/scoreboard/teams", scoreboardHandler.GetTeamScoreboard)

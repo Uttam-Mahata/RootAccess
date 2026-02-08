@@ -107,6 +107,108 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 	c.Redirect(http.StatusTemporaryRedirect, successURL)
 }
 
+// GitHubLogin initiates the GitHub OAuth flow
+func (h *OAuthHandler) GitHubLogin(c *gin.Context) {
+	state, err := h.generateStateToken()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate state token"})
+		return
+	}
+
+	ctx := context.Background()
+	stateKey := fmt.Sprintf("oauth_state:%s", state)
+	if err := h.redisClient.Set(ctx, stateKey, "valid", 10*time.Minute).Err(); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to store state token"})
+		return
+	}
+
+	authURL := h.oauthService.GetGitHubAuthURL(state)
+	c.Redirect(http.StatusTemporaryRedirect, authURL)
+}
+
+// GitHubCallback handles the OAuth callback from GitHub
+func (h *OAuthHandler) GitHubCallback(c *gin.Context) {
+	state := c.Query("state")
+	code := c.Query("code")
+
+	if state == "" || code == "" {
+		h.redirectToFrontendWithError(c, "missing state or code parameter")
+		return
+	}
+
+	ctx := context.Background()
+	stateKey := fmt.Sprintf("oauth_state:%s", state)
+	val, err := h.redisClient.Get(ctx, stateKey).Result()
+	if err != nil || val != "valid" {
+		h.redirectToFrontendWithError(c, "invalid or expired state token")
+		return
+	}
+
+	h.redisClient.Del(ctx, stateKey)
+
+	token, userInfo, err := h.oauthService.HandleGitHubCallback(ctx, code)
+	if err != nil {
+		h.redirectToFrontendWithError(c, fmt.Sprintf("OAuth authentication failed: %s", err.Error()))
+		return
+	}
+
+	c.SetCookie("auth_token", token, 7*24*60*60, "/", "", false, true)
+
+	successURL := fmt.Sprintf("%s/auth/callback?success=true&username=%s", h.config.FrontendURL, userInfo.Username)
+	c.Redirect(http.StatusTemporaryRedirect, successURL)
+}
+
+// DiscordLogin initiates the Discord OAuth flow
+func (h *OAuthHandler) DiscordLogin(c *gin.Context) {
+	state, err := h.generateStateToken()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate state token"})
+		return
+	}
+
+	ctx := context.Background()
+	stateKey := fmt.Sprintf("oauth_state:%s", state)
+	if err := h.redisClient.Set(ctx, stateKey, "valid", 10*time.Minute).Err(); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to store state token"})
+		return
+	}
+
+	authURL := h.oauthService.GetDiscordAuthURL(state)
+	c.Redirect(http.StatusTemporaryRedirect, authURL)
+}
+
+// DiscordCallback handles the OAuth callback from Discord
+func (h *OAuthHandler) DiscordCallback(c *gin.Context) {
+	state := c.Query("state")
+	code := c.Query("code")
+
+	if state == "" || code == "" {
+		h.redirectToFrontendWithError(c, "missing state or code parameter")
+		return
+	}
+
+	ctx := context.Background()
+	stateKey := fmt.Sprintf("oauth_state:%s", state)
+	val, err := h.redisClient.Get(ctx, stateKey).Result()
+	if err != nil || val != "valid" {
+		h.redirectToFrontendWithError(c, "invalid or expired state token")
+		return
+	}
+
+	h.redisClient.Del(ctx, stateKey)
+
+	token, userInfo, err := h.oauthService.HandleDiscordCallback(ctx, code)
+	if err != nil {
+		h.redirectToFrontendWithError(c, fmt.Sprintf("OAuth authentication failed: %s", err.Error()))
+		return
+	}
+
+	c.SetCookie("auth_token", token, 7*24*60*60, "/", "", false, true)
+
+	successURL := fmt.Sprintf("%s/auth/callback?success=true&username=%s", h.config.FrontendURL, userInfo.Username)
+	c.Redirect(http.StatusTemporaryRedirect, successURL)
+}
+
 // redirectToFrontendWithError redirects to frontend with error message
 func (h *OAuthHandler) redirectToFrontendWithError(c *gin.Context, errorMsg string) {
 	errorURL := fmt.Sprintf("%s/login?error=%s", h.config.FrontendURL, errorMsg)
