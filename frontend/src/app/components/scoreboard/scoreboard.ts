@@ -1,8 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { TeamService, Team } from '../../services/team';
 import { ScoreboardService } from '../../services/scoreboard';
+import { WebSocketService } from '../../services/websocket';
 
 interface UserScore {
   username: string;
@@ -17,19 +19,35 @@ interface UserScore {
   templateUrl: './scoreboard.html',
   styleUrls: ['./scoreboard.scss']
 })
-export class ScoreboardComponent implements OnInit {
+export class ScoreboardComponent implements OnInit, OnDestroy {
   teams: Team[] = [];
   users: UserScore[] = [];
   isLoading = true;
   viewMode: 'teams' | 'individuals' = 'teams';
+  private wsSub: Subscription | null = null;
 
   constructor(
     private teamService: TeamService,
-    private scoreboardService: ScoreboardService
+    private scoreboardService: ScoreboardService,
+    private wsService: WebSocketService
   ) { }
 
   ngOnInit(): void {
     this.loadTeamScoreboard();
+
+    // Subscribe to WebSocket scoreboard updates
+    this.wsService.connect();
+    this.wsSub = this.wsService.on('scoreboard_update').subscribe(() => {
+      if (this.viewMode === 'teams') {
+        this.loadTeamScoreboard();
+      } else {
+        this.loadIndividualScoreboard();
+      }
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.wsSub?.unsubscribe();
   }
 
   switchView(mode: 'teams' | 'individuals'): void {

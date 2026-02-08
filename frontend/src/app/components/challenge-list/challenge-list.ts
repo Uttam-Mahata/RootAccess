@@ -19,11 +19,13 @@ export class ChallengeListComponent implements OnInit {
   searchQuery = '';
   selectedCategory = '';
   selectedDifficulty = '';
+  selectedTag = '';
   sortBy = 'title';
 
   // Available filter options
   categories: string[] = [];
   difficulties = ['easy', 'medium', 'hard'];
+  tags: string[] = [];
 
   constructor(private challengeService: ChallengeService) { }
 
@@ -33,6 +35,9 @@ export class ChallengeListComponent implements OnInit {
         this.challenges = data || [];
         // Extract unique categories
         this.categories = [...new Set(this.challenges.map(c => c.category))].sort();
+        // Extract unique tags
+        const allTags = this.challenges.flatMap(c => c.tags || []);
+        this.tags = [...new Set(allTags)].sort();
         this.applyFilters();
       },
       error: (err) => {
@@ -52,7 +57,8 @@ export class ChallengeListComponent implements OnInit {
       result = result.filter(c =>
         c.title.toLowerCase().includes(query) ||
         c.description.toLowerCase().includes(query) ||
-        c.category.toLowerCase().includes(query)
+        c.category.toLowerCase().includes(query) ||
+        (c.tags || []).some(t => t.toLowerCase().includes(query))
       );
     }
 
@@ -64,6 +70,11 @@ export class ChallengeListComponent implements OnInit {
     // Difficulty filter
     if (this.selectedDifficulty) {
       result = result.filter(c => c.difficulty === this.selectedDifficulty);
+    }
+
+    // Tag filter
+    if (this.selectedTag) {
+      result = result.filter(c => (c.tags || []).includes(this.selectedTag));
     }
 
     // Sort
@@ -90,6 +101,7 @@ export class ChallengeListComponent implements OnInit {
     this.searchQuery = '';
     this.selectedCategory = '';
     this.selectedDifficulty = '';
+    this.selectedTag = '';
     this.sortBy = 'title';
     this.applyFilters();
   }
