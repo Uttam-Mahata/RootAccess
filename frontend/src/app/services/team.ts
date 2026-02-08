@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
+import { AuthService } from './auth';
 
 export interface Team {
   id: string;
@@ -58,7 +59,7 @@ export class TeamService {
   
   currentTeam$ = this.currentTeamSubject.asObservable();
 
-  constructor(private http: HttpClient) {
+  constructor(private http: HttpClient, private authService: AuthService) {
     // Check team status on init
     this.checkTeamStatus();
   }
@@ -184,8 +185,10 @@ export class TeamService {
   }
 
   isTeamLeader(): boolean {
-    // This requires user ID from auth service
-    return false; // Will be implemented with proper check
+    const team = this.currentTeamSubject.value;
+    if (!team) return false;
+    const user = this.authService.getCurrentUser();
+    return user !== null && team.leader_id === user.id;
   }
 
   checkTeamStatus(): void {
