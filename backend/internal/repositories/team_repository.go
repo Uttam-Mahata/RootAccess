@@ -240,3 +240,77 @@ func (r *TeamRepository) GetTeamMemberCount(teamID string) (int, error) {
 	}
 	return len(team.MemberIDs), nil
 }
+
+// GetAllTeams returns all teams (for admin)
+func (r *TeamRepository) GetAllTeams() ([]models.Team, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	opts := options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}})
+	cursor, err := r.collection.Find(ctx, bson.M{}, opts)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var teams []models.Team
+	if err = cursor.All(ctx, &teams); err != nil {
+		return nil, err
+	}
+	return teams, nil
+}
+
+// UpdateTeamFields updates specific fields of a team
+func (r *TeamRepository) UpdateTeamFields(teamID primitive.ObjectID, fields bson.M) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	fields["updated_at"] = time.Now()
+	_, err := r.collection.UpdateByID(ctx, teamID, bson.M{"$set": fields})
+	return err
+}
+
+// AdminDeleteTeam deletes a team by admin (bypasses leader check)
+func (r *TeamRepository) AdminDeleteTeam(teamID primitive.ObjectID) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	_, err := r.collection.DeleteOne(ctx, bson.M{"_id": teamID})
+	return err
+}
+
+// AdminUpdateTeamLeader updates the team leader (admin only)
+func (r *TeamRepository) AdminUpdateTeamLeader(teamID, newLeaderID primitive.ObjectID) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	update := bson.M{
+		"$set": bson.M{
+			"leader_id":  newLeaderID,
+			"updated_at": time.Now(),
+		},
+	}
+	_, err := r.collection.UpdateByID(ctx, teamID, update)
+	return err
+}
+
+// GetRecentTeams returns teams created within the specified duration
+func (r *TeamRepository) GetRecentTeams(since time.Time) ([]models.Team, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	filter := bson.M{"created_at": bson.M{"$gte": since}}
+	opts := options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}})
+
+	cursor, err := r.collection.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var teams []models.Team
+	if err = cursor.All(ctx, &teams); err != nil {
+		return nil, err
+	}
+	return teams, nil
+}

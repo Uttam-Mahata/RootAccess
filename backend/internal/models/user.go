@@ -18,11 +18,21 @@ type User struct {
 	ResetPasswordToken  string             `bson:"reset_password_token,omitempty" json:"-"`
 	ResetPasswordExpiry time.Time          `bson:"reset_password_expiry,omitempty" json:"-"`
 	OAuth               *OAuth             `bson:"oauth,omitempty" json:"oauth,omitempty"`
-	Status              string             `bson:"status" json:"status"`                                   // "active", "banned", "suspended"
+	Status              string             `bson:"status" json:"status"` // "active", "banned", "suspended"
 	BanReason           string             `bson:"ban_reason,omitempty" json:"ban_reason,omitempty"`
 	SuspendedUntil      *time.Time         `bson:"suspended_until,omitempty" json:"suspended_until,omitempty"`
+	LastIP              string             `bson:"last_ip,omitempty" json:"last_ip,omitempty"`
+	IPHistory           []IPRecord         `bson:"ip_history,omitempty" json:"ip_history,omitempty"`
+	LastLoginAt         *time.Time         `bson:"last_login_at,omitempty" json:"last_login_at,omitempty"`
 	CreatedAt           time.Time          `bson:"created_at" json:"created_at"`
 	UpdatedAt           time.Time          `bson:"updated_at" json:"updated_at"`
+}
+
+// IPRecord represents a single IP address record with timestamp
+type IPRecord struct {
+	IP        string    `bson:"ip" json:"ip"`
+	Timestamp time.Time `bson:"timestamp" json:"timestamp"`
+	Action    string    `bson:"action,omitempty" json:"action,omitempty"` // "login", "submission", etc.
 }
 
 type OAuth struct {

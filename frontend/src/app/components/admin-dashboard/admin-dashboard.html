@@ -190,6 +190,27 @@
         </svg>
         <span [class.hidden]="!sidebarOpen" class="text-sm font-medium">Users</span>
       </button>
+
+      <!-- Teams -->
+      <button 
+        (click)="switchTab('teams')"
+        [title]="!sidebarOpen ? 'Teams' : ''"
+        [class.bg-red-50]="activeTab === 'teams' && sidebarOpen"
+        [class.dark:bg-red-500/10]="activeTab === 'teams'"
+        [class.text-red-600]="activeTab === 'teams'"
+        [class.dark:text-red-400]="activeTab === 'teams'"
+        [class.bg-slate-50]="activeTab === 'teams' && !sidebarOpen"
+        [class.justify-center]="!sidebarOpen"
+        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-200 group relative">
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+        </svg>
+        <span [class.hidden]="!sidebarOpen" class="text-sm font-medium flex items-center justify-between flex-1">
+          <span>Teams</span>
+          <span class="text-xs px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400">{{ teams.length }}</span>
+        </span>
+        <span *ngIf="!sidebarOpen && teams.length > 0" class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">{{ teams.length }}</span>
+      </button>
     </nav>
   </aside>
 
@@ -259,6 +280,11 @@
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
           Users
         </button>
+        <button (click)="switchTab('teams')" [class.bg-red-50]="activeTab === 'teams'" [class.dark:bg-red-500/10]="activeTab === 'teams'" [class.text-red-600]="activeTab === 'teams'" [class.dark:text-red-400]="activeTab === 'teams'" class="w-full px-4 py-2.5 text-left text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-3">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+          Teams
+          <span class="ml-auto text-xs px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400">{{ teams.length }}</span>
+        </button>
       </div>
     </header>
 
@@ -276,6 +302,7 @@
           <span *ngIf="activeTab === 'audit'">Audit Log</span>
           <span *ngIf="activeTab === 'analytics'">Platform Analytics</span>
           <span *ngIf="activeTab === 'users'">User Management</span>
+          <span *ngIf="activeTab === 'teams'">Team Management</span>
         </h1>
         <p class="text-slate-600 dark:text-slate-400">
           <span *ngIf="activeTab === 'create' && !isEditMode">Create and configure CTF challenges with dynamic scoring</span>
@@ -287,6 +314,7 @@
           <span *ngIf="activeTab === 'audit'">Monitor system activity and security events</span>
           <span *ngIf="activeTab === 'analytics'">Track platform performance and user engagement</span>
           <span *ngIf="activeTab === 'users'">Manage user accounts and permissions</span>
+          <span *ngIf="activeTab === 'teams'">Manage teams, members, and leadership</span>
         </p>
       </div>
 
@@ -1311,52 +1339,241 @@
 
       <!-- Users Tab -->
       <div *ngIf="activeTab === 'users'" class="space-y-6">
-    <div *ngIf="usersLoading" class="text-center py-12">
-      <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-red-500 mx-auto"></div>
-    </div>
-    <div *ngIf="!usersLoading && users.length > 0" class="bg-white dark:bg-slate-800 rounded-lg shadow overflow-hidden">
-      <div class="overflow-x-auto max-w-full">
-        <table class="w-full text-left text-sm min-w-[700px]">
-          <thead>
-            <tr class="text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
-              <th class="px-4 py-3">Username</th>
-              <th class="px-4 py-3">Email</th>
-              <th class="px-4 py-3">Role</th>
-              <th class="px-4 py-3">Status</th>
-              <th class="px-4 py-3">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let user of users" class="border-b border-slate-100 dark:border-slate-700/50">
-              <td class="px-4 py-3 font-medium text-slate-900 dark:text-white">{{ user.username }}</td>
-              <td class="px-4 py-3 text-slate-600 dark:text-slate-400">{{ user.email }}</td>
-              <td class="px-4 py-3">
-                <span [class]="user.role === 'admin' ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-slate-600 dark:text-slate-400'">
-                  {{ user.role }}
-                </span>
-              </td>
-              <td class="px-4 py-3">
-                <span [class]="{
-                  'text-green-600 dark:text-green-400': user.status === 'active' || !user.status,
-                  'text-red-600 dark:text-red-400': user.status === 'banned',
-                  'text-yellow-600 dark:text-yellow-400': user.status === 'suspended'
-                }">
-                  {{ user.status || 'active' }}
-                </span>
-              </td>
-              <td class="px-4 py-3">
-                <div class="flex gap-2">
-                  <button *ngIf="user.role !== 'admin'" (click)="updateUserRole(user.id, 'admin')" class="text-xs px-2 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded hover:bg-indigo-200 dark:hover:bg-indigo-900/50">Make Admin</button>
-                  <button *ngIf="user.role === 'admin'" (click)="updateUserRole(user.id, 'user')" class="text-xs px-2 py-1 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded hover:bg-slate-200 dark:hover:bg-slate-600">Demote</button>
-                  <button *ngIf="user.status !== 'banned'" (click)="updateUserStatus(user.id, 'banned')" class="text-xs px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-900/50">Ban</button>
-                  <button *ngIf="user.status === 'banned'" (click)="updateUserStatus(user.id, 'active')" class="text-xs px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded hover:bg-green-200 dark:hover:bg-green-900/50">Unban</button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <div *ngIf="usersLoading" class="text-center py-12">
+          <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-red-500 mx-auto"></div>
+        </div>
+        <div *ngIf="!usersLoading && users.length > 0" class="bg-white dark:bg-slate-800 rounded-lg shadow overflow-hidden">
+          <div class="overflow-x-auto max-w-full">
+            <table class="w-full text-left text-sm min-w-[900px]">
+              <thead>
+                <tr class="text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+                  <th class="px-4 py-3">Username</th>
+                  <th class="px-4 py-3">Email</th>
+                  <th class="px-4 py-3">Role</th>
+                  <th class="px-4 py-3">Status</th>
+                  <th class="px-4 py-3">Last IP</th>
+                  <th class="px-4 py-3">Team</th>
+                  <th class="px-4 py-3">Last Login</th>
+                  <th class="px-4 py-3">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let user of users" class="border-b border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer" (click)="viewUserDetails(user)">
+                  <td class="px-4 py-3 font-medium text-slate-900 dark:text-white">
+                    <div class="flex items-center gap-2">
+                      {{ user.username }}
+                      <span *ngIf="user.oauth_provider" class="text-xs px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded">{{ user.oauth_provider }}</span>
+                      <span *ngIf="user.email_verified" class="text-green-500" title="Email verified">✓</span>
+                    </div>
+                  </td>
+                  <td class="px-4 py-3 text-slate-600 dark:text-slate-400">{{ user.email }}</td>
+                  <td class="px-4 py-3">
+                    <span [class]="user.role === 'admin' ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-slate-600 dark:text-slate-400'">
+                      {{ user.role }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-3">
+                    <span class="px-2 py-1 rounded-full text-xs" [class]="{
+                      'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400': user.status === 'active' || !user.status,
+                      'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400': user.status === 'banned',
+                      'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400': user.status === 'suspended'
+                    }">
+                      {{ user.status || 'active' }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-3 text-slate-600 dark:text-slate-400 font-mono text-xs">
+                    {{ user.last_ip || '-' }}
+                  </td>
+                  <td class="px-4 py-3 text-slate-600 dark:text-slate-400">
+                    <span *ngIf="user.team_name" class="text-xs px-2 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded">{{ user.team_name }}</span>
+                    <span *ngIf="!user.team_name" class="text-slate-400">-</span>
+                  </td>
+                  <td class="px-4 py-3 text-slate-600 dark:text-slate-400 text-xs">
+                    {{ user.last_login_at ? (user.last_login_at | date:'short') : '-' }}
+                  </td>
+                  <td class="px-4 py-3" (click)="$event.stopPropagation()">
+                    <div class="flex gap-2 flex-wrap">
+                      <button *ngIf="user.role !== 'admin'" (click)="updateUserRole(user.id, 'admin')" class="text-xs px-2 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded hover:bg-indigo-200 dark:hover:bg-indigo-900/50">Admin</button>
+                      <button *ngIf="user.role === 'admin'" (click)="updateUserRole(user.id, 'user')" class="text-xs px-2 py-1 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded hover:bg-slate-200 dark:hover:bg-slate-600">Demote</button>
+                      <button *ngIf="user.status !== 'banned'" (click)="updateUserStatus(user.id, 'banned')" class="text-xs px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-900/50">Ban</button>
+                      <button *ngIf="user.status === 'banned'" (click)="updateUserStatus(user.id, 'active')" class="text-xs px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded hover:bg-green-200 dark:hover:bg-green-900/50">Unban</button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- User Details Modal -->
+        <div *ngIf="selectedUser" class="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
+          <div class="flex justify-between items-start mb-4">
+            <h3 class="text-lg font-semibold text-slate-900 dark:text-white">User Details: {{ selectedUser.username }}</h3>
+            <button (click)="selectedUser = null" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div>
+              <p class="text-sm text-slate-500 dark:text-slate-400">Email</p>
+              <p class="text-slate-900 dark:text-white">{{ selectedUser.email }}</p>
+            </div>
+            <div>
+              <p class="text-sm text-slate-500 dark:text-slate-400">Role</p>
+              <p class="text-slate-900 dark:text-white">{{ selectedUser.role }}</p>
+            </div>
+            <div>
+              <p class="text-sm text-slate-500 dark:text-slate-400">Created At</p>
+              <p class="text-slate-900 dark:text-white">{{ selectedUser.created_at | date:'medium' }}</p>
+            </div>
+            <div>
+              <p class="text-sm text-slate-500 dark:text-slate-400">Last Login</p>
+              <p class="text-slate-900 dark:text-white">{{ selectedUser.last_login_at ? (selectedUser.last_login_at | date:'medium') : 'Never' }}</p>
+            </div>
+            <div>
+              <p class="text-sm text-slate-500 dark:text-slate-400">Last IP</p>
+              <p class="text-slate-900 dark:text-white font-mono">{{ selectedUser.last_ip || 'Unknown' }}</p>
+            </div>
+            <div>
+              <p class="text-sm text-slate-500 dark:text-slate-400">Team</p>
+              <p class="text-slate-900 dark:text-white">{{ selectedUser.team_name || 'No team' }}</p>
+            </div>
+            <div *ngIf="selectedUser.ban_reason">
+              <p class="text-sm text-slate-500 dark:text-slate-400">Ban Reason</p>
+              <p class="text-red-600 dark:text-red-400">{{ selectedUser.ban_reason }}</p>
+            </div>
+          </div>
+          
+          <!-- IP History -->
+          <div *ngIf="selectedUser.ip_history && selectedUser.ip_history.length > 0" class="mt-4">
+            <h4 class="text-sm font-semibold text-slate-900 dark:text-white mb-2">IP History (Last 50)</h4>
+            <div class="max-h-48 overflow-y-auto bg-slate-50 dark:bg-slate-900/50 rounded p-3">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="text-slate-500 dark:text-slate-400">
+                    <th class="text-left pb-2">IP Address</th>
+                    <th class="text-left pb-2">Action</th>
+                    <th class="text-left pb-2">Time</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let ip of selectedUser.ip_history" class="border-t border-slate-200 dark:border-slate-700">
+                    <td class="py-1 font-mono text-slate-700 dark:text-slate-300">{{ ip.ip }}</td>
+                    <td class="py-1 text-slate-600 dark:text-slate-400">{{ ip.action || '-' }}</td>
+                    <td class="py-1 text-slate-600 dark:text-slate-400">{{ ip.timestamp | date:'short' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
+
+      <!-- Teams Tab -->
+      <div *ngIf="activeTab === 'teams'" class="space-y-6">
+        <div *ngIf="teamsLoading" class="text-center py-12">
+          <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-red-500 mx-auto"></div>
+        </div>
+        <div *ngIf="!teamsLoading && teams.length === 0" class="text-center py-12 text-slate-500 dark:text-slate-400">
+          No teams found.
+        </div>
+        <div *ngIf="!teamsLoading && teams.length > 0" class="bg-white dark:bg-slate-800 rounded-lg shadow overflow-hidden">
+          <div class="overflow-x-auto max-w-full">
+            <table class="w-full text-left text-sm min-w-[800px]">
+              <thead>
+                <tr class="text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+                  <th class="px-4 py-3">Team Name</th>
+                  <th class="px-4 py-3">Leader</th>
+                  <th class="px-4 py-3">Members</th>
+                  <th class="px-4 py-3">Score</th>
+                  <th class="px-4 py-3">Invite Code</th>
+                  <th class="px-4 py-3">Created</th>
+                  <th class="px-4 py-3">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let team of teams" class="border-b border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer" (click)="viewTeamDetails(team)">
+                  <td class="px-4 py-3 font-medium text-slate-900 dark:text-white">{{ team.name }}</td>
+                  <td class="px-4 py-3 text-slate-600 dark:text-slate-400">{{ team.leader_name }}</td>
+                  <td class="px-4 py-3">
+                    <span class="px-2 py-1 rounded-full text-xs bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300">
+                      {{ team.member_count }} members
+                    </span>
+                  </td>
+                  <td class="px-4 py-3 font-semibold text-emerald-600 dark:text-emerald-400">{{ team.score }}</td>
+                  <td class="px-4 py-3 font-mono text-xs text-slate-600 dark:text-slate-400">{{ team.invite_code }}</td>
+                  <td class="px-4 py-3 text-slate-600 dark:text-slate-400 text-xs">{{ team.created_at | date:'short' }}</td>
+                  <td class="px-4 py-3" (click)="$event.stopPropagation()">
+                    <div class="flex gap-2">
+                      <button (click)="deleteTeam(team.id, team.name)" class="text-xs px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-900/50">Delete</button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Team Details Modal -->
+        <div *ngIf="selectedTeam" class="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
+          <div class="flex justify-between items-start mb-4">
+            <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Team: {{ selectedTeam.name }}</h3>
+            <button (click)="selectedTeam = null" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div>
+              <p class="text-sm text-slate-500 dark:text-slate-400">Description</p>
+              <p class="text-slate-900 dark:text-white">{{ selectedTeam.description || 'No description' }}</p>
+            </div>
+            <div>
+              <p class="text-sm text-slate-500 dark:text-slate-400">Score</p>
+              <p class="text-emerald-600 dark:text-emerald-400 font-bold">{{ selectedTeam.score }}</p>
+            </div>
+            <div>
+              <p class="text-sm text-slate-500 dark:text-slate-400">Invite Code</p>
+              <p class="text-slate-900 dark:text-white font-mono">{{ selectedTeam.invite_code }}</p>
+            </div>
+            <div>
+              <p class="text-sm text-slate-500 dark:text-slate-400">Created At</p>
+              <p class="text-slate-900 dark:text-white">{{ selectedTeam.created_at | date:'medium' }}</p>
+            </div>
+          </div>
+          
+          <!-- Team Members -->
+          <div class="mt-4">
+            <h4 class="text-sm font-semibold text-slate-900 dark:text-white mb-2">Team Members</h4>
+            <div class="bg-slate-50 dark:bg-slate-900/50 rounded p-3">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="text-slate-500 dark:text-slate-400">
+                    <th class="text-left pb-2">Username</th>
+                    <th class="text-left pb-2">Email</th>
+                    <th class="text-left pb-2">Role</th>
+                    <th class="text-left pb-2">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let member of selectedTeam.members" class="border-t border-slate-200 dark:border-slate-700">
+                    <td class="py-2 font-medium text-slate-900 dark:text-white">
+                      {{ member.username }}
+                      <span *ngIf="member.is_leader" class="ml-1 text-xs px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded">Leader</span>
+                    </td>
+                    <td class="py-2 text-slate-600 dark:text-slate-400">{{ member.email }}</td>
+                    <td class="py-2 text-slate-600 dark:text-slate-400">{{ member.is_leader ? 'Leader' : 'Member' }}</td>
+                    <td class="py-2">
+                      <div class="flex gap-2">
+                        <button *ngIf="!member.is_leader" (click)="changeTeamLeader(selectedTeam.id, member.id)" class="text-xs px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded hover:bg-amber-200 dark:hover:bg-amber-900/50">Make Leader</button>
+                        <button *ngIf="!member.is_leader" (click)="removeTeamMember(selectedTeam.id, member.id)" class="text-xs px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-900/50">Remove</button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       </div>
 
     </div>

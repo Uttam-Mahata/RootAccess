@@ -17,6 +17,21 @@ export interface TimeSeriesEntry {
   count: number;
 }
 
+export interface TeamStats {
+  team_id: string;
+  name: string;
+  score: number;
+  member_count: number;
+  solve_count?: number;
+}
+
+export interface UserStats {
+  user_id: string;
+  username: string;
+  score: number;
+  solve_count: number;
+}
+
 export interface AdminAnalytics {
   total_users: number;
   total_teams: number;
@@ -28,6 +43,22 @@ export interface AdminAnalytics {
   category_breakdown: { [key: string]: number };
   difficulty_breakdown: { [key: string]: number };
   solves_over_time: TimeSeriesEntry[];
+  // Enhanced statistics
+  active_users: number;
+  banned_users: number;
+  verified_users: number;
+  admin_count: number;
+  new_users_today: number;
+  new_users_this_week: number;
+  new_teams_today: number;
+  new_teams_this_week: number;
+  submissions_today: number;
+  solves_today: number;
+  average_team_size: number;
+  user_growth: TimeSeriesEntry[];
+  team_growth: TimeSeriesEntry[];
+  top_teams: TeamStats[];
+  top_users: UserStats[];
 }
 
 @Injectable({

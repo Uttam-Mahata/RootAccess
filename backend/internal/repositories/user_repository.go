@@ -9,6 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type UserRepository struct {
@@ -152,4 +153,109 @@ func (r *UserRepository) CountUsers() (int64, error) {
 	defer cancel()
 
 	return r.collection.CountDocuments(ctx, bson.M{})
+}
+
+// RecordUserIP records the user's IP address with timestamp and action
+func (r *UserRepository) RecordUserIP(userID primitive.ObjectID, ip string, action string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	ipRecord := models.IPRecord{
+		IP:        ip,
+		Timestamp: time.Now(),
+		Action:    action,
+	}
+
+	update := bson.M{
+		"$set": bson.M{
+			"last_ip":       ip,
+			"last_login_at": time.Now(),
+			"updated_at":    time.Now(),
+		},
+		"$push": bson.M{
+			"ip_history": bson.M{
+				"$each":  []models.IPRecord{ipRecord},
+				"$slice": -50, // Keep only the last 50 IP records
+			},
+		},
+	}
+
+	_, err := r.collection.UpdateByID(ctx, userID, update)
+	return err
+}
+
+// GetUsersWithDetails returns all users with detailed information for admin
+func (r *UserRepository) GetUsersWithDetails() ([]models.User, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	opts := options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}})
+	cursor, err := r.collection.Find(ctx, bson.M{}, opts)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var users []models.User
+	if err = cursor.All(ctx, &users); err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
+// CountUsersByStatus returns the count of users by status
+func (r *UserRepository) CountUsersByStatus(status string) (int64, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	filter := bson.M{}
+	if status == "active" || status == "" {
+		// Count users where status is "active" or not set
+		filter = bson.M{"$or": []bson.M{
+			{"status": "active"},
+			{"status": bson.M{"$exists": false}},
+			{"status": ""},
+		}}
+	} else {
+		filter = bson.M{"status": status}
+	}
+
+	return r.collection.CountDocuments(ctx, filter)
+}
+
+// CountVerifiedUsers returns the count of email-verified users
+func (r *UserRepository) CountVerifiedUsers() (int64, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	return r.collection.CountDocuments(ctx, bson.M{"email_verified": true})
+}
+
+// CountAdmins returns the count of admin users
+func (r *UserRepository) CountAdmins() (int64, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	return r.collection.CountDocuments(ctx, bson.M{"role": "admin"})
+}
+
+// GetRecentUsers returns users created within the specified duration
+func (r *UserRepository) GetRecentUsers(since time.Time) ([]models.User, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	filter := bson.M{"created_at": bson.M{"$gte": since}}
+	opts := options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}})
+
+	cursor, err := r.collection.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var users []models.User
+	if err = cursor.All(ctx, &users); err != nil {
+		return nil, err
+	}
+	return users, nil
 }
