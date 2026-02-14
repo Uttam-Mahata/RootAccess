@@ -60,9 +60,22 @@ func (h *TeamHandler) CreateTeam(c *gin.Context) {
 		return
 	}
 
+	// Get team members immediately after creation
+	members, err := h.teamService.GetTeamMembers(team.ID.Hex())
+	if err != nil {
+		// If we can't get members, still return success with just the team
+		c.JSON(http.StatusCreated, gin.H{
+			"message": "Team created successfully!",
+			"team":    team,
+			"members": []interface{}{},
+		})
+		return
+	}
+
 	c.JSON(http.StatusCreated, gin.H{
 		"message": "Team created successfully!",
 		"team":    team,
+		"members": members,
 	})
 }
 
@@ -134,9 +147,21 @@ func (h *TeamHandler) UpdateTeam(c *gin.Context) {
 		return
 	}
 
+	// Get team members after update
+	members, err := h.teamService.GetTeamMembers(team.ID.Hex())
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "Team updated successfully!",
+			"team":    team,
+			"members": []interface{}{},
+		})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Team updated successfully!",
 		"team":    team,
+		"members": members,
 	})
 }
 
@@ -240,9 +265,22 @@ func (h *TeamHandler) JoinByCode(c *gin.Context) {
 		return
 	}
 
+	// Get team members immediately after joining
+	members, err := h.teamService.GetTeamMembers(team.ID.Hex())
+	if err != nil {
+		// If we can't get members, still return success with just the team
+		c.JSON(http.StatusOK, gin.H{
+			"message": "Successfully joined the team!",
+			"team":    team,
+			"members": []interface{}{},
+		})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Successfully joined the team!",
 		"team":    team,
+		"members": members,
 	})
 }
 
@@ -284,9 +322,22 @@ func (h *TeamHandler) AcceptInvitation(c *gin.Context) {
 		return
 	}
 
+	// Get team members immediately after accepting invitation
+	members, err := h.teamService.GetTeamMembers(team.ID.Hex())
+	if err != nil {
+		// If we can't get members, still return success with just the team
+		c.JSON(http.StatusOK, gin.H{
+			"message": "Invitation accepted! You are now a member of the team.",
+			"team":    team,
+			"members": []interface{}{},
+		})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Invitation accepted! You are now a member of the team.",
 		"team":    team,
+		"members": members,
 	})
 }
 

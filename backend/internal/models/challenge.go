@@ -15,22 +15,23 @@ const (
 )
 
 type Challenge struct {
-	ID          primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	Title       string             `bson:"title" json:"title"`
-	Description string             `bson:"description" json:"description"`
-	Category    string             `bson:"category" json:"category"`
-	Difficulty  string             `bson:"difficulty" json:"difficulty"` // easy, medium, hard
-	MaxPoints   int                `bson:"max_points" json:"max_points"` // Maximum/initial points
-	MinPoints   int                `bson:"min_points" json:"min_points"` // Minimum floor points
-	Decay       int                `bson:"decay" json:"decay"`           // Decay factor (solves to reach midpoint)
-	ScoringType string             `bson:"scoring_type" json:"scoring_type"` // static, linear, dynamic
-	SolveCount  int                `bson:"solve_count" json:"solve_count"`
-	FlagHash    string             `bson:"flag_hash" json:"-"` // SHA-256 hashed flag (hidden from API)
-	Files       []string           `bson:"files" json:"files"`
-	Tags        []string           `bson:"tags" json:"tags"`
-	ScheduledAt *time.Time         `bson:"scheduled_at,omitempty" json:"scheduled_at,omitempty"`
-	IsPublished bool               `bson:"is_published" json:"is_published"`
-	Hints       []Hint             `bson:"hints,omitempty" json:"hints,omitempty"` // Embedded hints
+	ID                primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	Title             string             `bson:"title" json:"title"`
+	Description       string             `bson:"description" json:"description"`
+	DescriptionFormat string             `bson:"description_format" json:"description_format"` // "markdown" or "html"
+	Category          string             `bson:"category" json:"category"`
+	Difficulty        string             `bson:"difficulty" json:"difficulty"` // easy, medium, hard
+	MaxPoints         int                `bson:"max_points" json:"max_points"` // Maximum/initial points
+	MinPoints         int                `bson:"min_points" json:"min_points"` // Minimum floor points
+	Decay             int                `bson:"decay" json:"decay"`           // Decay factor (solves to reach midpoint)
+	ScoringType       string             `bson:"scoring_type" json:"scoring_type"` // static, linear, dynamic
+	SolveCount        int                `bson:"solve_count" json:"solve_count"`
+	FlagHash          string             `bson:"flag_hash" json:"-"` // SHA-256 hashed flag (hidden from API)
+	Files             []string           `bson:"files" json:"files"`
+	Tags              []string           `bson:"tags" json:"tags"`
+	ScheduledAt       *time.Time         `bson:"scheduled_at,omitempty" json:"scheduled_at,omitempty"`
+	IsPublished       bool               `bson:"is_published" json:"is_published"`
+	Hints             []Hint             `bson:"hints,omitempty" json:"hints,omitempty"` // Embedded hints
 }
 
 // CurrentPoints calculates points based on scoring type and solve count

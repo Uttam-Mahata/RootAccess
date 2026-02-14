@@ -115,11 +115,16 @@ export class TeamDashboardComponent implements OnInit {
       const { name, description } = this.createTeamForm.value;
       this.teamService.createTeam(name, description).subscribe({
         next: (response) => {
-          this.isLoading = false;
           this.success = response.message || 'Team created successfully!';
           this.team = response.team || null;
+          this.members = response.members || [];
           this.showCreateForm = false;
-          this.loadTeamData();
+          this.isLoading = false;
+          
+          // Load pending invitations for the new team if it exists
+          if (this.team) {
+            this.loadTeamPendingInvitations();
+          }
         },
         error: (err) => {
           this.isLoading = false;
@@ -192,10 +197,16 @@ export class TeamDashboardComponent implements OnInit {
       const code = this.joinForm.get('inviteCode')?.value;
       this.teamService.joinByCode(code).subscribe({
         next: (response) => {
-          this.isLoading = false;
           this.success = response.message || 'Joined team successfully!';
+          this.team = response.team || null;
+          this.members = response.members || [];
           this.showJoinForm = false;
-          this.loadTeamData();
+          this.isLoading = false;
+          
+          // Load pending invitations for the new team if it exists
+          if (this.team) {
+            this.loadTeamPendingInvitations();
+          }
         },
         error: (err) => {
           this.isLoading = false;
@@ -209,12 +220,19 @@ export class TeamDashboardComponent implements OnInit {
   onAcceptInvitation(invitationId: string): void {
     this.isLoading = true;
     this.error = '';
+    this.success = '';
     this.teamService.acceptInvitation(invitationId).subscribe({
       next: (response) => {
-        this.isLoading = false;
         this.success = response.message || 'Joined team!';
-        this.loadTeamData();
+        this.team = response.team || null;
+        this.members = response.members || [];
+        this.isLoading = false;
+        
+        // Load pending invitations and team invitations
         this.loadPendingInvitations();
+        if (this.team) {
+          this.loadTeamPendingInvitations();
+        }
       },
       error: (err) => {
         this.isLoading = false;

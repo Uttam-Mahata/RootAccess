@@ -1,4 +1,4 @@
-<div class="flex min-h-screen bg-slate-50 dark:bg-slate-950">
+<div class="flex min-h-screen w-full min-w-0 overflow-x-hidden max-w-full bg-slate-50 dark:bg-slate-950">
   
   <!-- Sidebar for large screens -->
   <aside 
@@ -197,7 +197,7 @@
   <div 
     [class.lg:ml-64]="sidebarOpen"
     [class.lg:ml-20]="!sidebarOpen"
-    class="flex-1 transition-all duration-300">
+    class="flex-1 min-w-0 overflow-x-hidden transition-all duration-300">
     
     <!-- Mobile Header with Dropdown -->
     <header class="lg:hidden sticky top-0 z-30 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 py-3 shadow-sm">
@@ -263,7 +263,7 @@
     </header>
 
     <!-- Page Content -->
-    <div class="p-2 sm:p-3 lg:p-4 xl:p-6 w-full">
+    <div class="p-2 sm:p-3 lg:p-4 xl:p-6 w-full min-w-0 overflow-x-hidden">
       
       <!-- Page Header -->
       <div class="mb-8">
@@ -348,6 +348,39 @@
                   class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all duration-200"
                   placeholder="e.g., SQL Injection 101"
                 />
+              </div>
+
+              <!-- Description Format Selector -->
+              <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+                  Description Format *
+                </label>
+                <div class="flex gap-4">
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input 
+                      type="radio" 
+                      formControlName="description_format" 
+                      value="markdown"
+                      class="w-4 h-4 text-red-600 border-slate-300 focus:ring-red-500"
+                    />
+                    <div>
+                      <span class="text-sm font-medium text-slate-900 dark:text-white">Markdown</span>
+                      <p class="text-xs text-slate-500 dark:text-slate-400">Editor content will be converted to Markdown</p>
+                    </div>
+                  </label>
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input 
+                      type="radio" 
+                      formControlName="description_format" 
+                      value="html"
+                      class="w-4 h-4 text-red-600 border-slate-300 focus:ring-red-500"
+                    />
+                    <div>
+                      <span class="text-sm font-medium text-slate-900 dark:text-white">HTML</span>
+                      <p class="text-xs text-slate-500 dark:text-slate-400">Store raw HTML from editor (recommended)</p>
+                    </div>
+                  </label>
+                </div>
               </div>
 
               <!-- Description (Rich Text Editor) -->
@@ -612,8 +645,9 @@
       <div class="absolute -inset-0.5 bg-gradient-to-r from-red-600 to-red-700 rounded-2xl blur opacity-10 group-hover:opacity-20 dark:opacity-20 dark:group-hover:opacity-30 transition duration-300"></div>
       
       <div class="relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-red-600/20 overflow-hidden shadow-2xl transition-colors duration-300">
-        <div class="overflow-x-auto">
-          <table class="w-full">
+        <!-- Desktop Table View (hidden on mobile) -->
+        <div class="hidden md:block overflow-x-auto">
+          <table class="w-full min-w-full">
             <thead class="bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
               <tr>
                 <th class="px-6 py-4 text-left text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Title</th>
@@ -625,32 +659,188 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
-              <tr *ngFor="let challenge of challenges" class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors duration-150">
-                <!-- Title -->
-                <td class="px-6 py-4">
-                  <div class="flex items-center">
-                    <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center text-white font-bold text-sm mr-3 flex-shrink-0">
-                      {{ challenge.title.charAt(0).toUpperCase() }}
+              <ng-container *ngFor="let challenge of challenges">
+                <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors duration-150"
+                    [class.bg-slate-50]="previewChallenge?.id === challenge.id"
+                    [class.dark:bg-slate-800/50]="previewChallenge?.id === challenge.id">
+                  <!-- Title -->
+                  <td class="px-6 py-4">
+                    <div class="flex items-center">
+                      <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center text-white font-bold text-sm mr-3 flex-shrink-0">
+                        {{ challenge.title.charAt(0).toUpperCase() }}
+                      </div>
+                      <div>
+                        <p class="text-slate-900 dark:text-white font-medium">{{ challenge.title }}</p>
+                        <p class="text-slate-500 dark:text-slate-400 text-xs truncate max-w-xs">
+                          {{ (challenge.files && challenge.files.length) || 0 }} file(s)
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p class="text-slate-900 dark:text-white font-medium">{{ challenge.title }}</p>
-                      <p class="text-slate-500 dark:text-slate-400 text-xs truncate max-w-xs">
-                        {{ (challenge.files && challenge.files.length) || 0 }} file(s)
-                      </p>
+                  </td>
+                  
+                  <!-- Category -->
+                  <td class="px-6 py-4">
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+                      {{ getCategoryLabel(challenge.category) }}
+                    </span>
+                  </td>
+                  
+                  <!-- Difficulty -->
+                  <td class="px-6 py-4">
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium"
+                          [ngClass]="{
+                            'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400': challenge.difficulty === 'easy',
+                            'bg-yellow-100 dark:bg-yellow-500/20 text-yellow-700 dark:text-yellow-400': challenge.difficulty === 'medium',
+                            'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400': challenge.difficulty === 'hard'
+                          }">
+                      {{ getDifficultyLabel(challenge.difficulty) }}
+                    </span>
+                  </td>
+                  
+                  <!-- Points (Dynamic) -->
+                  <td class="px-6 py-4">
+                    <div class="flex flex-col">
+                      <span class="text-slate-900 dark:text-white font-semibold">{{ challenge.current_points }} pts</span>
+                      <span class="text-slate-500 dark:text-slate-400 text-xs">
+                        {{ challenge.max_points }} → {{ challenge.min_points }} ({{ getScoringTypeLabel(challenge.scoring_type) }})
+                      </span>
                     </div>
-                  </div>
-                </td>
+                  </td>
+                  
+                  <!-- Solves -->
+                  <td class="px-6 py-4">
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400">
+                      {{ challenge.solve_count }} solves
+                    </span>
+                  </td>
+                  
+                  <!-- Actions -->
+                  <td class="px-6 py-4 text-right">
+                    <div class="flex items-center justify-end gap-2">
+                      <button 
+                        (click)="previewChallengeToggle(challenge)"
+                        class="p-2 text-slate-500 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-500/10 rounded-lg transition-colors"
+                        [class.text-purple-600]="previewChallenge?.id === challenge.id"
+                        [class.dark:text-purple-400]="previewChallenge?.id === challenge.id"
+                        [class.bg-purple-50]="previewChallenge?.id === challenge.id"
+                        [class.dark:bg-purple-500/10]="previewChallenge?.id === challenge.id"
+                        title="Preview">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                        </svg>
+                      </button>
+                      <button 
+                        (click)="editChallenge(challenge)"
+                        class="p-2 text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-lg transition-colors"
+                        title="Edit">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                        </svg>
+                      </button>
+                      <button 
+                        (click)="duplicateChallenge(challenge.id)"
+                        class="p-2 text-slate-500 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-500/10 rounded-lg transition-colors"
+                        title="Duplicate">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                        </svg>
+                      </button>
+                      <button 
+                        (click)="deleteChallenge(challenge)"
+                        class="p-2 text-slate-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
+                        title="Delete">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
                 
-                <!-- Category -->
-                <td class="px-6 py-4">
-                  <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+                <!-- Preview Row -->
+                <tr *ngIf="previewChallenge?.id === challenge.id">
+                  <td colspan="6" class="px-6 py-6 bg-slate-100 dark:bg-slate-800/70 border-t border-b border-slate-300 dark:border-slate-700">
+                    <div class="relative bg-white dark:bg-slate-900 rounded-xl p-6 shadow-inner border border-slate-200 dark:border-slate-700">
+                      <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-bold text-slate-900 dark:text-white">Challenge Preview</h3>
+                        <button 
+                          (click)="previewChallenge = null"
+                          class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+                          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                          </svg>
+                        </button>
+                      </div>
+                      
+                      <!-- Metadata -->
+                      <div class="flex items-center gap-4 mb-4 pb-4 border-b border-slate-200 dark:border-slate-700">
+                        <span class="px-3 py-1 text-xs font-medium rounded-full bg-purple-100 dark:bg-purple-500/20 text-purple-700 dark:text-purple-400">
+                          Format: {{ challenge.description_format || 'markdown' }}
+                        </span>
+                        <span class="text-sm text-slate-600 dark:text-slate-400">
+                          <strong>{{ challenge.current_points }}</strong> points
+                        </span>
+                        <span class="text-sm text-slate-600 dark:text-slate-400">
+                          <strong>{{ challenge.solve_count }}</strong> solves
+                        </span>
+                      </div>
+                      
+                      <!-- Rendered Description -->
+                      <div class="prose prose-slate dark:prose-invert max-w-none
+                                  prose-headings:text-slate-900 dark:prose-headings:text-white prose-headings:break-words
+                                  prose-p:text-slate-700 dark:prose-p:text-slate-300 prose-p:break-words
+                                  prose-a:text-red-600 dark:prose-a:text-red-400 prose-a:break-words
+                                  prose-code:text-red-600 dark:prose-code:text-red-400 prose-code:bg-slate-100 dark:prose-code:bg-slate-800 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none prose-code:break-words prose-code:whitespace-pre-wrap
+                                  prose-pre:bg-slate-900 dark:prose-pre:bg-slate-950 prose-pre:border prose-pre:border-slate-700 prose-pre:overflow-x-auto prose-pre:max-w-full
+                                  prose-strong:text-slate-900 dark:prose-strong:text-white prose-strong:break-words
+                                  prose-ul:text-slate-700 dark:prose-ul:text-slate-300
+                                  prose-ol:text-slate-700 dark:prose-ol:text-slate-300
+                                  prose-li:text-slate-700 dark:prose-li:text-slate-300 prose-li:break-words
+                                  prose-blockquote:border-red-500 dark:prose-blockquote:border-red-500
+                                  prose-hr:border-slate-300 dark:prose-hr:border-slate-700
+                                  prose-table:block prose-table:overflow-x-auto prose-table:max-w-full
+                                  overflow-hidden"
+                           [innerHTML]="renderChallengeDescription(challenge)"></div>
+                      
+                      <!-- Files -->
+                      <div *ngIf="challenge.files && challenge.files.length > 0" class="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                        <h4 class="text-sm font-semibold text-slate-900 dark:text-white mb-2">Files:</h4>
+                        <div class="flex flex-wrap gap-2">
+                          <span *ngFor="let file of challenge.files" class="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400 rounded-lg font-mono">
+                            {{ file }}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <!-- Tags -->
+                      <div *ngIf="challenge.tags && challenge.tags.length > 0" class="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                        <h4 class="text-sm font-semibold text-slate-900 dark:text-white mb-2">Tags:</h4>
+                        <div class="flex flex-wrap gap-2">
+                          <span *ngFor="let tag of challenge.tags" class="text-xs px-2 py-1 bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 rounded-lg">
+                            {{ tag }}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              </ng-container>
+            </tbody>
+          </table>
+        </div>
+        
+        <!-- Mobile Card View (visible on mobile only) -->
+        <div class="md:hidden divide-y divide-slate-200 dark:divide-slate-700">
+          <div *ngFor="let challenge of challenges" class="p-4">
+            <div class="flex items-start justify-between mb-3">
+              <div class="flex-1 min-w-0">
+                <h3 class="text-base font-semibold text-slate-900 dark:text-white break-words">{{ challenge.title }}</h3>
+                <div class="flex flex-wrap gap-2 mt-2">
+                  <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
                     {{ getCategoryLabel(challenge.category) }}
                   </span>
-                </td>
-                
-                <!-- Difficulty -->
-                <td class="px-6 py-4">
-                  <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium"
+                  <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
                         [ngClass]="{
                           'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400': challenge.difficulty === 'easy',
                           'bg-yellow-100 dark:bg-yellow-500/20 text-yellow-700 dark:text-yellow-400': challenge.difficulty === 'medium',
@@ -658,57 +848,67 @@
                         }">
                     {{ getDifficultyLabel(challenge.difficulty) }}
                   </span>
-                </td>
-                
-                <!-- Points (Dynamic) -->
-                <td class="px-6 py-4">
-                  <div class="flex flex-col">
-                    <span class="text-slate-900 dark:text-white font-semibold">{{ challenge.current_points }} pts</span>
-                    <span class="text-slate-500 dark:text-slate-400 text-xs">
-                      {{ challenge.max_points }} → {{ challenge.min_points }} ({{ getScoringTypeLabel(challenge.scoring_type) }})
-                    </span>
-                  </div>
-                </td>
-                
-                <!-- Solves -->
-                <td class="px-6 py-4">
-                  <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400">
-                    {{ challenge.solve_count }} solves
-                  </span>
-                </td>
-                
-                <!-- Actions -->
-                <td class="px-6 py-4 text-right">
-                  <div class="flex items-center justify-end gap-2">
-                    <button 
-                      (click)="editChallenge(challenge)"
-                      class="p-2 text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-lg transition-colors"
-                      title="Edit">
-                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                      </svg>
-                    </button>
-                    <button 
-                      (click)="duplicateChallenge(challenge.id)"
-                      class="p-2 text-slate-500 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-500/10 rounded-lg transition-colors"
-                      title="Duplicate">
-                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                      </svg>
-                    </button>
-                    <button 
-                      (click)="deleteChallenge(challenge)"
-                      class="p-2 text-slate-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
-                      title="Delete">
-                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                      </svg>
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                </div>
+              </div>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-2 text-sm mb-3">
+              <div>
+                <span class="text-slate-500 dark:text-slate-400">Points:</span>
+                <span class="ml-1 font-semibold text-slate-900 dark:text-white">{{ challenge.current_points }}</span>
+              </div>
+              <div>
+                <span class="text-slate-500 dark:text-slate-400">Solves:</span>
+                <span class="ml-1 font-semibold text-blue-600 dark:text-blue-400">{{ challenge.solve_count }}</span>
+              </div>
+            </div>
+            
+            <div class="flex flex-wrap gap-2">
+              <button 
+                (click)="previewChallengeToggle(challenge)"
+                class="flex-1 min-w-[100px] px-3 py-2 text-xs font-medium text-purple-700 dark:text-purple-400 bg-purple-50 dark:bg-purple-500/10 hover:bg-purple-100 dark:hover:bg-purple-500/20 rounded-lg transition-colors">
+                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                </svg>
+                Preview
+              </button>
+              <button 
+                (click)="editChallenge(challenge)"
+                class="flex-1 min-w-[100px] px-3 py-2 text-xs font-medium text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 hover:bg-blue-100 dark:hover:bg-blue-500/20 rounded-lg transition-colors">
+                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                </svg>
+                Edit
+              </button>
+              <button 
+                (click)="duplicateChallenge(challenge.id)"
+                class="px-3 py-2 text-xs font-medium text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-500/10 hover:bg-green-100 dark:hover:bg-green-500/20 rounded-lg transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                </svg>
+              </button>
+              <button 
+                (click)="deleteChallenge(challenge)"
+                class="px-3 py-2 text-xs font-medium text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 rounded-lg transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+              </button>
+            </div>
+            
+            <!-- Preview for mobile -->
+            <div *ngIf="previewChallenge?.id === challenge.id" class="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+              <div class="prose prose-sm prose-slate dark:prose-invert max-w-none
+                          prose-headings:text-slate-900 dark:prose-headings:text-white prose-headings:break-words
+                          prose-p:text-slate-700 dark:prose-p:text-slate-300 prose-p:break-words
+                          prose-code:text-red-600 dark:prose-code:text-red-400 prose-code:bg-slate-100 dark:prose-code:bg-slate-800 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:break-words prose-code:text-xs
+                          prose-pre:bg-slate-900 dark:prose-pre:bg-slate-950 prose-pre:overflow-x-auto prose-pre:max-w-full prose-pre:text-xs
+                          prose-table:block prose-table:overflow-x-auto prose-table:max-w-full prose-table:text-xs
+                          overflow-hidden"
+                   [innerHTML]="renderChallengeDescription(challenge)"></div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -949,7 +1149,10 @@
             </div>
             <span class="text-xs text-slate-500 dark:text-slate-400">{{ writeup.created_at | date:'short' }}</span>
           </div>
-          <p class="text-slate-700 dark:text-slate-300 text-sm mb-3 whitespace-pre-line line-clamp-3">{{ writeup.content }}</p>
+          <div class="prose prose-sm prose-slate dark:prose-invert max-w-none mb-3 line-clamp-3
+                      prose-p:text-slate-700 dark:prose-p:text-slate-300
+                      prose-code:text-blue-600 dark:prose-code:text-blue-400 prose-code:bg-slate-100 dark:prose-code:bg-slate-900 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none"
+               [innerHTML]="renderWriteupContent(writeup)"></div>
           <div class="flex gap-2">
             <button *ngIf="writeup.status !== 'approved'" (click)="approveWriteup(writeup.id)"
                     class="px-3 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-500/20 hover:bg-emerald-200 dark:hover:bg-emerald-500/30 rounded-lg transition-colors duration-200">
@@ -982,8 +1185,8 @@
         <p class="text-slate-500 dark:text-slate-400">No audit logs yet.</p>
       </div>
 
-      <div *ngIf="!isLoadingAudit && auditLogs.length > 0" class="overflow-x-auto">
-        <table class="w-full text-sm">
+      <div *ngIf="!isLoadingAudit && auditLogs.length > 0" class="overflow-x-auto max-w-full">
+        <table class="w-full text-sm min-w-[600px]">
           <thead>
             <tr class="border-b border-slate-200 dark:border-slate-700">
               <th class="text-left py-3 px-4 text-slate-600 dark:text-slate-400 font-medium">Time</th>
@@ -1080,8 +1283,8 @@
       <!-- Challenge Popularity -->
       <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-6" *ngIf="analytics.challenge_popularity && analytics.challenge_popularity.length > 0">
         <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Challenge Popularity</h3>
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-sm">
+        <div class="overflow-x-auto max-w-full">
+          <table class="w-full text-left text-sm min-w-[600px]">
             <thead>
               <tr class="text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700">
                 <th class="pb-3">Challenge</th>
@@ -1112,8 +1315,8 @@
       <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-red-500 mx-auto"></div>
     </div>
     <div *ngIf="!usersLoading && users.length > 0" class="bg-white dark:bg-slate-800 rounded-lg shadow overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="w-full text-left text-sm">
+      <div class="overflow-x-auto max-w-full">
+        <table class="w-full text-left text-sm min-w-[700px]">
           <thead>
             <tr class="text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
               <th class="px-4 py-3">Username</th>

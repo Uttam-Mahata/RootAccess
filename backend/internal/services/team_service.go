@@ -116,6 +116,11 @@ func (s *TeamService) calculateTeamScore(teamID primitive.ObjectID) int {
 		return 0
 	}
 
+	// Early return if no submissions - avoid unnecessary DB queries
+	if len(submissions) == 0 {
+		return 0
+	}
+
 	totalScore := 0
 	seenChallenges := make(map[string]bool)
 

@@ -8,6 +8,7 @@ export interface Challenge {
   id: string;
   title: string;
   description: string;
+  description_format?: string; // "markdown" or "html"
   category: string;
   difficulty: string;
   max_points: number;
@@ -24,6 +25,7 @@ export interface ChallengeAdmin {
   id: string;
   title: string;
   description: string;
+  description_format?: string; // "markdown" or "html"
   category: string;
   difficulty: string;
   max_points: number;
@@ -56,6 +58,7 @@ export interface HintRequest {
 export interface ChallengeRequest {
   title: string;
   description: string;
+  description_format?: string; // "markdown" or "html"
   category: string;
   difficulty: string;
   max_points: number;
@@ -100,8 +103,9 @@ export class ChallengeService {
   }
 
   // Admin methods
-  getChallengesForAdmin(): Observable<ChallengeAdmin[]> {
-    return this.http.get<ChallengeAdmin[]>(`${this.apiUrl}/admin/challenges`);
+  getChallengesForAdmin(listOnly = false): Observable<ChallengeAdmin[]> {
+    const url = listOnly ? `${this.apiUrl}/admin/challenges?list=1` : `${this.apiUrl}/admin/challenges`;
+    return this.http.get<ChallengeAdmin[]>(url);
   }
 
   createChallenge(challenge: ChallengeRequest): Observable<any> {
@@ -126,8 +130,11 @@ export class ChallengeService {
   }
 
   // Writeup methods
-  submitWriteup(challengeId: string, content: string): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/challenges/${challengeId}/writeups`, { content });
+  submitWriteup(challengeId: string, content: string, contentFormat: string = 'markdown'): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/challenges/${challengeId}/writeups`, { 
+      content,
+      content_format: contentFormat
+    });
   }
 
   getWriteups(challengeId: string): Observable<any[]> {

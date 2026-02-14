@@ -159,8 +159,8 @@ func (r *WriteupRepository) FindByUserAndChallenge(userID, challengeID primitive
 	return &writeup, nil
 }
 
-// UpdateWriteupContent updates the content of a writeup
-func (r *WriteupRepository) UpdateWriteupContent(id string, content string) error {
+// UpdateWriteupContent updates the content and format of a writeup
+func (r *WriteupRepository) UpdateWriteupContent(id string, content string, contentFormat string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -171,8 +171,9 @@ func (r *WriteupRepository) UpdateWriteupContent(id string, content string) erro
 
 	update := bson.M{
 		"$set": bson.M{
-			"content":    content,
-			"updated_at": time.Now(),
+			"content":        content,
+			"content_format": contentFormat,
+			"updated_at":     time.Now(),
 		},
 	}
 	_, err = r.collection.UpdateOne(ctx, bson.M{"_id": oid}, update)

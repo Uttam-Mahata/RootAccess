@@ -1,4 +1,4 @@
-<div class="min-h-screen bg-gradient-to-br from-gray-50 via-slate-50 to-gray-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 bg-cyber-grid-light dark:bg-cyber-grid-dark bg-grid transition-colors duration-300">
+<div class="min-h-screen w-full max-w-[100vw] overflow-x-hidden bg-gradient-to-br from-gray-50 via-slate-50 to-gray-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 bg-cyber-grid-light dark:bg-cyber-grid-dark bg-grid transition-colors duration-300">
   <!-- Accent Glow Effects (visible in both themes) -->
   <div class="fixed inset-0 overflow-hidden pointer-events-none">
     <div class="absolute -top-40 -right-40 w-80 h-80 bg-red-500/10 dark:bg-red-600/20 rounded-full blur-3xl"></div>
@@ -332,10 +332,12 @@
   </nav>
 
   <!-- Main Content -->
-  <main class="relative max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <main class="relative w-full min-w-0 max-w-[1920px] overflow-x-hidden mx-auto px-4 sm:px-6 lg:px-8 py-8 box-border">
     <!-- Notification Banner -->
     <app-notification-banner></app-notification-banner>
     
-    <router-outlet></router-outlet>
+    <div class="w-full min-w-0 overflow-x-hidden">
+      <router-outlet></router-outlet>
+    </div>
   </main>
 </div>

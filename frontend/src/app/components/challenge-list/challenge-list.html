@@ -1,4 +1,4 @@
-<div class="py-8">
+<div class="py-8 w-full min-w-0 overflow-x-hidden max-w-full">
   <!-- Header -->
   <div class="mb-8">
     <h1 class="text-4xl font-bold text-slate-900 dark:text-white mb-2 flex items-center transition-colors duration-300">
@@ -118,7 +118,7 @@
 
           <!-- Description -->
           <p class="text-slate-600 dark:text-slate-400 text-sm mb-4 line-clamp-3">
-            {{ challenge.description.length > 100 ? (challenge.description | slice:0:100) + '...' : challenge.description }}
+            {{ getPlainTextPreview(challenge, 150) }}
           </p>
 
           <!-- Tags -->

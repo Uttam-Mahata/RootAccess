@@ -1,4 +1,4 @@
-<div class="py-8" *ngIf="challenge">
+<div class="py-8 w-full min-w-0 overflow-x-hidden max-w-full" *ngIf="challenge">
   <!-- Back Button -->
   <div class="mb-6">
     <a routerLink="/challenges" class="inline-flex items-center text-red-600 dark:text-red-500 hover:text-red-700 dark:hover:text-red-400 transition-colors duration-200">
@@ -9,9 +9,9 @@
     </a>
   </div>
 
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full min-w-0">
     <!-- Main Challenge Card -->
-    <div class="lg:col-span-2">
+    <div class="lg:col-span-2 min-w-0">
       <div class="relative group">
         <!-- Glow Effect -->
         <div class="absolute -inset-0.5 bg-gradient-to-r from-red-600 to-red-700 rounded-2xl blur opacity-20 group-hover:opacity-30 dark:opacity-30 dark:group-hover:opacity-40 transition duration-300"></div>
@@ -62,7 +62,21 @@
           <!-- Description -->
           <div class="mb-6">
             <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-3">Description</h2>
-            <div class="text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line prose dark:prose-invert max-w-none" [innerHTML]="challenge.description"></div>
+            <div class="text-slate-700 dark:text-slate-300 leading-relaxed prose prose-slate dark:prose-invert max-w-none 
+                        prose-headings:text-slate-900 dark:prose-headings:text-white prose-headings:break-words
+                        prose-p:text-slate-700 dark:prose-p:text-slate-300 prose-p:break-words
+                        prose-a:text-red-600 dark:prose-a:text-red-400 prose-a:break-words
+                        prose-code:text-red-600 dark:prose-code:text-red-400 prose-code:bg-slate-100 dark:prose-code:bg-slate-800 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none prose-code:break-words prose-code:whitespace-pre-wrap
+                        prose-pre:bg-slate-900 dark:prose-pre:bg-slate-950 prose-pre:border prose-pre:border-slate-700 prose-pre:overflow-x-auto prose-pre:max-w-full
+                        prose-strong:text-slate-900 dark:prose-strong:text-white prose-strong:break-words
+                        prose-ul:text-slate-700 dark:prose-ul:text-slate-300
+                        prose-ol:text-slate-700 dark:prose-ol:text-slate-300
+                        prose-li:text-slate-700 dark:prose-li:text-slate-300 prose-li:break-words
+                        prose-blockquote:border-red-500 dark:prose-blockquote:border-red-500
+                        prose-hr:border-slate-300 dark:prose-hr:border-slate-700
+                        prose-table:block prose-table:overflow-x-auto prose-table:max-w-full
+                        overflow-hidden" 
+                 [innerHTML]="renderedDescription"></div>
           </div>
 
           <!-- Files Section -->
@@ -146,21 +160,49 @@
             <!-- Writeup Form -->
             <div *ngIf="showWriteupForm" class="mb-4 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4">
               <form [formGroup]="writeupForm" (ngSubmit)="submitWriteup()">
+                <!-- Format Selector -->
+                <div class="mb-3 flex gap-4 p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700">
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input 
+                      type="radio" 
+                      formControlName="content_format" 
+                      value="markdown"
+                      class="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500"
+                    />
+                    <span class="text-sm font-medium text-slate-900 dark:text-white">Markdown</span>
+                  </label>
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input 
+                      type="radio" 
+                      formControlName="content_format" 
+                      value="html"
+                      class="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500"
+                    />
+                    <span class="text-sm font-medium text-slate-900 dark:text-white">HTML</span>
+                  </label>
+                </div>
+
                 <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                  Write your solution (Markdown supported, min 50 characters)
+                  Write your solution (Rich Text Editor)
                 </label>
-                <textarea formControlName="content"
-                          rows="6"
-                          placeholder="Explain how you solved this challenge..."
-                          class="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 font-mono text-sm"></textarea>
-                <div class="flex gap-2 mt-3">
+                <div class="rounded-lg overflow-hidden border border-slate-300 dark:border-slate-700 mb-3">
+                  @if (showWriteupEditor) {
+                    <editor
+                      [init]="writeupEditorConfig"
+                      [initialValue]="writeupEditorContent"
+                      (onInit)="onWriteupEditorChange($event)"
+                      (onChange)="onWriteupEditorChange($event)">
+                    </editor>
+                  }
+                </div>
+                <div class="flex gap-2">
                   <button type="submit"
-                          [disabled]="!writeupForm.valid || isSubmittingWriteup"
+                          [disabled]="isSubmittingWriteup || !writeupEditorContent.trim()"
                           class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors duration-200 disabled:opacity-50">
                     {{ isSubmittingWriteup ? 'Submitting...' : 'Submit Writeup' }}
                   </button>
                   <button type="button"
-                          (click)="showWriteupForm = false"
+                          (click)="showWriteupForm = false; writeupEditorContent = ''"
                           class="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors duration-200">
                     Cancel
                   </button>
@@ -175,11 +217,18 @@
             <!-- Writeup List -->
             <div *ngIf="writeups.length > 0" class="space-y-3">
               <div *ngFor="let writeup of writeups" class="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4">
-                <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center justify-between mb-3">
                   <span class="text-sm font-medium text-slate-900 dark:text-white">{{ writeup.username }}</span>
                   <span class="text-xs text-slate-500 dark:text-slate-400">{{ writeup.created_at | date:'short' }}</span>
                 </div>
-                <div class="text-slate-700 dark:text-slate-300 text-sm whitespace-pre-line">{{ writeup.content }}</div>
+                <div class="prose prose-sm prose-slate dark:prose-invert max-w-none
+                            prose-headings:text-slate-900 dark:prose-headings:text-white
+                            prose-p:text-slate-700 dark:prose-p:text-slate-300
+                            prose-a:text-blue-600 dark:prose-a:text-blue-400
+                            prose-code:text-blue-600 dark:prose-code:text-blue-400 prose-code:bg-slate-100 dark:prose-code:bg-slate-900 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none
+                            prose-pre:bg-slate-900 dark:prose-pre:bg-black prose-pre:border prose-pre:border-slate-700
+                            prose-strong:text-slate-900 dark:prose-strong:text-white"
+                     [innerHTML]="writeup.renderedContent"></div>
               </div>
             </div>
             <div *ngIf="writeups.length === 0 && !showWriteupForm" class="text-slate-500 dark:text-slate-400 text-sm">

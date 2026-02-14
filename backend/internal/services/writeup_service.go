@@ -24,7 +24,7 @@ func NewWriteupService(
 }
 
 // CreateWriteup creates a new writeup (user must have solved the challenge)
-func (s *WriteupService) CreateWriteup(userID primitive.ObjectID, username string, challengeID string, content string) (*models.Writeup, error) {
+func (s *WriteupService) CreateWriteup(userID primitive.ObjectID, username string, challengeID string, content string, contentFormat string) (*models.Writeup, error) {
 	cid, err := primitive.ObjectIDFromHex(challengeID)
 	if err != nil {
 		return nil, errors.New("invalid challenge ID")
@@ -43,10 +43,11 @@ func (s *WriteupService) CreateWriteup(userID primitive.ObjectID, username strin
 	}
 
 	writeup := &models.Writeup{
-		ChallengeID: cid,
-		UserID:      userID,
-		Username:    username,
-		Content:     content,
+		ChallengeID:   cid,
+		UserID:        userID,
+		Username:      username,
+		Content:       content,
+		ContentFormat: contentFormat,
 	}
 
 	if err := s.writeupRepo.CreateWriteup(writeup); err != nil {
@@ -89,7 +90,7 @@ func (s *WriteupService) GetMyWriteups(userID primitive.ObjectID) ([]models.Writ
 }
 
 // UpdateWriteupContent allows authors to edit their own writeup content
-func (s *WriteupService) UpdateWriteupContent(writeupID string, userID primitive.ObjectID, content string) error {
+func (s *WriteupService) UpdateWriteupContent(writeupID string, userID primitive.ObjectID, content string, contentFormat string) error {
 	writeup, err := s.writeupRepo.GetWriteupByID(writeupID)
 	if err != nil {
 		return errors.New("writeup not found")
@@ -97,7 +98,7 @@ func (s *WriteupService) UpdateWriteupContent(writeupID string, userID primitive
 	if writeup.UserID != userID {
 		return errors.New("you can only edit your own writeups")
 	}
-	return s.writeupRepo.UpdateWriteupContent(writeupID, content)
+	return s.writeupRepo.UpdateWriteupContent(writeupID, content, contentFormat)
 }
 
 // ToggleUpvote toggles a user's upvote on a writeup

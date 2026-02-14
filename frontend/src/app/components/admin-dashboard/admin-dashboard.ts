@@ -55,6 +55,9 @@ export class AdminDashboardComponent implements OnInit {
   // Edit mode
   isEditMode = false;
   editingChallengeId: string | null = null;
+  
+  // Preview mode
+  previewChallenge: ChallengeAdmin | null = null;
 
   // Contest
   contestConfig: any = null;
@@ -123,9 +126,22 @@ export class AdminDashboardComponent implements OnInit {
     { value: 'error', label: 'Error', icon: 'error', colorClass: 'text-red-500' }
   ];
 
-  // Markdown converter
+  // Markdown converter with enhanced configuration
   private turndownService = new TurndownService();
-  private showdownConverter = new Showdown.Converter();
+  private showdownConverter = new Showdown.Converter({
+    tables: true,
+    strikethrough: true,
+    tasklists: true,
+    smoothLivePreview: true,
+    simpleLineBreaks: false,  // Proper paragraph handling
+    openLinksInNewWindow: true,
+    emoji: true,
+    ghCodeBlocks: true,  // GitHub-style code blocks
+    encodeEmails: true,
+    simplifiedAutoLink: true,
+    literalMidWordUnderscores: true,
+    parseImgDimensions: true
+  });
 
   constructor(
     private fb: FormBuilder,
@@ -142,6 +158,7 @@ export class AdminDashboardComponent implements OnInit {
       title: ['', Validators.required],
       category: ['', Validators.required],
       difficulty: ['', Validators.required],
+      description_format: ['markdown', Validators.required],
       max_points: [500, [Validators.required, Validators.min(1)]],
       min_points: [100, [Validators.required, Validators.min(1)]],
       decay: [10, [Validators.required, Validators.min(1)]],
@@ -293,7 +310,8 @@ export class AdminDashboardComponent implements OnInit {
 
   loadChallenges(): void {
     this.isLoading = true;
-    this.challengeService.getChallengesForAdmin().subscribe({
+    // Use list=1 for fast load (no descriptions); full data fetched on Preview/Edit
+    this.challengeService.getChallengesForAdmin(true).subscribe({
       next: (data) => {
         this.challenges = data || [];
         this.isLoading = false;
@@ -472,13 +490,23 @@ export class AdminDashboardComponent implements OnInit {
 
   onSubmit(): void {
     if (this.challengeForm.valid && this.editorContent.trim()) {
-      // Convert HTML to Markdown for storage
-      const markdownDescription = this.turndownService.turndown(this.editorContent);
-      
       const formValue = this.challengeForm.value;
+      const selectedFormat = formValue.description_format || 'markdown';
+      
+      // Convert HTML to selected format
+      let description: string;
+      if (selectedFormat === 'markdown') {
+        // Convert TinyMCE HTML to Markdown
+        description = this.turndownService.turndown(this.editorContent);
+      } else {
+        // Store as HTML directly
+        description = this.editorContent;
+      }
+      
       const challenge: ChallengeRequest = {
         title: formValue.title,
-        description: markdownDescription,
+        description: description,
+        description_format: selectedFormat,
         category: formValue.category,
         difficulty: formValue.difficulty,
         max_points: formValue.max_points,
@@ -496,7 +524,10 @@ export class AdminDashboardComponent implements OnInit {
         this.challengeService.updateChallenge(this.editingChallengeId, challenge).subscribe({
           next: () => {
             this.showMessage('Challenge updated successfully', 'success');
-            this.loadChallenges();
+            // Optimized: Only reload challenges if on manage tab
+            if (this.activeTab === 'manage') {
+              this.loadChallenges();
+            }
             this.resetForm();
             this.switchTab('manage');
           },
@@ -524,28 +555,63 @@ export class AdminDashboardComponent implements OnInit {
     }
   }
 
+  previewChallengeToggle(challenge: ChallengeAdmin): void {
+    if (this.previewChallenge?.id === challenge.id) {
+      this.previewChallenge = null;
+      return;
+    }
+    // List API omits description; fetch full challenge for preview
+    if (!challenge.description) {
+      this.challengeService.getChallenge(challenge.id).subscribe({
+        next: (full) => {
+          this.previewChallenge = { ...challenge, description: full.description, description_format: full.description_format };
+        },
+        error: () => this.showMessage('Failed to load challenge details', 'error')
+      });
+    } else {
+      this.previewChallenge = challenge;
+    }
+  }
+
   editChallenge(challenge: ChallengeAdmin): void {
     this.isEditMode = true;
     this.editingChallengeId = challenge.id;
     
-    // Convert Markdown to HTML for the editor
-    this.editorContent = this.showdownConverter.makeHtml(challenge.description);
-    
-    this.challengeForm.patchValue({
-      title: challenge.title,
-      category: challenge.category,
-      difficulty: challenge.difficulty,
-      max_points: challenge.max_points,
-      min_points: challenge.min_points,
-      decay: challenge.decay,
-      scoring_type: challenge.scoring_type || 'dynamic',
-      flag: '', // Flag is not returned from API for security
-      files: challenge.files ? challenge.files.join(', ') : '',
-      tags: challenge.tags ? challenge.tags.join(', ') : ''
-    });
-    
-    this.switchTab('create');
-    this.showMessage(`Editing: ${challenge.title} (Enter the flag again)`, 'success');
+    const applyEdit = (ch: ChallengeAdmin) => {
+      const format = ch.description_format || 'markdown';
+      if (format === 'html') {
+        this.editorContent = ch.description;
+      } else {
+        this.editorContent = this.showdownConverter.makeHtml(ch.description || '');
+      }
+      this.challengeForm.patchValue({
+        title: ch.title,
+        category: ch.category,
+        difficulty: ch.difficulty,
+        description_format: format,
+        max_points: ch.max_points,
+        min_points: ch.min_points,
+        decay: ch.decay,
+        scoring_type: ch.scoring_type || 'dynamic',
+        flag: '',
+        files: ch.files ? ch.files.join(', ') : '',
+        tags: ch.tags ? ch.tags.join(', ') : ''
+      });
+      this.switchTab('create');
+      this.showMessage(`Editing: ${ch.title} (Enter the flag again)`, 'success');
+    };
+
+    // List API omits description; fetch full challenge for edit
+    if (!challenge.description) {
+      this.challengeService.getChallenge(challenge.id).subscribe({
+        next: (full) => {
+          applyEdit({ ...challenge, description: full.description, description_format: full.description_format });
+        },
+        error: () => this.showMessage('Failed to load challenge for edit', 'error')
+      });
+    } else {
+      applyEdit(challenge);
+    }
   }
 
   deleteChallenge(challenge: ChallengeAdmin): void {
@@ -571,6 +637,7 @@ export class AdminDashboardComponent implements OnInit {
       title: '',
       category: '',
       difficulty: '',
+      description_format: 'markdown',
       max_points: 500,
       min_points: 100,
       decay: 10,
@@ -829,6 +896,24 @@ export class AdminDashboardComponent implements OnInit {
       },
       error: () => this.showMessage('Failed to duplicate challenge', 'error')
     });
+  }
+
+  renderWriteupContent(writeup: any): string {
+    const format = writeup.content_format || 'markdown'; // Default to markdown for backward compatibility
+    if (format === 'html') {
+      return writeup.content || '';
+    } else {
+      return this.showdownConverter.makeHtml(writeup.content || '');
+    }
+  }
+
+  renderChallengeDescription(challenge: ChallengeAdmin): string {
+    const format = challenge.description_format || 'markdown'; // Default to markdown for backward compatibility
+    if (format === 'html') {
+      return challenge.description || '';
+    } else {
+      return this.showdownConverter.makeHtml(challenge.description || '');
+    }
   }
 
   private get apiUrl(): string {

@@ -20,7 +20,8 @@ func NewWriteupHandler(writeupService *services.WriteupService) *WriteupHandler 
 }
 
 type CreateWriteupRequest struct {
-	Content string `json:"content" binding:"required"`
+	Content       string `json:"content" binding:"required"`
+	ContentFormat string `json:"content_format"` // "markdown" or "html"
 }
 
 // CreateWriteup handles creating a new writeup for a challenge
@@ -41,7 +42,17 @@ func (h *WriteupHandler) CreateWriteup(c *gin.Context) {
 		return
 	}
 
-	writeup, err := h.writeupService.CreateWriteup(userID, username.(string), challengeID, req.Content)
+	// Validate and set default format
+	contentFormat := req.ContentFormat
+	if contentFormat == "" {
+		contentFormat = "markdown" // Default to markdown
+	}
+	if contentFormat != "markdown" && contentFormat != "html" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "content_format must be 'markdown' or 'html'"})
+		return
+	}
+
+	writeup, err := h.writeupService.CreateWriteup(userID, username.(string), challengeID, req.Content, contentFormat)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -158,7 +169,17 @@ func (h *WriteupHandler) UpdateWriteup(c *gin.Context) {
 		return
 	}
 
-	if err := h.writeupService.UpdateWriteupContent(id, userID, req.Content); err != nil {
+	// Validate and set default format
+	contentFormat := req.ContentFormat
+	if contentFormat == "" {
+		contentFormat = "markdown" // Default to markdown
+	}
+	if contentFormat != "markdown" && contentFormat != "html" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "content_format must be 'markdown' or 'html'"})
+		return
+	}
+
+	if err := h.writeupService.UpdateWriteupContent(id, userID, req.Content, contentFormat); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}

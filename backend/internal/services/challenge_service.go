@@ -48,6 +48,10 @@ func (s *ChallengeService) GetAllChallenges() ([]models.Challenge, error) {
 	return s.challengeRepo.GetAllChallenges()
 }
 
+func (s *ChallengeService) GetAllChallengesForList() ([]models.Challenge, error) {
+	return s.challengeRepo.GetAllChallengesForList()
+}
+
 func (s *ChallengeService) GetChallengeByID(id string) (*models.Challenge, error) {
 	return s.challengeRepo.GetChallengeByID(id)
 }

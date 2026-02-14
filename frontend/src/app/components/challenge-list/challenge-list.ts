@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ChallengeService, Challenge } from '../../services/challenge';
+import Showdown from 'showdown';
 
 @Component({
   selector: 'app-challenge-list',
@@ -26,8 +27,46 @@ export class ChallengeListComponent implements OnInit {
   categories: string[] = [];
   difficulties = ['easy', 'medium', 'hard'];
   tags: string[] = [];
+  
+  // Markdown converter with enhanced configuration
+  private markdownConverter = new Showdown.Converter({
+    tables: true,
+    strikethrough: true,
+    tasklists: true,
+    smoothLivePreview: true,
+    simpleLineBreaks: false,  // Proper paragraph handling
+    openLinksInNewWindow: true,
+    emoji: true,
+    ghCodeBlocks: true,  // GitHub-style code blocks
+    encodeEmails: true,
+    simplifiedAutoLink: true,
+    literalMidWordUnderscores: true,
+    parseImgDimensions: true
+  });
 
   constructor(private challengeService: ChallengeService) { }
+  
+  // Convert markdown/HTML to plain text for preview
+  getPlainTextPreview(challenge: Challenge, maxLength: number = 150): string {
+    if (!challenge.description) return '';
+    
+    const format = challenge.description_format || 'markdown'; // Default to markdown for backward compatibility
+    let html = '';
+    
+    if (format === 'html') {
+      // Already HTML
+      html = challenge.description;
+    } else {
+      // Convert markdown to HTML
+      html = this.markdownConverter.makeHtml(challenge.description);
+    }
+    
+    // Strip HTML tags to get plain text
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    const plainText = tmp.textContent || tmp.innerText || '';
+    return plainText.length > maxLength ? plainText.slice(0, maxLength) + '...' : plainText;
+  }
 
   ngOnInit(): void {
     this.challengeService.getChallenges().subscribe({

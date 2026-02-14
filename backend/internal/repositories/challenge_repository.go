@@ -9,6 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type ChallengeRepository struct {
@@ -49,6 +50,26 @@ func (r *ChallengeRepository) GetAllChallenges() ([]models.Challenge, error) {
 	return challenges, nil
 }
 
+// GetAllChallengesForList returns challenges without description for fast list views (admin manage tab).
+// Uses projection to exclude description from DB response for smaller payload and faster load.
+func (r *ChallengeRepository) GetAllChallengesForList() ([]models.Challenge, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	opts := options.Find().SetProjection(bson.M{"description": 0})
+	cursor, err := r.collection.Find(ctx, bson.M{}, opts)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var challenges []models.Challenge
+	if err = cursor.All(ctx, &challenges); err != nil {
+		return nil, err
+	}
+	return challenges, nil
+}
+
 func (r *ChallengeRepository) GetChallengeByID(id string) (*models.Challenge, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -77,17 +98,19 @@ func (r *ChallengeRepository) UpdateChallenge(id string, challenge *models.Chall
 
 	update := bson.M{
 		"$set": bson.M{
-			"title":        challenge.Title,
-			"description":  challenge.Description,
-			"category":     challenge.Category,
-			"difficulty":   challenge.Difficulty,
-			"max_points":   challenge.MaxPoints,
-			"min_points":   challenge.MinPoints,
-			"decay":        challenge.Decay,
-			"scoring_type": challenge.ScoringType,
-			"flag_hash":    challenge.FlagHash,
-			"files":        challenge.Files,
-			"hints":        challenge.Hints,
+			"title":              challenge.Title,
+			"description":        challenge.Description,
+			"description_format": challenge.DescriptionFormat,
+			"category":           challenge.Category,
+			"difficulty":         challenge.Difficulty,
+			"max_points":         challenge.MaxPoints,
+			"min_points":         challenge.MinPoints,
+			"decay":              challenge.Decay,
+			"scoring_type":       challenge.ScoringType,
+			"flag_hash":          challenge.FlagHash,
+			"files":              challenge.Files,
+			"tags":               challenge.Tags,
+			"hints":              challenge.Hints,
 		},
 	}
 
