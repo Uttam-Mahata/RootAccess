@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -16,6 +17,23 @@ import (
 
 func SetupRouter(cfg *config.Config) *gin.Engine {
 	r := gin.Default()
+
+	// Configure trusted proxies for accurate client IP detection
+	// When behind a reverse proxy (nginx, load balancer), this ensures
+	// c.ClientIP() returns the real client IP from X-Forwarded-For / X-Real-IP
+	// instead of the proxy's IP (e.g. 127.0.0.1)
+	if cfg.TrustedProxies != "" {
+		proxies := strings.Split(cfg.TrustedProxies, ",")
+		for i := range proxies {
+			proxies[i] = strings.TrimSpace(proxies[i])
+		}
+		r.SetTrustedProxies(proxies)
+	} else {
+		// Trust all proxies when not explicitly configured (development mode)
+		r.SetTrustedProxies(nil)
+	}
+	r.ForwardedByClientIP = true
+	r.RemoteIPHeaders = []string{"X-Forwarded-For", "X-Real-IP"}
 
 	// CORS
 	r.Use(func(c *gin.Context) {
@@ -53,7 +71,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	authService := services.NewAuthService(userRepo, emailService, cfg)
 	oauthService := services.NewOAuthService(userRepo, cfg)
 	challengeService := services.NewChallengeService(challengeRepo, submissionRepo, teamRepo)
-	scoreboardService := services.NewScoreboardService(userRepo, submissionRepo, challengeRepo, teamRepo)
+	scoreboardService := services.NewScoreboardService(userRepo, submissionRepo, challengeRepo, teamRepo, contestRepo)
 	teamService := services.NewTeamService(teamRepo, teamInvitationRepo, userRepo, emailService, submissionRepo, challengeRepo)
 	notificationService := services.NewNotificationService(notificationRepo)
 	hintService := services.NewHintService(hintRepo, challengeRepo, teamRepo)
@@ -71,8 +89,8 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	// Handlers
 	authHandler := handlers.NewAuthHandler(authService)
 	oauthHandler := handlers.NewOAuthHandler(oauthService, database.RDB, cfg)
-	challengeHandler := handlers.NewChallengeHandler(challengeService, achievementService, wsHub)
-	scoreboardHandler := handlers.NewScoreboardHandler(scoreboardService)
+	challengeHandler := handlers.NewChallengeHandler(challengeService, achievementService, contestService, wsHub)
+	scoreboardHandler := handlers.NewScoreboardHandler(scoreboardService, contestService)
 	teamHandler := handlers.NewTeamHandler(teamService)
 	notificationHandler := handlers.NewNotificationHandler(notificationService)
 	profileHandler := handlers.NewProfileHandler(userRepo, submissionRepo, challengeRepo, teamRepo)

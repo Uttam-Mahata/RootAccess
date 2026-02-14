@@ -13,13 +13,15 @@ import (
 type ChallengeHandler struct {
 	challengeService   *services.ChallengeService
 	achievementService *services.AchievementService
+	contestService     *services.ContestService
 	wsHub              interface{ BroadcastMessage(string, interface{}) }
 }
 
-func NewChallengeHandler(challengeService *services.ChallengeService, achievementService *services.AchievementService, wsHub interface{ BroadcastMessage(string, interface{}) }) *ChallengeHandler {
+func NewChallengeHandler(challengeService *services.ChallengeService, achievementService *services.AchievementService, contestService *services.ContestService, wsHub interface{ BroadcastMessage(string, interface{}) }) *ChallengeHandler {
 	return &ChallengeHandler{
 		challengeService:   challengeService,
 		achievementService: achievementService,
+		contestService:     contestService,
 		wsHub:              wsHub,
 	}
 }
@@ -327,6 +329,15 @@ type SubmitFlagRequest struct {
 }
 
 func (h *ChallengeHandler) SubmitFlag(c *gin.Context) {
+	// Check if contest is paused
+	if h.contestService != nil {
+		status, _, err := h.contestService.GetContestStatus()
+		if err == nil && status == models.ContestStatusPaused {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Contest is currently paused. Submissions are not accepted."})
+			return
+		}
+	}
+
 	challengeID := c.Param("id")
 	userIDStr, exists := c.Get("user_id")
 	if !exists {
@@ -343,7 +354,8 @@ func (h *ChallengeHandler) SubmitFlag(c *gin.Context) {
 		return
 	}
 
-	result, err := h.challengeService.SubmitFlag(userID, challengeID, req.Flag)
+	clientIP := c.ClientIP()
+	result, err := h.challengeService.SubmitFlag(userID, challengeID, req.Flag, clientIP)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

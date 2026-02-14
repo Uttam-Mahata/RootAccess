@@ -35,6 +35,12 @@ func (h *ContestHandler) GetContestStatus(c *gin.Context) {
 		response["start_time"] = config.StartTime
 		response["end_time"] = config.EndTime
 		response["is_active"] = config.IsActive
+		response["is_paused"] = config.IsPaused
+		response["scoreboard_visibility"] = config.ScoreboardVisibility
+		if config.FreezeTime != nil {
+			response["freeze_time"] = config.FreezeTime
+			response["is_frozen"] = config.IsScoreboardFrozen()
+		}
 	}
 
 	c.JSON(http.StatusOK, response)
@@ -42,10 +48,13 @@ func (h *ContestHandler) GetContestStatus(c *gin.Context) {
 
 // UpdateContestRequest represents the request body for updating contest config
 type UpdateContestRequest struct {
-	Title     string `json:"title" binding:"required"`
-	StartTime string `json:"start_time" binding:"required"`
-	EndTime   string `json:"end_time" binding:"required"`
-	IsActive  bool   `json:"is_active"`
+	Title                string  `json:"title" binding:"required"`
+	StartTime            string  `json:"start_time" binding:"required"`
+	EndTime              string  `json:"end_time" binding:"required"`
+	FreezeTime           *string `json:"freeze_time"`
+	IsActive             bool    `json:"is_active"`
+	IsPaused             bool    `json:"is_paused"`
+	ScoreboardVisibility string  `json:"scoreboard_visibility"`
 }
 
 // UpdateContestConfig updates the contest configuration (admin only)
@@ -68,7 +77,27 @@ func (h *ContestHandler) UpdateContestConfig(c *gin.Context) {
 		return
 	}
 
-	config, err := h.contestService.UpdateContestConfig(req.Title, startTime, endTime, req.IsActive)
+	var freezeTime *time.Time
+	if req.FreezeTime != nil && *req.FreezeTime != "" {
+		ft, err := time.Parse(time.RFC3339, *req.FreezeTime)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid freeze_time format, use RFC3339"})
+			return
+		}
+		freezeTime = &ft
+	}
+
+	// Default scoreboard visibility to "public"
+	visibility := req.ScoreboardVisibility
+	if visibility == "" {
+		visibility = "public"
+	}
+	if visibility != "public" && visibility != "private" && visibility != "hidden" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "scoreboard_visibility must be 'public', 'private', or 'hidden'"})
+		return
+	}
+
+	config, err := h.contestService.UpdateContestConfig(req.Title, startTime, endTime, freezeTime, req.IsActive, req.IsPaused, visibility)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return

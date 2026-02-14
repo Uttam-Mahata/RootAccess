@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/go-ctf-platform/backend/internal/database"
+	"github.com/go-ctf-platform/backend/internal/models"
 	"github.com/go-ctf-platform/backend/internal/repositories"
 )
 
@@ -15,6 +16,7 @@ type ScoreboardService struct {
 	submissionRepo *repositories.SubmissionRepository
 	challengeRepo  *repositories.ChallengeRepository
 	teamRepo       *repositories.TeamRepository
+	contestRepo    *repositories.ContestRepository
 }
 
 type UserScore struct {
@@ -39,18 +41,30 @@ func NewScoreboardService(
 	submissionRepo *repositories.SubmissionRepository,
 	challengeRepo *repositories.ChallengeRepository,
 	teamRepo *repositories.TeamRepository,
+	contestRepo *repositories.ContestRepository,
 ) *ScoreboardService {
 	return &ScoreboardService{
 		userRepo:       userRepo,
 		submissionRepo: submissionRepo,
 		challengeRepo:  challengeRepo,
 		teamRepo:       teamRepo,
+		contestRepo:    contestRepo,
 	}
 }
 
 func (s *ScoreboardService) GetScoreboard() ([]UserScore, error) {
 	ctx := context.Background()
 	cacheKey := "scoreboard"
+
+	// Check if scoreboard is frozen
+	var freezeTime *time.Time
+	if s.contestRepo != nil {
+		contest, err := s.contestRepo.GetActiveContest()
+		if err == nil && contest != nil && contest.IsScoreboardFrozen() {
+			freezeTime = contest.FreezeTime
+			cacheKey = "scoreboard_frozen"
+		}
+	}
 
 	// Try to get from Redis
 	if database.RDB != nil {
@@ -63,8 +77,14 @@ func (s *ScoreboardService) GetScoreboard() ([]UserScore, error) {
 		}
 	}
 
-	// Calculate scores if not in cache
-	submissions, err := s.submissionRepo.GetAllCorrectSubmissions()
+	// Get submissions - use freeze time if scoreboard is frozen
+	var submissions []models.Submission
+	var err error
+	if freezeTime != nil {
+		submissions, err = s.submissionRepo.GetCorrectSubmissionsBefore(*freezeTime)
+	} else {
+		submissions, err = s.submissionRepo.GetAllCorrectSubmissions()
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -146,6 +166,16 @@ func (s *ScoreboardService) GetTeamScoreboard() ([]TeamScore, error) {
 	ctx := context.Background()
 	cacheKey := "team_scoreboard"
 
+	// Check if scoreboard is frozen
+	var freezeTime *time.Time
+	if s.contestRepo != nil {
+		contest, err := s.contestRepo.GetActiveContest()
+		if err == nil && contest != nil && contest.IsScoreboardFrozen() {
+			freezeTime = contest.FreezeTime
+			cacheKey = "team_scoreboard_frozen"
+		}
+	}
+
 	// Try to get from Redis
 	if database.RDB != nil {
 		val, err := database.RDB.Get(ctx, cacheKey).Result()
@@ -173,7 +203,13 @@ func (s *ScoreboardService) GetTeamScoreboard() ([]TeamScore, error) {
 		challengePoints[c.ID.Hex()] = c.CurrentPoints()
 	}
 
-	submissions, err := s.submissionRepo.GetAllCorrectSubmissions()
+	// Get submissions - use freeze time if scoreboard is frozen
+	var submissions []models.Submission
+	if freezeTime != nil {
+		submissions, err = s.submissionRepo.GetCorrectSubmissionsBefore(*freezeTime)
+	} else {
+		submissions, err = s.submissionRepo.GetAllCorrectSubmissions()
+	}
 	if err != nil {
 		return nil, err
 	}

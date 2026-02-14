@@ -49,6 +49,55 @@ func TestContestGetStatus_Ended(t *testing.T) {
 	}
 }
 
+func TestContestGetStatus_Paused(t *testing.T) {
+	c := &ContestConfig{
+		StartTime: time.Now().Add(-1 * time.Hour),
+		EndTime:   time.Now().Add(1 * time.Hour),
+		IsActive:  true,
+		IsPaused:  true,
+	}
+	if got := c.GetStatus(); got != ContestStatusPaused {
+		t.Errorf("GetStatus() = %s, want %s", got, ContestStatusPaused)
+	}
+}
+
+func TestContestIsScoreboardFrozen_NoFreezeTime(t *testing.T) {
+	c := &ContestConfig{
+		StartTime: time.Now().Add(-1 * time.Hour),
+		EndTime:   time.Now().Add(1 * time.Hour),
+		IsActive:  true,
+	}
+	if c.IsScoreboardFrozen() {
+		t.Errorf("IsScoreboardFrozen() = true, want false (no freeze time set)")
+	}
+}
+
+func TestContestIsScoreboardFrozen_BeforeFreezeTime(t *testing.T) {
+	ft := time.Now().Add(30 * time.Minute)
+	c := &ContestConfig{
+		StartTime:  time.Now().Add(-1 * time.Hour),
+		EndTime:    time.Now().Add(1 * time.Hour),
+		FreezeTime: &ft,
+		IsActive:   true,
+	}
+	if c.IsScoreboardFrozen() {
+		t.Errorf("IsScoreboardFrozen() = true, want false (before freeze time)")
+	}
+}
+
+func TestContestIsScoreboardFrozen_AfterFreezeTime(t *testing.T) {
+	ft := time.Now().Add(-30 * time.Minute)
+	c := &ContestConfig{
+		StartTime:  time.Now().Add(-1 * time.Hour),
+		EndTime:    time.Now().Add(1 * time.Hour),
+		FreezeTime: &ft,
+		IsActive:   true,
+	}
+	if !c.IsScoreboardFrozen() {
+		t.Errorf("IsScoreboardFrozen() = false, want true (after freeze time)")
+	}
+}
+
 func TestIsValidNotificationType(t *testing.T) {
 	tests := []struct {
 		ntype string

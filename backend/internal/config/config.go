@@ -9,19 +9,20 @@ import (
 )
 
 type Config struct {
-	Port         string
-	MongoURI     string
-	DBName       string
-	JWTSecret    string
-	FrontendURL  string
-	SMTPHost     string
-	SMTPPort     int
-	SMTPUser     string
-	SMTPPass     string
-	SMTPFrom     string
-	RedisAddr    string
-	RedisPassword string
-	RedisDB      int
+	Port           string
+	MongoURI       string
+	DBName         string
+	JWTSecret      string
+	FrontendURL    string
+	TrustedProxies string
+	SMTPHost       string
+	SMTPPort       int
+	SMTPUser       string
+	SMTPPass       string
+	SMTPFrom       string
+	RedisAddr      string
+	RedisPassword  string
+	RedisDB        int
 	GoogleClientID     string
 	GoogleClientSecret string
 	GoogleRedirectURL  string
@@ -43,12 +44,13 @@ func LoadConfig() *Config {
 	redisDB, _ := strconv.Atoi(getEnv("REDIS_DB", "0"))
 
 	return &Config{
-		Port:         getEnv("PORT", "8080"),
-		MongoURI:     getEnv("MONGO_URI", "mongodb://localhost:27017"),
-		DBName:       getEnv("DB_NAME", "go_ctf"),
-		JWTSecret:    getEnv("JWT_SECRET", "default_secret"),
-		FrontendURL:  getEnv("FRONTEND_URL", "http://localhost:4200"),
-		SMTPHost:     getEnv("SMTP_HOST", "smtp.gmail.com"),
+		Port:           getEnv("PORT", "8080"),
+		MongoURI:       getEnv("MONGO_URI", "mongodb://localhost:27017"),
+		DBName:         getEnv("DB_NAME", "go_ctf"),
+		JWTSecret:      getEnv("JWT_SECRET", "default_secret"),
+		FrontendURL:    getEnv("FRONTEND_URL", "http://localhost:4200"),
+		TrustedProxies: getEnv("TRUSTED_PROXIES", ""),
+		SMTPHost:       getEnv("SMTP_HOST", "smtp.gmail.com"),
 		SMTPPort:     smtpPort,
 		SMTPUser:     getEnv("SMTP_USER", ""),
 		SMTPPass:     getEnv("SMTP_PASS", ""),
