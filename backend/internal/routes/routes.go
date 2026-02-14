@@ -29,8 +29,8 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 		}
 		r.SetTrustedProxies(proxies)
 	} else {
-		// Trust all proxies when not explicitly configured (development mode)
-		r.SetTrustedProxies(nil)
+		// Default: only trust loopback addresses in development
+		r.SetTrustedProxies([]string{"127.0.0.1", "::1"})
 	}
 	r.ForwardedByClientIP = true
 	r.RemoteIPHeaders = []string{"X-Forwarded-For", "X-Real-IP"}

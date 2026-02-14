@@ -87,12 +87,9 @@ func (h *ContestHandler) UpdateContestConfig(c *gin.Context) {
 		freezeTime = &ft
 	}
 
-	// Default scoreboard visibility to "public"
+	// Validate scoreboard visibility
 	visibility := req.ScoreboardVisibility
-	if visibility == "" {
-		visibility = "public"
-	}
-	if visibility != "public" && visibility != "private" && visibility != "hidden" {
+	if visibility != "" && visibility != "public" && visibility != "private" && visibility != "hidden" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "scoreboard_visibility must be 'public', 'private', or 'hidden'"})
 		return
 	}

@@ -52,18 +52,33 @@ func NewScoreboardService(
 	}
 }
 
+// getFreezeInfo checks contest config and returns freeze time and appropriate cache key suffix
+func (s *ScoreboardService) getFreezeInfo() *time.Time {
+	if s.contestRepo != nil {
+		contest, err := s.contestRepo.GetActiveContest()
+		if err == nil && contest != nil && contest.IsScoreboardFrozen() {
+			return contest.FreezeTime
+		}
+	}
+	return nil
+}
+
+// getCorrectSubmissions returns correct submissions, respecting freeze time if set
+func (s *ScoreboardService) getCorrectSubmissions(freezeTime *time.Time) ([]models.Submission, error) {
+	if freezeTime != nil {
+		return s.submissionRepo.GetCorrectSubmissionsBefore(*freezeTime)
+	}
+	return s.submissionRepo.GetAllCorrectSubmissions()
+}
+
 func (s *ScoreboardService) GetScoreboard() ([]UserScore, error) {
 	ctx := context.Background()
 	cacheKey := "scoreboard"
 
 	// Check if scoreboard is frozen
-	var freezeTime *time.Time
-	if s.contestRepo != nil {
-		contest, err := s.contestRepo.GetActiveContest()
-		if err == nil && contest != nil && contest.IsScoreboardFrozen() {
-			freezeTime = contest.FreezeTime
-			cacheKey = "scoreboard_frozen"
-		}
+	freezeTime := s.getFreezeInfo()
+	if freezeTime != nil {
+		cacheKey = "scoreboard_frozen"
 	}
 
 	// Try to get from Redis
@@ -78,13 +93,7 @@ func (s *ScoreboardService) GetScoreboard() ([]UserScore, error) {
 	}
 
 	// Get submissions - use freeze time if scoreboard is frozen
-	var submissions []models.Submission
-	var err error
-	if freezeTime != nil {
-		submissions, err = s.submissionRepo.GetCorrectSubmissionsBefore(*freezeTime)
-	} else {
-		submissions, err = s.submissionRepo.GetAllCorrectSubmissions()
-	}
+	submissions, err := s.getCorrectSubmissions(freezeTime)
 	if err != nil {
 		return nil, err
 	}
@@ -167,13 +176,9 @@ func (s *ScoreboardService) GetTeamScoreboard() ([]TeamScore, error) {
 	cacheKey := "team_scoreboard"
 
 	// Check if scoreboard is frozen
-	var freezeTime *time.Time
-	if s.contestRepo != nil {
-		contest, err := s.contestRepo.GetActiveContest()
-		if err == nil && contest != nil && contest.IsScoreboardFrozen() {
-			freezeTime = contest.FreezeTime
-			cacheKey = "team_scoreboard_frozen"
-		}
+	freezeTime := s.getFreezeInfo()
+	if freezeTime != nil {
+		cacheKey = "team_scoreboard_frozen"
 	}
 
 	// Try to get from Redis
@@ -204,12 +209,7 @@ func (s *ScoreboardService) GetTeamScoreboard() ([]TeamScore, error) {
 	}
 
 	// Get submissions - use freeze time if scoreboard is frozen
-	var submissions []models.Submission
-	if freezeTime != nil {
-		submissions, err = s.submissionRepo.GetCorrectSubmissionsBefore(*freezeTime)
-	} else {
-		submissions, err = s.submissionRepo.GetAllCorrectSubmissions()
-	}
+	submissions, err := s.getCorrectSubmissions(freezeTime)
 	if err != nil {
 		return nil, err
 	}
