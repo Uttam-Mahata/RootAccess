@@ -237,3 +237,26 @@ func (r *SubmissionRepository) GetSubmissionsSince(since time.Time) ([]models.Su
 	}
 	return submissions, nil
 }
+
+// GetCorrectSubmissionsBefore returns correct submissions before a given time (for scoreboard freeze)
+func (r *SubmissionRepository) GetCorrectSubmissionsBefore(before time.Time) ([]models.Submission, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	filter := bson.M{
+		"is_correct": true,
+		"timestamp":  bson.M{"$lte": before},
+	}
+
+	cursor, err := r.collection.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var submissions []models.Submission
+	if err = cursor.All(ctx, &submissions); err != nil {
+		return nil, err
+	}
+	return submissions, nil
+}

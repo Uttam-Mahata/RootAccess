@@ -50,11 +50,14 @@ func (r *ContestRepository) UpsertContest(config *models.ContestConfig) error {
 
 	update := bson.M{
 		"$set": bson.M{
-			"start_time": config.StartTime,
-			"end_time":   config.EndTime,
-			"title":      config.Title,
-			"is_active":  config.IsActive,
-			"updated_at": config.UpdatedAt,
+			"start_time":             config.StartTime,
+			"end_time":               config.EndTime,
+			"freeze_time":            config.FreezeTime,
+			"title":                  config.Title,
+			"is_active":              config.IsActive,
+			"is_paused":              config.IsPaused,
+			"scoreboard_visibility":  config.ScoreboardVisibility,
+			"updated_at":             config.UpdatedAt,
 		},
 	}
 
