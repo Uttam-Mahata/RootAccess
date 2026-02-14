@@ -86,7 +86,8 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	wsHandler := handlers.NewWebSocketHandler(wsHub, cfg)
 	bulkChallengeHandler := handlers.NewBulkChallengeHandler(challengeService)
 	leaderboardHandler := handlers.NewLeaderboardHandler(scoreboardService)
-	adminUserHandler := handlers.NewAdminUserHandler(userRepo)
+	adminUserHandler := handlers.NewAdminUserHandlerWithRepos(userRepo, teamRepo, submissionRepo)
+	adminTeamHandler := handlers.NewAdminTeamHandler(teamRepo, userRepo, submissionRepo, teamInvitationRepo)
 
 	// Public Routes - Authentication (with IP rate limiting)
 	r.POST("/auth/register", middleware.IPRateLimitMiddleware(10, time.Minute), authHandler.Register)
@@ -260,8 +261,18 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 
 			// User management
 			admin.GET("/users", adminUserHandler.ListUsers)
+			admin.GET("/users/:id", adminUserHandler.GetUser)
 			admin.PUT("/users/:id/status", adminUserHandler.UpdateUserStatus)
 			admin.PUT("/users/:id/role", adminUserHandler.UpdateUserRole)
+			admin.DELETE("/users/:id", adminUserHandler.DeleteUser)
+
+			// Team management (admin)
+			admin.GET("/teams", adminTeamHandler.ListTeams)
+			admin.GET("/teams/:id", adminTeamHandler.GetTeam)
+			admin.PUT("/teams/:id", adminTeamHandler.UpdateTeam)
+			admin.PUT("/teams/:id/leader", adminTeamHandler.UpdateTeamLeader)
+			admin.DELETE("/teams/:id/members/:memberId", adminTeamHandler.RemoveMember)
+			admin.DELETE("/teams/:id", adminTeamHandler.DeleteTeam)
 		}
 	}
 

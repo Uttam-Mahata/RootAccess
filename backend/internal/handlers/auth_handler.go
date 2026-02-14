@@ -122,6 +122,10 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
+	// Record user IP address after successful login
+	clientIP := c.ClientIP()
+	go h.authService.RecordUserLoginIP(userInfo.ID, clientIP)
+
 	// Set HTTP-only cookie with JWT token
 	c.SetCookie(
 		"auth_token", // name

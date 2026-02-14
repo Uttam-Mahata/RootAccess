@@ -10,6 +10,7 @@ import { NotificationService, Notification } from '../../services/notification';
 import { ContestService } from '../../services/contest';
 import { AnalyticsService, AdminAnalytics } from '../../services/analytics';
 import { AdminUserService, AdminUser } from '../../services/admin-user';
+import { AdminTeamService, AdminTeam } from '../../services/admin-team';
 import { BulkChallengeService } from '../../services/bulk-challenge';
 import { ThemeService } from '../../services/theme';
 import { environment } from '../../../environments/environment';
@@ -36,7 +37,7 @@ export class AdminDashboardComponent implements OnInit {
   messageType: 'success' | 'error' = 'success';
   
   // Tab state
-  activeTab: 'create' | 'manage' | 'notifications' | 'contest' | 'writeups' | 'audit' | 'analytics' | 'users' = 'create';
+  activeTab: 'create' | 'manage' | 'notifications' | 'contest' | 'writeups' | 'audit' | 'analytics' | 'users' | 'teams' = 'create';
   
   // Sidebar state
   sidebarOpen = true;
@@ -82,6 +83,12 @@ export class AdminDashboardComponent implements OnInit {
   // User Management
   users: AdminUser[] = [];
   usersLoading = false;
+  selectedUser: AdminUser | null = null;
+
+  // Team Management
+  teams: AdminTeam[] = [];
+  teamsLoading = false;
+  selectedTeam: AdminTeam | null = null;
 
   // Scoring types
   scoringTypes = [
@@ -150,6 +157,7 @@ export class AdminDashboardComponent implements OnInit {
     private contestService: ContestService,
     private analyticsService: AnalyticsService,
     private adminUserService: AdminUserService,
+    private adminTeamService: AdminTeamService,
     private bulkChallengeService: BulkChallengeService,
     private http: HttpClient,
     private themeService: ThemeService
@@ -325,7 +333,7 @@ export class AdminDashboardComponent implements OnInit {
     });
   }
 
-  switchTab(tab: 'create' | 'manage' | 'notifications' | 'contest' | 'writeups' | 'audit' | 'analytics' | 'users'): void {
+  switchTab(tab: 'create' | 'manage' | 'notifications' | 'contest' | 'writeups' | 'audit' | 'analytics' | 'users' | 'teams'): void {
     this.activeTab = tab;
     this.mobileMenuOpen = false; // Close mobile menu on tab switch
     if (tab === 'manage') {
@@ -348,6 +356,9 @@ export class AdminDashboardComponent implements OnInit {
     }
     if (tab === 'users') {
       this.loadUsers();
+    }
+    if (tab === 'teams') {
+      this.loadTeams();
     }
     if (tab === 'create' && !this.isEditMode) {
       this.resetForm();
@@ -913,6 +924,90 @@ export class AdminDashboardComponent implements OnInit {
       return challenge.description || '';
     } else {
       return this.showdownConverter.makeHtml(challenge.description || '');
+    }
+  }
+
+  // Team Management
+  loadTeams(): void {
+    this.teamsLoading = true;
+    this.adminTeamService.listTeams().subscribe({
+      next: (data) => {
+        this.teams = data || [];
+        this.teamsLoading = false;
+      },
+      error: () => {
+        this.teamsLoading = false;
+        this.showMessage('Failed to load teams', 'error');
+      }
+    });
+  }
+
+  viewTeamDetails(team: AdminTeam): void {
+    this.selectedTeam = this.selectedTeam?.id === team.id ? null : team;
+  }
+
+  updateTeam(teamId: string, name: string, description: string): void {
+    this.adminTeamService.updateTeam(teamId, name, description).subscribe({
+      next: () => {
+        this.showMessage('Team updated successfully', 'success');
+        this.loadTeams();
+      },
+      error: () => this.showMessage('Failed to update team', 'error')
+    });
+  }
+
+  changeTeamLeader(teamId: string, newLeaderId: string): void {
+    this.adminTeamService.updateTeamLeader(teamId, newLeaderId).subscribe({
+      next: () => {
+        this.showMessage('Team leader updated successfully', 'success');
+        this.loadTeams();
+        this.selectedTeam = null;
+      },
+      error: () => this.showMessage('Failed to update team leader', 'error')
+    });
+  }
+
+  removeTeamMember(teamId: string, memberId: string): void {
+    if (confirm('Are you sure you want to remove this member from the team?')) {
+      this.adminTeamService.removeMember(teamId, memberId).subscribe({
+        next: () => {
+          this.showMessage('Member removed from team', 'success');
+          this.loadTeams();
+          this.selectedTeam = null;
+        },
+        error: () => this.showMessage('Failed to remove member', 'error')
+      });
+    }
+  }
+
+  deleteTeam(teamId: string, teamName: string): void {
+    if (confirm(`Are you sure you want to delete the team "${teamName}"? This action cannot be undone.`)) {
+      this.adminTeamService.deleteTeam(teamId).subscribe({
+        next: () => {
+          this.showMessage('Team deleted successfully', 'success');
+          this.loadTeams();
+          this.selectedTeam = null;
+        },
+        error: () => this.showMessage('Failed to delete team', 'error')
+      });
+    }
+  }
+
+  // Enhanced User Management
+  viewUserDetails(user: AdminUser): void {
+    this.selectedUser = this.selectedUser?.id === user.id ? null : user;
+  }
+
+  deleteUser(userId: string, username: string): void {
+    if (confirm(`Are you sure you want to delete the user "${username}"? This action cannot be undone.`)) {
+      this.adminUserService.deleteUser(userId).subscribe({
+        next: () => {
+          this.showMessage('User deleted successfully', 'success');
+          this.loadUsers();
+          this.selectedUser = null;
+        },
+        error: () => this.showMessage('Failed to delete user', 'error')
+      });
     }
   }
 

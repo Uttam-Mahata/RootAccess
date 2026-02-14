@@ -8,6 +8,7 @@ import (
 	"github.com/go-ctf-platform/backend/internal/models"
 	"github.com/go-ctf-platform/backend/internal/repositories"
 	"github.com/golang-jwt/jwt/v5"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -159,6 +160,11 @@ func (s *AuthService) Login(usernameOrEmail, password string) (string, *UserInfo
 		return "", nil, errors.New("please verify your email before logging in")
 	}
 
+	// Check if user is banned
+	if user.Status == "banned" {
+		return "", nil, errors.New("your account has been banned")
+	}
+
 	// Verify password
 	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
 	if err != nil {
@@ -188,6 +194,15 @@ func (s *AuthService) Login(usernameOrEmail, password string) (string, *UserInfo
 	}
 
 	return tokenString, userInfo, nil
+}
+
+// RecordUserLoginIP records the user's IP address after a successful login
+func (s *AuthService) RecordUserLoginIP(userID string, ip string) error {
+	objID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return err
+	}
+	return s.userRepo.RecordUserIP(objID, ip, "login")
 }
 
 // RequestPasswordReset sends a password reset email
