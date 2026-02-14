@@ -147,6 +147,9 @@ func (r *UserRepository) UpdateFields(userID primitive.ObjectID, fields bson.M) 
 	return err
 }
 
+// MaxIPHistoryRecords defines the maximum number of IP records to keep per user
+const MaxIPHistoryRecords = 50
+
 // CountUsers returns the total number of users
 func (r *UserRepository) CountUsers() (int64, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -175,7 +178,7 @@ func (r *UserRepository) RecordUserIP(userID primitive.ObjectID, ip string, acti
 		"$push": bson.M{
 			"ip_history": bson.M{
 				"$each":  []models.IPRecord{ipRecord},
-				"$slice": -50, // Keep only the last 50 IP records
+				"$slice": -MaxIPHistoryRecords,
 			},
 		},
 	}

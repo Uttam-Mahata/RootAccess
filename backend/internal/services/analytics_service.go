@@ -271,8 +271,10 @@ func (s *AnalyticsService) GetPlatformAnalytics() (*models.AdminAnalytics, error
 	}
 
 	// Top users - calculate scores from correct submissions
+	// Deduplicate submissions per user-challenge to avoid counting the same solve multiple times
 	userScores := make(map[string]int)
 	userSolveCounts := make(map[string]int)
+	userChallengeSolved := make(map[string]map[string]bool) // userID -> challengeID -> solved
 	challengeScores := make(map[string]int)
 	for _, c := range challenges {
 		challengeScores[c.ID.Hex()] = c.CurrentPoints()
@@ -280,8 +282,20 @@ func (s *AnalyticsService) GetPlatformAnalytics() (*models.AdminAnalytics, error
 
 	for _, sub := range allSubmissions {
 		if sub.IsCorrect {
-			userScores[sub.UserID.Hex()] += challengeScores[sub.ChallengeID.Hex()]
-			userSolveCounts[sub.UserID.Hex()]++
+			userID := sub.UserID.Hex()
+			challengeID := sub.ChallengeID.Hex()
+			
+			// Initialize the inner map if needed
+			if userChallengeSolved[userID] == nil {
+				userChallengeSolved[userID] = make(map[string]bool)
+			}
+			
+			// Only count each user-challenge pair once
+			if !userChallengeSolved[userID][challengeID] {
+				userChallengeSolved[userID][challengeID] = true
+				userScores[userID] += challengeScores[challengeID]
+				userSolveCounts[userID]++
+			}
 		}
 	}
 

@@ -231,8 +231,10 @@ func (h *AdminUserHandler) DeleteUser(c *gin.Context) {
 	}
 
 	// Delete user from database
-	// Note: This is a soft implementation - in production, you might want to
-	// also clean up related data (submissions, team memberships, etc.)
+	// Note: This is a soft delete - the user's status is set to "deleted" rather than
+	// physically removing the record. This preserves data integrity for historical records
+	// like submissions and team memberships. The user will still appear in total counts.
+	// For a full purge, implement data cleanup in related tables (submissions, teams, etc.)
 	err = h.userRepo.UpdateFields(objID, bson.M{"status": "deleted"})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

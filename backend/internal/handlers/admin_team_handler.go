@@ -55,6 +55,9 @@ type TeamMemberInfo struct {
 }
 
 // ListTeams returns all teams with detailed information for admin
+// Note: This uses individual queries per team member for simplicity. For very large
+// datasets with many teams, consider using MongoDB aggregation pipelines for better
+// performance. For typical admin usage with tens of teams, this approach is acceptable.
 func (h *AdminTeamHandler) ListTeams(c *gin.Context) {
 	teams, err := h.teamRepo.GetAllTeams()
 	if err != nil {
