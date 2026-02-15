@@ -41,8 +41,8 @@ export interface UserProfile {
 }
 
 export interface UpdateProfileRequest {
-  bio: string;
-  website: string;
+  bio?: string;
+  website?: string;
   social_links?: SocialLinks;
 }
 

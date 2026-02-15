@@ -64,7 +64,9 @@ export class AccountSettingsComponent implements OnInit {
           linkedin: profile.social_links?.linkedin || ''
         });
       },
-      error: () => {} // Ignore errors for initial load
+      error: (err) => {
+        console.error('Error loading profile:', err);
+      }
     });
   }
 
