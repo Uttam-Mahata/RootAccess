@@ -81,6 +81,19 @@ export interface SubmitFlagResponse {
   team_name?: string;
 }
 
+export interface ChallengeFilter {
+  category?: string;
+  difficulty?: string;
+  search?: string;
+  tags?: string;
+}
+
+export interface ChallengeStats {
+  total: number;
+  categories: { _id: string; count: number; total_solves: number }[];
+  difficulties: { _id: string; count: number }[];
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -90,8 +103,20 @@ export class ChallengeService {
   constructor(private http: HttpClient) { }
 
   // Public methods
-  getChallenges(): Observable<Challenge[]> {
-    return this.http.get<Challenge[]>(`${this.apiUrl}/challenges`);
+  getChallenges(filter?: ChallengeFilter): Observable<Challenge[]> {
+    let params: string[] = [];
+    if (filter) {
+      if (filter.category) params.push(`category=${encodeURIComponent(filter.category)}`);
+      if (filter.difficulty) params.push(`difficulty=${encodeURIComponent(filter.difficulty)}`);
+      if (filter.search) params.push(`search=${encodeURIComponent(filter.search)}`);
+      if (filter.tags) params.push(`tags=${encodeURIComponent(filter.tags)}`);
+    }
+    const queryString = params.length > 0 ? `?${params.join('&')}` : '';
+    return this.http.get<Challenge[]>(`${this.apiUrl}/challenges${queryString}`);
+  }
+
+  getChallengeStats(): Observable<ChallengeStats> {
+    return this.http.get<ChallengeStats>(`${this.apiUrl}/challenges/stats`);
   }
 
   getChallenge(id: string): Observable<Challenge> {

@@ -142,6 +142,9 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	// Public Routes - User Profiles
 	r.GET("/users/:username/profile", profileHandler.GetUserProfile)
 
+	// Public Routes - Challenge Statistics
+	r.GET("/challenges/stats", challengeHandler.GetChallengeStats)
+
 	// Get current user info (checks cookie)
 	r.GET("/auth/me", func(c *gin.Context) {
 		tokenString, err := c.Cookie("auth_token")
@@ -185,6 +188,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	{
 		// User Routes
 		protected.POST("/auth/change-password", authHandler.ChangePassword)
+		protected.PUT("/users/profile", profileHandler.UpdateMyProfile)
 		protected.GET("/challenges", challengeHandler.GetAllChallenges)
 		protected.GET("/challenges/:id", challengeHandler.GetChallengeByID)
 		// Flag submission with rate limiting (5 attempts per minute per challenge)

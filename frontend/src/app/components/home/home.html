@@ -11,6 +11,37 @@
       <p class="text-xl text-slate-600 dark:text-slate-400">Ready to hack some challenges?</p>
     </div>
 
+    <!-- Platform Stats -->
+    <div *ngIf="stats && !statsLoading" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+      <div class="bg-white dark:bg-slate-800/50 backdrop-blur-xl rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 p-4">
+        <p class="text-3xl font-bold text-red-600 dark:text-red-400">{{ stats.total }}</p>
+        <p class="text-sm text-slate-600 dark:text-slate-400">Total Challenges</p>
+      </div>
+      <div class="bg-white dark:bg-slate-800/50 backdrop-blur-xl rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 p-4">
+        <p class="text-3xl font-bold text-blue-600 dark:text-blue-400">{{ stats.categories.length }}</p>
+        <p class="text-sm text-slate-600 dark:text-slate-400">Categories</p>
+      </div>
+      <div class="bg-white dark:bg-slate-800/50 backdrop-blur-xl rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 p-4">
+        <p class="text-3xl font-bold text-green-600 dark:text-green-400">{{ stats.difficulties.length }}</p>
+        <p class="text-sm text-slate-600 dark:text-slate-400">Difficulty Levels</p>
+      </div>
+      <div class="bg-white dark:bg-slate-800/50 backdrop-blur-xl rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 p-4">
+        <p class="text-3xl font-bold text-yellow-600 dark:text-yellow-400">{{ getTotalSolves() }}</p>
+        <p class="text-sm text-slate-600 dark:text-slate-400">Total Solves</p>
+      </div>
+    </div>
+
+    <!-- Category Breakdown -->
+    <div *ngIf="stats?.categories?.length" class="bg-white dark:bg-slate-800/50 backdrop-blur-xl rounded-xl shadow-xl dark:shadow-2xl border border-slate-200 dark:border-slate-700 p-6 mb-12">
+      <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-4">Challenge Categories</h2>
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+        <div *ngFor="let cat of stats!.categories" class="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3 text-left">
+          <p class="font-semibold text-slate-900 dark:text-white capitalize">{{ cat._id }}</p>
+          <p class="text-sm text-slate-600 dark:text-slate-400">{{ cat.count }} challenges · {{ cat.total_solves }} solves</p>
+        </div>
+      </div>
+    </div>
+
     <!-- Quick Actions Grid -->
     <div class="grid md:grid-cols-3 gap-6 mb-12">
       <!-- Challenges Card -->

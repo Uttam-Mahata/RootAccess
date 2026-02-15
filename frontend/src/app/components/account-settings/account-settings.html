@@ -47,8 +47,116 @@
         </div>
       </div>
 
-      <!-- Change Password Card -->
-      <div class="lg:col-span-2">
+      <!-- Settings Cards -->
+      <div class="lg:col-span-2 space-y-6">
+        <!-- Profile Edit Card -->
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6 border border-slate-200 dark:border-slate-700">
+          <div class="flex items-center gap-3 mb-6">
+            <svg class="w-6 h-6 text-blue-600 dark:text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+            </svg>
+            <h2 class="text-xl font-semibold text-slate-900 dark:text-white">Edit Profile</h2>
+          </div>
+
+          <!-- Profile Success Message -->
+          <div *ngIf="profileSuccess" class="mb-4 p-4 rounded-lg bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700">
+            <div class="flex items-center gap-2 text-green-800 dark:text-green-400">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+              </svg>
+              <span>{{ profileSuccess }}</span>
+            </div>
+          </div>
+
+          <!-- Profile Error Message -->
+          <div *ngIf="profileError" class="mb-4 p-4 rounded-lg bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700">
+            <div class="flex items-center gap-2 text-red-800 dark:text-red-400">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+              <span>{{ profileError }}</span>
+            </div>
+          </div>
+
+          <form [formGroup]="profileForm" (ngSubmit)="onProfileSubmit()" class="space-y-4">
+            <!-- Bio -->
+            <div>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Bio</label>
+              <textarea
+                formControlName="bio"
+                rows="3"
+                class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                placeholder="Tell us about yourself (max 500 characters)"
+              ></textarea>
+            </div>
+
+            <!-- Website -->
+            <div>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Website</label>
+              <input
+                type="text"
+                formControlName="website"
+                class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                placeholder="https://yourwebsite.com"
+              />
+            </div>
+
+            <!-- Social Links -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">GitHub</label>
+                <input
+                  type="text"
+                  formControlName="github"
+                  class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  placeholder="GitHub username"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Twitter</label>
+                <input
+                  type="text"
+                  formControlName="twitter"
+                  class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  placeholder="Twitter handle"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Discord</label>
+                <input
+                  type="text"
+                  formControlName="discord"
+                  class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  placeholder="Discord username"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">LinkedIn</label>
+                <input
+                  type="text"
+                  formControlName="linkedin"
+                  class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  placeholder="LinkedIn username"
+                />
+              </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button
+              type="submit"
+              [disabled]="!profileForm.valid || isProfileLoading"
+              class="w-full py-3 px-4 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 rounded-lg transition-all duration-200 shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
+            >
+              <svg *ngIf="isProfileLoading" class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span>{{ isProfileLoading ? 'Saving Profile...' : 'Save Profile' }}</span>
+            </button>
+          </form>
+        </div>
+
+        <!-- Change Password Card -->
         <div class="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6 border border-slate-200 dark:border-slate-700">
           <div class="flex items-center gap-3 mb-6">
             <svg class="w-6 h-6 text-red-600 dark:text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">

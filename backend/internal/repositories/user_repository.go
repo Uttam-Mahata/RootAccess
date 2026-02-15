@@ -262,3 +262,22 @@ func (r *UserRepository) GetRecentUsers(since time.Time) ([]models.User, error) 
 	}
 	return users, nil
 }
+
+// UpdateProfile updates a user's profile fields (bio, website, social links)
+func (r *UserRepository) UpdateProfile(userID primitive.ObjectID, bio string, website string, socialLinks *models.SocialLinks) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	fields := bson.M{
+		"bio":        bio,
+		"website":    website,
+		"updated_at": time.Now(),
+	}
+
+	if socialLinks != nil {
+		fields["social_links"] = socialLinks
+	}
+
+	_, err := r.collection.UpdateByID(ctx, userID, bson.M{"$set": fields})
+	return err
+}

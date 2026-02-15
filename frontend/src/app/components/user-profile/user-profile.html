@@ -40,6 +40,38 @@
           <div class="flex-1 text-center md:text-left">
             <h1 class="text-3xl font-bold text-slate-900 dark:text-white mb-2">{{ profile.username }}</h1>
             
+            <!-- Bio -->
+            <p *ngIf="profile.bio" class="text-slate-600 dark:text-slate-400 mb-3">{{ profile.bio }}</p>
+
+            <!-- Website -->
+            <a *ngIf="profile.website" [href]="profile.website" target="_blank" rel="noopener noreferrer"
+               class="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline mb-3">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+              </svg>
+              {{ profile.website }}
+            </a>
+
+            <!-- Social Links -->
+            <div *ngIf="profile.social_links" class="flex flex-wrap gap-3 mb-3">
+              <a *ngIf="profile.social_links.github" [href]="'https://github.com/' + profile.social_links.github" target="_blank" rel="noopener noreferrer"
+                 class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                GitHub
+              </a>
+              <a *ngIf="profile.social_links.twitter" [href]="'https://twitter.com/' + profile.social_links.twitter" target="_blank" rel="noopener noreferrer"
+                 class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300 hover:bg-sky-200 dark:hover:bg-sky-900/50 transition-colors">
+                Twitter
+              </a>
+              <a *ngIf="profile.social_links.linkedin" [href]="'https://linkedin.com/in/' + profile.social_links.linkedin" target="_blank" rel="noopener noreferrer"
+                 class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
+                LinkedIn
+              </a>
+              <span *ngIf="profile.social_links.discord"
+                 class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300">
+                Discord: {{ profile.social_links.discord }}
+              </span>
+            </div>
+
             <!-- Team Badge -->
             <div *ngIf="profile.team_name" class="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-100 dark:bg-blue-500/20 rounded-full text-blue-700 dark:text-blue-400 text-sm font-medium mb-3">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

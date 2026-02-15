@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-ctf-platform/backend/internal/models"
 	"github.com/go-ctf-platform/backend/internal/repositories"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type ProfileHandler struct {
@@ -49,6 +50,9 @@ type CategoryStats struct {
 // UserProfileResponse represents the user profile data
 type UserProfileResponse struct {
 	Username          string            `json:"username"`
+	Bio               string            `json:"bio,omitempty"`
+	Website           string            `json:"website,omitempty"`
+	SocialLinks       *models.SocialLinks `json:"social_links,omitempty"`
 	JoinedAt          string            `json:"joined_at"`
 	TeamID            string            `json:"team_id,omitempty"`
 	TeamName          string            `json:"team_name,omitempty"`
@@ -149,6 +153,9 @@ func (h *ProfileHandler) GetUserProfile(c *gin.Context) {
 
 	profile := UserProfileResponse{
 		Username:         user.Username,
+		Bio:              user.Bio,
+		Website:          user.Website,
+		SocialLinks:      user.SocialLinks,
 		JoinedAt:         user.CreatedAt.Format("2006-01-02T15:04:05Z"),
 		TeamID:           teamID,
 		TeamName:         teamName,
@@ -160,4 +167,52 @@ func (h *ProfileHandler) GetUserProfile(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, profile)
+}
+
+// UpdateProfileRequest represents the request body for profile update
+type UpdateProfileRequest struct {
+	Bio         string             `json:"bio"`
+	Website     string             `json:"website"`
+	SocialLinks *models.SocialLinks `json:"social_links"`
+}
+
+// UpdateMyProfile updates the authenticated user's profile
+func (h *ProfileHandler) UpdateMyProfile(c *gin.Context) {
+	userIDStr, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	userID, err := primitive.ObjectIDFromHex(userIDStr.(string))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	var req UpdateProfileRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Validate bio length
+	if len(req.Bio) > 500 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Bio must be 500 characters or less"})
+		return
+	}
+
+	// Validate website length
+	if len(req.Website) > 200 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Website must be 200 characters or less"})
+		return
+	}
+
+	err = h.userRepo.UpdateProfile(userID, req.Bio, req.Website, req.SocialLinks)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update profile"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Profile updated successfully"})
 }

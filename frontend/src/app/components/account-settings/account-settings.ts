@@ -3,6 +3,7 @@ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angula
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../services/auth';
+import { ProfileService, UpdateProfileRequest } from '../../services/profile';
 
 @Component({
   selector: 'app-account-settings',
@@ -13,14 +14,19 @@ import { AuthService } from '../../services/auth';
 })
 export class AccountSettingsComponent implements OnInit {
   changePasswordForm: FormGroup;
+  profileForm: FormGroup;
   error = '';
   success = '';
+  profileError = '';
+  profileSuccess = '';
   isLoading = false;
+  isProfileLoading = false;
   userInfo: any = null;
 
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
+    private profileService: ProfileService,
     private router: Router
   ) {
     this.changePasswordForm = this.fb.group({
@@ -28,13 +34,38 @@ export class AccountSettingsComponent implements OnInit {
       newPassword: ['', [Validators.required, Validators.minLength(8)]],
       confirmPassword: ['', Validators.required]
     }, { validators: this.passwordMatchValidator });
+
+    this.profileForm = this.fb.group({
+      bio: ['', Validators.maxLength(500)],
+      website: ['', Validators.maxLength(200)],
+      github: [''],
+      twitter: [''],
+      discord: [''],
+      linkedin: ['']
+    });
   }
 
   ngOnInit(): void {
     this.userInfo = this.authService.getCurrentUser();
     if (!this.userInfo) {
       this.router.navigate(['/login']);
+      return;
     }
+
+    // Load profile data
+    this.profileService.getUserProfile(this.userInfo.username).subscribe({
+      next: (profile) => {
+        this.profileForm.patchValue({
+          bio: profile.bio || '',
+          website: profile.website || '',
+          github: profile.social_links?.github || '',
+          twitter: profile.social_links?.twitter || '',
+          discord: profile.social_links?.discord || '',
+          linkedin: profile.social_links?.linkedin || ''
+        });
+      },
+      error: () => {} // Ignore errors for initial load
+    });
   }
 
   passwordMatchValidator(g: FormGroup) {
@@ -60,6 +91,37 @@ export class AccountSettingsComponent implements OnInit {
         error: (err) => {
           this.isLoading = false;
           this.error = err.error?.error || 'Failed to change password. Please try again.';
+        }
+      });
+    }
+  }
+
+  onProfileSubmit(): void {
+    if (this.profileForm.valid && !this.isProfileLoading) {
+      this.isProfileLoading = true;
+      this.profileError = '';
+      this.profileSuccess = '';
+
+      const formValue = this.profileForm.value;
+      const profileUpdate: UpdateProfileRequest = {
+        bio: formValue.bio || '',
+        website: formValue.website || '',
+        social_links: {
+          github: formValue.github || '',
+          twitter: formValue.twitter || '',
+          discord: formValue.discord || '',
+          linkedin: formValue.linkedin || ''
+        }
+      };
+
+      this.profileService.updateProfile(profileUpdate).subscribe({
+        next: (response) => {
+          this.isProfileLoading = false;
+          this.profileSuccess = response.message || 'Profile updated successfully!';
+        },
+        error: (err) => {
+          this.isProfileLoading = false;
+          this.profileError = err.error?.error || 'Failed to update profile. Please try again.';
         }
       });
     }

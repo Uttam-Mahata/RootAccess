@@ -12,6 +12,9 @@ type User struct {
 	Email               string             `bson:"email" json:"email"`
 	PasswordHash        string             `bson:"password_hash" json:"-"`
 	Role                string             `bson:"role" json:"role"` // "admin" or "user"
+	Bio                 string             `bson:"bio,omitempty" json:"bio,omitempty"`
+	Website             string             `bson:"website,omitempty" json:"website,omitempty"`
+	SocialLinks         *SocialLinks       `bson:"social_links,omitempty" json:"social_links,omitempty"`
 	EmailVerified       bool               `bson:"email_verified" json:"email_verified"`
 	VerificationToken   string             `bson:"verification_token,omitempty" json:"-"`
 	VerificationExpiry  time.Time          `bson:"verification_expiry,omitempty" json:"-"`
@@ -26,6 +29,14 @@ type User struct {
 	LastLoginAt         *time.Time         `bson:"last_login_at,omitempty" json:"last_login_at,omitempty"`
 	CreatedAt           time.Time          `bson:"created_at" json:"created_at"`
 	UpdatedAt           time.Time          `bson:"updated_at" json:"updated_at"`
+}
+
+// SocialLinks represents a user's social media links
+type SocialLinks struct {
+	GitHub  string `bson:"github,omitempty" json:"github,omitempty"`
+	Twitter string `bson:"twitter,omitempty" json:"twitter,omitempty"`
+	Discord string `bson:"discord,omitempty" json:"discord,omitempty"`
+	LinkedIn string `bson:"linkedin,omitempty" json:"linkedin,omitempty"`
 }
 
 // IPRecord represents a single IP address record with timestamp

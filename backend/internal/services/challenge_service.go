@@ -52,6 +52,35 @@ func (s *ChallengeService) GetAllChallengesForList() ([]models.Challenge, error)
 	return s.challengeRepo.GetAllChallengesForList()
 }
 
+// SearchChallenges returns challenges matching the filter criteria
+func (s *ChallengeService) SearchChallenges(filter repositories.ChallengeFilter) ([]models.Challenge, error) {
+	return s.challengeRepo.FindChallengesFiltered(filter)
+}
+
+// GetChallengeStats returns aggregated challenge statistics by category
+func (s *ChallengeService) GetChallengeStats() (map[string]interface{}, error) {
+	categoryStats, err := s.challengeRepo.GetChallengeStats()
+	if err != nil {
+		return nil, err
+	}
+
+	difficultyStats, err := s.challengeRepo.GetDifficultyDistribution()
+	if err != nil {
+		return nil, err
+	}
+
+	totalCount, err := s.challengeRepo.CountChallenges()
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"total":       totalCount,
+		"categories":  categoryStats,
+		"difficulties": difficultyStats,
+	}, nil
+}
+
 func (s *ChallengeService) GetChallengeByID(id string) (*models.Challenge, error) {
 	return s.challengeRepo.GetChallengeByID(id)
 }

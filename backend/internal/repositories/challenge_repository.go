@@ -178,3 +178,103 @@ func (r *ChallengeRepository) CountChallenges() (int64, error) {
 
 	return r.collection.CountDocuments(ctx, bson.M{})
 }
+
+// ChallengeFilter holds the filter parameters for searching challenges
+type ChallengeFilter struct {
+	Category   string
+	Difficulty string
+	Search     string
+	Tags       []string
+}
+
+// FindChallengesFiltered returns challenges matching the given filter criteria
+func (r *ChallengeRepository) FindChallengesFiltered(filter ChallengeFilter) ([]models.Challenge, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	query := bson.M{}
+
+	if filter.Category != "" {
+		query["category"] = filter.Category
+	}
+
+	if filter.Difficulty != "" {
+		query["difficulty"] = filter.Difficulty
+	}
+
+	if filter.Search != "" {
+		query["$or"] = bson.A{
+			bson.M{"title": bson.M{"$regex": filter.Search, "$options": "i"}},
+			bson.M{"description": bson.M{"$regex": filter.Search, "$options": "i"}},
+		}
+	}
+
+	if len(filter.Tags) > 0 {
+		query["tags"] = bson.M{"$all": filter.Tags}
+	}
+
+	cursor, err := r.collection.Find(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var challenges []models.Challenge
+	if err = cursor.All(ctx, &challenges); err != nil {
+		return nil, err
+	}
+	return challenges, nil
+}
+
+// GetChallengeStats returns aggregated challenge statistics
+func (r *ChallengeRepository) GetChallengeStats() ([]bson.M, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	pipeline := mongo.Pipeline{
+		{{Key: "$group", Value: bson.M{
+			"_id":         "$category",
+			"count":       bson.M{"$sum": 1},
+			"total_solves": bson.M{"$sum": "$solve_count"},
+		}}},
+		{{Key: "$sort", Value: bson.M{"count": -1}}},
+	}
+
+	cursor, err := r.collection.Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var results []bson.M
+	if err = cursor.All(ctx, &results); err != nil {
+		return nil, err
+	}
+	return results, nil
+}
+
+// GetDifficultyDistribution returns the number of challenges per difficulty level
+func (r *ChallengeRepository) GetDifficultyDistribution() ([]bson.M, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	pipeline := mongo.Pipeline{
+		{{Key: "$group", Value: bson.M{
+			"_id":   "$difficulty",
+			"count": bson.M{"$sum": 1},
+		}}},
+		{{Key: "$sort", Value: bson.M{"_id": 1}}},
+	}
+
+	cursor, err := r.collection.Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var results []bson.M
+	if err = cursor.All(ctx, &results); err != nil {
+		return nil, err
+	}
+	return results, nil
+}

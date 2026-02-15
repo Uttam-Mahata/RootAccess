@@ -2,9 +2,11 @@ package handlers
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-ctf-platform/backend/internal/models"
+	"github.com/go-ctf-platform/backend/internal/repositories"
 	"github.com/go-ctf-platform/backend/internal/services"
 	"github.com/go-ctf-platform/backend/internal/utils"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -268,7 +270,31 @@ type ChallengePublicResponse struct {
 }
 
 func (h *ChallengeHandler) GetAllChallenges(c *gin.Context) {
-	challenges, err := h.challengeService.GetAllChallenges()
+	// Check for filter query parameters
+	category := c.Query("category")
+	difficulty := c.Query("difficulty")
+	search := c.Query("search")
+	tagsParam := c.Query("tags")
+
+	var challenges []models.Challenge
+	var err error
+
+	hasFilter := category != "" || difficulty != "" || search != "" || tagsParam != ""
+
+	if hasFilter {
+		filter := repositories.ChallengeFilter{
+			Category:   category,
+			Difficulty: difficulty,
+			Search:     search,
+		}
+		if tagsParam != "" {
+			filter.Tags = splitTags(tagsParam)
+		}
+		challenges, err = h.challengeService.SearchChallenges(filter)
+	} else {
+		challenges, err = h.challengeService.GetAllChallenges()
+	}
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -294,6 +320,29 @@ func (h *ChallengeHandler) GetAllChallenges(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, result)
+}
+
+// splitTags splits a comma-separated string of tags into a slice
+func splitTags(tags string) []string {
+	var result []string
+	for _, tag := range strings.Split(tags, ",") {
+		trimmed := strings.TrimSpace(tag)
+		if trimmed != "" {
+			result = append(result, trimmed)
+		}
+	}
+	return result
+}
+
+// GetChallengeStats returns aggregated challenge statistics
+func (h *ChallengeHandler) GetChallengeStats(c *gin.Context) {
+	stats, err := h.challengeService.GetChallengeStats()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, stats)
 }
 
 func (h *ChallengeHandler) GetChallengeByID(c *gin.Context) {

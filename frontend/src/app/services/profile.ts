@@ -3,6 +3,13 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
+export interface SocialLinks {
+  github?: string;
+  twitter?: string;
+  discord?: string;
+  linkedin?: string;
+}
+
 export interface SolvedChallenge {
   id: string;
   title: string;
@@ -20,6 +27,9 @@ export interface CategoryStats {
 
 export interface UserProfile {
   username: string;
+  bio?: string;
+  website?: string;
+  social_links?: SocialLinks;
   joined_at: string;
   team_id?: string;
   team_name?: string;
@@ -28,6 +38,12 @@ export interface UserProfile {
   total_submissions: number;
   solved_challenges: SolvedChallenge[];
   category_stats: CategoryStats[];
+}
+
+export interface UpdateProfileRequest {
+  bio: string;
+  website: string;
+  social_links?: SocialLinks;
 }
 
 @Injectable({
@@ -40,5 +56,9 @@ export class ProfileService {
 
   getUserProfile(username: string): Observable<UserProfile> {
     return this.http.get<UserProfile>(`${this.apiUrl}/users/${username}/profile`);
+  }
+
+  updateProfile(profile: UpdateProfileRequest): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/users/profile`, profile);
   }
 }
