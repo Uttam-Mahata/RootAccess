@@ -1,12 +1,31 @@
-import { Component, OnInit, OnDestroy, effect } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewChecked, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { EditorModule, TINYMCE_SCRIPT_SRC } from '@tinymce/tinymce-angular';
 import TurndownService from 'turndown';
 import Showdown from 'showdown';
+import * as Prism from 'prismjs';
+import 'prismjs/components/prism-python';
+import 'prismjs/components/prism-javascript';
+import 'prismjs/components/prism-bash';
+import 'prismjs/components/prism-java';
+import 'prismjs/components/prism-c';
+import 'prismjs/components/prism-cpp';
+import 'prismjs/components/prism-sql';
+import 'prismjs/components/prism-json';
+import 'prismjs/components/prism-markup';
+import 'prismjs/components/prism-css';
 import { ChallengeService, HintResponse } from '../../services/challenge';
 import { ThemeService } from '../../services/theme';
+
+export interface SolveEntry {
+  user_id: string;
+  username: string;
+  team_id?: string;
+  team_name?: string;
+  solved_at: string;
+}
 
 @Component({
   selector: 'app-challenge-detail',
@@ -23,7 +42,7 @@ import { ThemeService } from '../../services/theme';
   templateUrl: './challenge-detail.html',
   styleUrls: ['./challenge-detail.scss']
 })
-export class ChallengeDetailComponent implements OnInit, OnDestroy {
+export class ChallengeDetailComponent implements OnInit, OnDestroy, AfterViewChecked {
   challenge: any;
   renderedDescription = '';
   flagForm: FormGroup;
@@ -45,10 +64,18 @@ export class ChallengeDetailComponent implements OnInit, OnDestroy {
   writeupEditorConfig: any = {};
   showWriteupEditor = true;
   
+  // Solves
+  solves: SolveEntry[] = [];
+  showSolves = false;
+  isLoadingSolves = false;
+
   // Rate limiting
   isRateLimited = false;
   rateLimitSeconds = 0;
   private rateLimitInterval: any;
+  
+  // Prism highlighting state
+  private needsHighlight = false;
   
   // Markdown converter with enhanced configuration
   private markdownConverter = new Showdown.Converter({
@@ -163,33 +190,94 @@ export class ChallengeDetailComponent implements OnInit, OnDestroy {
     this.writeupEditorContent = event.editor.getContent();
   }
 
+  ngAfterViewChecked(): void {
+    if (this.needsHighlight) {
+      this.needsHighlight = false;
+      this.highlightAndWrapCodeBlocks();
+    }
+  }
+
+  private highlightAndWrapCodeBlocks(): void {
+    // Highlight all code blocks with Prism
+    setTimeout(() => {
+      const codeBlocks = document.querySelectorAll('.challenge-description pre code, .writeup-content pre code');
+      codeBlocks.forEach((block) => {
+        Prism.highlightElement(block as HTMLElement);
+      });
+
+      // Wrap pre blocks with copy button if not already wrapped
+      const preBlocks = document.querySelectorAll('.challenge-description pre, .writeup-content pre');
+      preBlocks.forEach((pre) => {
+        if (pre.parentElement?.classList.contains('code-block-wrapper')) return;
+        const wrapper = document.createElement('div');
+        wrapper.className = 'code-block-wrapper';
+        const btn = document.createElement('button');
+        btn.className = 'code-copy-btn';
+        btn.textContent = 'Copy';
+        btn.addEventListener('click', () => this.copyCode(pre as HTMLElement, btn));
+        pre.parentNode?.insertBefore(wrapper, pre);
+        wrapper.appendChild(btn);
+        wrapper.appendChild(pre);
+      });
+    }, 0);
+  }
+
+  copyCode(preElement: HTMLElement, btn: HTMLButtonElement): void {
+    const code = preElement.textContent || '';
+    navigator.clipboard.writeText(code).then(() => {
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = 'Copy';
+        btn.classList.remove('copied');
+      }, 2000);
+    });
+  }
+
+  toggleSolves(): void {
+    if (this.showSolves) {
+      this.showSolves = false;
+      return;
+    }
+    this.loadSolves();
+  }
+
+  loadSolves(): void {
+    if (!this.challenge) return;
+    this.isLoadingSolves = true;
+    this.showSolves = true;
+    this.challengeService.getChallengeSolves(this.challenge.id).subscribe({
+      next: (data) => {
+        this.solves = data || [];
+        this.isLoadingSolves = false;
+      },
+      error: () => {
+        this.solves = [];
+        this.isLoadingSolves = false;
+      }
+    });
+  }
+
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
       this.challengeService.getChallenge(id).subscribe({
         next: (data) => {
           this.challenge = data;
-          console.log('Challenge data:', this.challenge);
-          console.log('Description format:', this.challenge.description_format);
-          console.log('Description (first 200 chars):', this.challenge.description?.substring(0, 200));
           
           // Render description based on format
           if (this.challenge.description) {
-            const format = this.challenge.description_format || 'markdown'; // Default to markdown for backward compatibility
-            console.log('Using format:', format);
+            const format = this.challenge.description_format || 'markdown';
             
             if (format === 'html') {
-              // Already HTML, use directly
               this.renderedDescription = this.challenge.description;
             } else {
-              // Convert markdown to HTML
               this.renderedDescription = this.markdownConverter.makeHtml(this.challenge.description);
             }
-            
-            console.log('Rendered description (first 200 chars):', this.renderedDescription.substring(0, 200));
           } else {
             this.renderedDescription = '';
           }
+          this.needsHighlight = true;
           this.loadHints();
           this.loadWriteups();
         },
@@ -241,7 +329,7 @@ export class ChallengeDetailComponent implements OnInit, OnDestroy {
     this.challengeService.getWriteups(this.challenge.id).subscribe({
       next: (writeups) => {
         this.writeups = (writeups || []).map(writeup => {
-          const format = writeup.content_format || 'markdown'; // Default to markdown for backward compatibility
+          const format = writeup.content_format || 'markdown';
           return {
             ...writeup,
             renderedContent: format === 'html' 
@@ -249,6 +337,7 @@ export class ChallengeDetailComponent implements OnInit, OnDestroy {
               : this.markdownConverter.makeHtml(writeup.content || '')
           };
         });
+        this.needsHighlight = true;
       },
       error: () => this.writeups = []
     });

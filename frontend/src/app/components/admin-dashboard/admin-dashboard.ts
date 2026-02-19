@@ -595,6 +595,9 @@ export class AdminDashboardComponent implements OnInit {
       } else {
         this.editorContent = this.showdownConverter.makeHtml(ch.description || '');
       }
+      // Remove required validator on flag for edit mode
+      this.challengeForm.get('flag')?.clearValidators();
+      this.challengeForm.get('flag')?.updateValueAndValidity();
       this.challengeForm.patchValue({
         title: ch.title,
         category: ch.category,
@@ -609,7 +612,7 @@ export class AdminDashboardComponent implements OnInit {
         tags: ch.tags ? ch.tags.join(', ') : ''
       });
       this.switchTab('create');
-      this.showMessage(`Editing: ${ch.title} (Enter the flag again)`, 'success');
+      this.showMessage(`Editing: ${ch.title} (Leave flag empty to keep current flag)`, 'success');
     };
 
     // List API omits description; fetch full challenge for edit
@@ -644,6 +647,9 @@ export class AdminDashboardComponent implements OnInit {
     this.isEditMode = false;
     this.editingChallengeId = null;
     this.editorContent = '';
+    // Restore required validator for flag (needed for create mode)
+    this.challengeForm.get('flag')?.setValidators(Validators.required);
+    this.challengeForm.get('flag')?.updateValueAndValidity();
     this.challengeForm.reset({
       title: '',
       category: '',

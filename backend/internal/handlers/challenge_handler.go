@@ -2,9 +2,11 @@ package handlers
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-ctf-platform/backend/internal/models"
+	"github.com/go-ctf-platform/backend/internal/repositories"
 	"github.com/go-ctf-platform/backend/internal/services"
 	"github.com/go-ctf-platform/backend/internal/utils"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -14,6 +16,9 @@ type ChallengeHandler struct {
 	challengeService   *services.ChallengeService
 	achievementService *services.AchievementService
 	contestService     *services.ContestService
+	submissionRepo     *repositories.SubmissionRepository
+	userRepo           *repositories.UserRepository
+	teamRepo           *repositories.TeamRepository
 	wsHub              interface{ BroadcastMessage(string, interface{}) }
 }
 
@@ -22,6 +27,18 @@ func NewChallengeHandler(challengeService *services.ChallengeService, achievemen
 		challengeService:   challengeService,
 		achievementService: achievementService,
 		contestService:     contestService,
+		wsHub:              wsHub,
+	}
+}
+
+func NewChallengeHandlerWithRepos(challengeService *services.ChallengeService, achievementService *services.AchievementService, contestService *services.ContestService, wsHub interface{ BroadcastMessage(string, interface{}) }, submissionRepo *repositories.SubmissionRepository, userRepo *repositories.UserRepository, teamRepo *repositories.TeamRepository) *ChallengeHandler {
+	return &ChallengeHandler{
+		challengeService:   challengeService,
+		achievementService: achievementService,
+		contestService:     contestService,
+		submissionRepo:     submissionRepo,
+		userRepo:           userRepo,
+		teamRepo:           teamRepo,
 		wsHub:              wsHub,
 	}
 }
@@ -37,6 +54,23 @@ type CreateChallengeRequest struct {
 	Decay             int           `json:"decay" binding:"required"`
 	ScoringType       string        `json:"scoring_type"`
 	Flag              string        `json:"flag" binding:"required"`
+	Files             []string      `json:"files"`
+	Tags              []string      `json:"tags"`
+	Hints             []HintRequest `json:"hints"`
+}
+
+// UpdateChallengeRequest is used for updating challenges – flag is optional
+type UpdateChallengeRequest struct {
+	Title             string        `json:"title" binding:"required"`
+	Description       string        `json:"description" binding:"required"`
+	DescriptionFormat string        `json:"description_format"`
+	Category          string        `json:"category" binding:"required"`
+	Difficulty        string        `json:"difficulty" binding:"required"`
+	MaxPoints         int           `json:"max_points" binding:"required"`
+	MinPoints         int           `json:"min_points" binding:"required"`
+	Decay             int           `json:"decay" binding:"required"`
+	ScoringType       string        `json:"scoring_type"`
+	Flag              string        `json:"flag"` // optional on update
 	Files             []string      `json:"files"`
 	Tags              []string      `json:"tags"`
 	Hints             []HintRequest `json:"hints"`
@@ -117,7 +151,7 @@ func (h *ChallengeHandler) CreateChallenge(c *gin.Context) {
 
 func (h *ChallengeHandler) UpdateChallenge(c *gin.Context) {
 	id := c.Param("id")
-	var req CreateChallengeRequest
+	var req UpdateChallengeRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -133,8 +167,19 @@ func (h *ChallengeHandler) UpdateChallenge(c *gin.Context) {
 		return
 	}
 
-	// Hash the flag before storing
-	flagHash := utils.HashFlag(req.Flag)
+	// Only update flag hash if a new flag is provided
+	var flagHash string
+	if req.Flag != "" {
+		flagHash = utils.HashFlag(req.Flag)
+	} else {
+		// Preserve existing flag hash
+		existing, err := h.challengeService.GetChallengeByID(id)
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Challenge not found"})
+			return
+		}
+		flagHash = existing.FlagHash
+	}
 
 	// Set default scoring type
 	scoringType := req.ScoringType
@@ -402,4 +447,74 @@ func (h *ChallengeHandler) SubmitFlag(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, response)
+}
+
+// SolveEntryResponse represents a single solve for the challenge solves endpoint
+type SolveEntryResponse struct {
+	UserID    string    `json:"user_id"`
+	Username  string    `json:"username"`
+	TeamID    string    `json:"team_id,omitempty"`
+	TeamName  string    `json:"team_name,omitempty"`
+	SolvedAt  time.Time `json:"solved_at"`
+}
+
+// GetChallengeSolves returns the list of users/teams that solved a challenge
+func (h *ChallengeHandler) GetChallengeSolves(c *gin.Context) {
+	challengeID := c.Param("id")
+	cid, err := primitive.ObjectIDFromHex(challengeID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid challenge ID"})
+		return
+	}
+
+	if h.submissionRepo == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Service not available"})
+		return
+	}
+
+	submissions, err := h.submissionRepo.GetCorrectSubmissionsByChallenge(cid)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to load solves"})
+		return
+	}
+
+	// Deduplicate: keep first solve per team (or per user if no team)
+	seen := make(map[string]bool)
+	var solves []SolveEntryResponse
+	for _, sub := range submissions {
+		key := sub.UserID.Hex()
+		if !sub.TeamID.IsZero() {
+			key = "team:" + sub.TeamID.Hex()
+		}
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+
+		entry := SolveEntryResponse{
+			UserID:   sub.UserID.Hex(),
+			SolvedAt: sub.Timestamp,
+		}
+
+		// Look up username
+		if h.userRepo != nil {
+			user, err := h.userRepo.FindByID(sub.UserID.Hex())
+			if err == nil && user != nil {
+				entry.Username = user.Username
+			}
+		}
+
+		// Look up team name
+		if !sub.TeamID.IsZero() && h.teamRepo != nil {
+			team, err := h.teamRepo.FindTeamByID(sub.TeamID.Hex())
+			if err == nil && team != nil {
+				entry.TeamID = team.ID.Hex()
+				entry.TeamName = team.Name
+			}
+		}
+
+		solves = append(solves, entry)
+	}
+
+	c.JSON(http.StatusOK, solves)
 }

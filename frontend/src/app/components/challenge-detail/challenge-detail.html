@@ -45,11 +45,35 @@
                 </svg>
                 <span class="text-yellow-600 dark:text-yellow-400 text-xl font-bold">{{ challenge.current_points }} points</span>
               </div>
-              <div class="flex items-center px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-500/20">
+              <button (click)="toggleSolves()" class="flex items-center px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-500/20 hover:bg-blue-200 dark:hover:bg-blue-500/30 transition-colors cursor-pointer">
                 <svg class="w-4 h-4 text-blue-600 dark:text-blue-400 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
                 <span class="text-blue-700 dark:text-blue-400 text-sm font-medium">{{ challenge.solve_count }} solves</span>
+              </button>
+            </div>
+
+            <!-- Solves Panel -->
+            <div *ngIf="showSolves" class="mt-4 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4">
+              <h3 class="text-sm font-semibold text-slate-900 dark:text-white mb-3 flex items-center">
+                <svg class="w-4 h-4 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+                Solvers
+              </h3>
+              <div *ngIf="isLoadingSolves" class="text-slate-500 dark:text-slate-400 text-sm py-2">Loading...</div>
+              <div *ngIf="!isLoadingSolves && solves.length === 0" class="text-slate-500 dark:text-slate-400 text-sm py-2">No solves yet.</div>
+              <div *ngIf="!isLoadingSolves && solves.length > 0" class="space-y-2 max-h-64 overflow-y-auto">
+                <div *ngFor="let solve of solves; let i = index" class="flex items-center justify-between py-2 px-3 rounded-lg" [ngClass]="i % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-slate-100 dark:bg-slate-800/50'">
+                  <div class="flex items-center gap-3">
+                    <span class="text-xs font-mono text-slate-400 dark:text-slate-500 w-6 text-right">{{ i + 1 }}.</span>
+                    <div>
+                      <span class="text-sm font-medium text-slate-900 dark:text-white">{{ solve.username || 'Unknown' }}</span>
+                      <span *ngIf="solve.team_name" class="ml-2 text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full">{{ solve.team_name }}</span>
+                    </div>
+                  </div>
+                  <span class="text-xs text-slate-500 dark:text-slate-400">{{ solve.solved_at | date:'short' }}</span>
+                </div>
               </div>
             </div>
             
@@ -62,7 +86,7 @@
           <!-- Description -->
           <div class="mb-6">
             <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-3">Description</h2>
-            <div class="text-slate-700 dark:text-slate-300 leading-relaxed prose prose-slate dark:prose-invert max-w-none 
+            <div class="text-slate-700 dark:text-slate-300 leading-relaxed prose prose-slate dark:prose-invert max-w-none challenge-description
                         prose-headings:text-slate-900 dark:prose-headings:text-white prose-headings:break-words
                         prose-p:text-slate-700 dark:prose-p:text-slate-300 prose-p:break-words
                         prose-a:text-red-600 dark:prose-a:text-red-400 prose-a:break-words
@@ -221,8 +245,7 @@
                   <span class="text-sm font-medium text-slate-900 dark:text-white">{{ writeup.username }}</span>
                   <span class="text-xs text-slate-500 dark:text-slate-400">{{ writeup.created_at | date:'short' }}</span>
                 </div>
-                <div class="prose prose-sm prose-slate dark:prose-invert max-w-none
-                            prose-headings:text-slate-900 dark:prose-headings:text-white
+                <div class="prose prose-sm prose-slate dark:prose-invert max-w-none writeup-content                            prose-headings:text-slate-900 dark:prose-headings:text-white
                             prose-p:text-slate-700 dark:prose-p:text-slate-300
                             prose-a:text-blue-600 dark:prose-a:text-blue-400
                             prose-code:text-blue-600 dark:prose-code:text-blue-400 prose-code:bg-slate-100 dark:prose-code:bg-slate-900 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none

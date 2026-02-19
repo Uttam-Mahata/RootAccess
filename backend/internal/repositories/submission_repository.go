@@ -238,6 +238,28 @@ func (r *SubmissionRepository) GetSubmissionsSince(since time.Time) ([]models.Su
 	return submissions, nil
 }
 
+// GetCorrectSubmissionsByChallenge returns all correct submissions for a specific challenge
+func (r *SubmissionRepository) GetCorrectSubmissionsByChallenge(challengeID primitive.ObjectID) ([]models.Submission, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	opts := options.Find().SetSort(bson.D{{Key: "timestamp", Value: 1}})
+	cursor, err := r.collection.Find(ctx, bson.M{
+		"challenge_id": challengeID,
+		"is_correct":   true,
+	}, opts)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var submissions []models.Submission
+	if err = cursor.All(ctx, &submissions); err != nil {
+		return nil, err
+	}
+	return submissions, nil
+}
+
 // GetCorrectSubmissionsBefore returns correct submissions before a given time (for scoreboard freeze)
 func (r *SubmissionRepository) GetCorrectSubmissionsBefore(before time.Time) ([]models.Submission, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)

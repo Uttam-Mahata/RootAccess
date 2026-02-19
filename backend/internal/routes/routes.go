@@ -89,7 +89,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	// Handlers
 	authHandler := handlers.NewAuthHandler(authService)
 	oauthHandler := handlers.NewOAuthHandler(oauthService, database.RDB, cfg)
-	challengeHandler := handlers.NewChallengeHandler(challengeService, achievementService, contestService, wsHub)
+	challengeHandler := handlers.NewChallengeHandlerWithRepos(challengeService, achievementService, contestService, wsHub, submissionRepo, userRepo, teamRepo)
 	scoreboardHandler := handlers.NewScoreboardHandler(scoreboardService, contestService)
 	teamHandler := handlers.NewTeamHandler(teamService)
 	notificationHandler := handlers.NewNotificationHandler(notificationService)
@@ -187,6 +187,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 		protected.POST("/auth/change-password", authHandler.ChangePassword)
 		protected.GET("/challenges", challengeHandler.GetAllChallenges)
 		protected.GET("/challenges/:id", challengeHandler.GetChallengeByID)
+		protected.GET("/challenges/:id/solves", challengeHandler.GetChallengeSolves)
 		// Flag submission with rate limiting (5 attempts per minute per challenge)
 		protected.POST("/challenges/:id/submit", middleware.RateLimitMiddleware(5, time.Minute), challengeHandler.SubmitFlag)
 

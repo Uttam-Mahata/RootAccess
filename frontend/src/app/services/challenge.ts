@@ -98,6 +98,10 @@ export class ChallengeService {
     return this.http.get<Challenge>(`${this.apiUrl}/challenges/${id}`);
   }
 
+  getChallengeSolves(id: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/challenges/${id}/solves`);
+  }
+
   submitFlag(id: string, flag: string): Observable<SubmitFlagResponse> {
     return this.http.post<SubmitFlagResponse>(`${this.apiUrl}/challenges/${id}/submit`, { flag });
   }
