@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -36,6 +37,8 @@ jobs:
       - name: Generate Clients
         run: |
           ./scripts/generate-clients.sh
+          echo "📂 Clients directory after generation:"
+          ls -R clients
           # Build TS client
           cd clients/typescript && npm install && npm run build && cd ../..
           # Build Python client
