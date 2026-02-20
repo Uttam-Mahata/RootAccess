@@ -46,11 +46,9 @@ jobs:
       - name: Build TS Client
         run: |
           cd clients/typescript
-          # Normalize package version to match tag
           npm version ${{ steps.get_version.outputs.VERSION }} --no-git-tag-version || true
-          npm install
-          # The generator might have a faulty build script, let's run tsc directly if needed
-          npm run build || npx tsc
+          npm install --ignore-scripts
+          npm run build
 
       - name: Build Python Client
         run: |
@@ -91,7 +89,7 @@ jobs:
       - name: Publish to NPM
         run: |
           cd clients/typescript
-          npm publish --access public
+          npm publish --access public --ignore-scripts
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 

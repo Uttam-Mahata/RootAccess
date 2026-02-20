@@ -18,12 +18,23 @@ echo "🚀 Generating API Clients..."
 echo "📦 Generating TypeScript (Axios) client..."
 rm -rf "$OUTPUT_DIR/typescript"
 mkdir -p "$OUTPUT_DIR/typescript"
-npx @openapitools/openapi-generator-cli generate \
+npx @openapitools/openapi-generator-cli@7.10.0 generate \
     -i "$SPEC_FILE" \
     -g typescript-axios \
     -o "$OUTPUT_DIR/typescript" \
     --skip-validate-spec \
     --additional-properties=npmName=@rootaccessd/client,supportsES6=true
+
+# Patch generated package.json: remove prepare hook, pin TypeScript version
+node -e "
+  const fs = require('fs');
+  const pkg = JSON.parse(fs.readFileSync('$OUTPUT_DIR/typescript/package.json', 'utf8'));
+  delete pkg.scripts.prepare;
+  if (pkg.devDependencies) {
+    pkg.devDependencies.typescript = '^5.6.0';
+  }
+  fs.writeFileSync('$OUTPUT_DIR/typescript/package.json', JSON.stringify(pkg, null, 2));
+"
 
 # Generate Python
 echo "📦 Generating Python client..."
