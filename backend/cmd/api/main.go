@@ -15,7 +15,7 @@ import (
 
 // @contact.name API Support
 // @contact.url https://github.com/Uttam-Mahata/RootAccess/issues
-// @contact.email support@rootaccess.ctf
+// @contact.email contact@rootaccess.live
 
 // @license.name Apache 2.0
 // @license.url http://www.apache.org/licenses/LICENSE-2.0.html
