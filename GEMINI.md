@@ -1,15 +1,18 @@
 # Go CTF Platform - Developer Context
 
 ## 1. Project Overview
-**Name:** Go CTF Platform
+**Name:** RootAccess (Go CTF Platform)
 **Type:** Full-stack Web Application (Capture The Flag)
+**Repository:** `github.com/Uttam-Mahata/RootAccess`
 **Goal:** Provide a platform for hosting and solving security challenges, with user management, scoring, and admin capabilities.
 
 ## 2. Technology Stack
 
 ### Backend (`/backend`)
 - **Language:** Go 1.24
+- **Module Path:** `github.com/Uttam-Mahata/RootAccess/backend`
 - **Framework:** Gin (HTTP)
+- **Documentation:** Swagger/OpenAPI (via `swaggo`)
 - **Database Driver:** `go.mongodb.org/mongo-driver`
 - **Authentication:** `golang-jwt/jwt` (JWT)
 - **Architecture:** Clean Architecture
@@ -28,8 +31,8 @@
 
 ### Infrastructure
 - **Database:** MongoDB 7.0 (via Docker)
+- **Caching:** Redis (for state and scoreboard caching)
 - **Orchestration:** Docker Compose
-
 
 ## 3. Development Setup & Commands
 
@@ -37,63 +40,43 @@
 - Go 1.24+
 - Node.js 18+ & npm 11+
 - Docker & Docker Compose
-- MongoDB (if not using Docker)
+- `swag` CLI (for API docs): `go install github.com/swaggo/swag/cmd/swag@latest`
 
 ### Quick Start
-1. **Start Database:**
-   ```bash
-   docker compose up -d
-   ```
+1. **Start Services:** `docker compose up -d`
+2. **Backend:** `cd backend && go run cmd/api/main.go`
+3. **Frontend:** `cd frontend && npm install && npm start`
 
-2. **Backend Setup:**
-   ```bash
-   cd backend
-   cp .env.example .env
-   # Edit .env if necessary (default: PORT=8080, MONGO_URI=mongodb://localhost:27017)
-   go mod download
-   go run cmd/api/main.go
-   ```
+### API Documentation (Swagger)
+- **Development:** Accessible at `http://localhost:8080/swagger/index.html`.
+- **Update Docs:** `cd backend && swag init -g cmd/api/main.go`.
+- **Production:** Swagger is **disabled** in production builds (via `-tags production`).
 
-3. **Frontend Setup:**
-   ```bash
-   cd frontend
-   npm install
-   npm start
-   # Access at http://localhost:4200
-   ```
-
-### Administrative Actions
-**Create Admin User:**
-The platform protects admin creation. Use the CLI tool:
-```bash
-cd backend
-go run cmd/admin/main.go
-# Follow interactive prompts to create or promote a user
-```
-
-### Testing
-- **Backend:** `cd backend && go test ./...`
-- **Frontend:** `cd frontend && npm test`
+### Client SDK Generation
+Automated clients can be generated from the Swagger spec:
+- **Script:** `./scripts/generate-clients.sh`
+- **Output:** `/clients/typescript` and `/clients/python`.
 
 ## 4. Key Conventions & Architecture
 
+- **Environment Management:**
+  - `APP_ENV`: Set to `production` to disable Swagger and enable production optimizations.
+  - Backend uses `godotenv` to load `.env`.
+
+- **CI/CD & Releases:**
+  - Pushing a version tag (e.g., `v1.0.0`) triggers a GitHub Action (`.github/workflows/release.yml`).
+  - Automatically generates Swagger docs, packages TS/Python clients, and creates a GitHub Release.
+
 - **Role Management:**
   - Default registration role is **hardcoded** to "user".
-  - Admin promotion must be done via the CLI tool (`cmd/admin/main.go`) or direct DB access.
-  - Role checks are implemented in `internal/middleware/auth_middleware.go`.
+  - Admin promotion must be done via the CLI tool (`cmd/admin/main.go`).
 
-- **Configuration:**
-  - Backend uses `godotenv` to load `.env`.
-  - Config struct defined in `internal/config/config.go`.
-
-- **Frontend Structure:**
-  - `src/app/components`: Feature-based components (login, scoreboard, etc.)
-  - `src/app/services`: API communication (auth, challenge, etc.)
-  - `src/app/interceptors`: HTTP interceptors for JWT injection (`credentials.interceptor.ts`).
+- **Agent Skills:**
+  - `api-manager`: Specialized skill for syncing Swagger docs and refreshing client SDKs. Activate by asking to "update docs" or "sync API".
 
 ## 5. Important Files
-- `backend/cmd/api/main.go`: Backend entry point.
-- `backend/cmd/admin/main.go`: Admin management CLI.
-- `backend/internal/routes/routes.go`: API Route definitions.
-- `frontend/src/app/app.routes.ts`: Frontend routing.
-- `docker-compose.yml`: MongoDB service config.
+- `backend/cmd/api/main.go`: Backend entry point & Swagger metadata.
+- `backend/internal/routes/routes.go`: Router setup (with build-tag based Swagger registration).
+- `scripts/generate-clients.sh`: Multi-language SDK generation script.
+- `.github/workflows/release.yml`: Automated release pipeline.
+- `docker-compose.yml`: MongoDB and local service configuration.
