@@ -33,6 +33,9 @@ type Config struct {
 	DiscordClientID     string
 	DiscordClientSecret string
 	DiscordRedirectURL  string
+	// Registration access control
+	RegistrationMode           string // "open" | "domain" | "disabled"
+	RegistrationAllowedDomains string // comma-separated, e.g. "college.edu,university.org"
 }
 
 func LoadConfig() *Config {
@@ -56,19 +59,21 @@ func LoadConfig() *Config {
 		SMTPPort:     smtpPort,
 		SMTPUser:     getEnv("SMTP_USER", ""),
 		SMTPPass:     getEnv("SMTP_PASS", ""),
-		SMTPFrom:     getEnv("SMTP_FROM", "noreply@rootaccess.ctf"),
+		SMTPFrom:     getEnv("SMTP_FROM", "noreply@rootaccess.live"),
 		RedisAddr:    getEnv("REDIS_ADDR", "localhost:6379"),
 		RedisPassword: getEnv("REDIS_PASSWORD", ""),
 		RedisDB:      redisDB,
 		GoogleClientID:     getEnv("GOOGLE_CLIENT_ID", ""),
 		GoogleClientSecret: getEnv("GOOGLE_CLIENT_SECRET", ""),
-		GoogleRedirectURL:  getEnv("GOOGLE_REDIRECT_URL", "http://localhost:8080/auth/google/callback"),
+		GoogleRedirectURL:  getEnv("GOOGLE_REDIRECT_URL", "https://rootaccess.live/auth/google/callback"),
 		GitHubClientID:     getEnv("GITHUB_CLIENT_ID", ""),
 		GitHubClientSecret: getEnv("GITHUB_CLIENT_SECRET", ""),
-		GitHubRedirectURL:  getEnv("GITHUB_REDIRECT_URL", "http://localhost:8080/auth/github/callback"),
+		GitHubRedirectURL:  getEnv("GITHUB_REDIRECT_URL", "https://rootaccess.live/auth/github/callback"),
 		DiscordClientID:     getEnv("DISCORD_CLIENT_ID", ""),
 		DiscordClientSecret: getEnv("DISCORD_CLIENT_SECRET", ""),
-		DiscordRedirectURL:  getEnv("DISCORD_REDIRECT_URL", "http://localhost:8080/auth/discord/callback"),
+		DiscordRedirectURL:  getEnv("DISCORD_REDIRECT_URL", "https://rootaccess.live/auth/discord/callback"),
+		RegistrationMode:           getEnv("REGISTRATION_MODE", "open"),
+		RegistrationAllowedDomains: getEnv("REGISTRATION_ALLOWED_DOMAINS", ""),
 	}
 }
 

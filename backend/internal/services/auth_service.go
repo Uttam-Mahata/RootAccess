@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/config"
@@ -28,6 +29,23 @@ func NewAuthService(userRepo *repositories.UserRepository, emailService *EmailSe
 
 // Register creates a new user account with email verification
 func (s *AuthService) Register(username, email, password string) error {
+	// Registration access control
+	switch s.config.RegistrationMode {
+	case "disabled":
+		return errors.New("registration is currently closed")
+	case "domain":
+		allowed := false
+		for _, domain := range strings.Split(s.config.RegistrationAllowedDomains, ",") {
+			if strings.HasSuffix(email, "@"+strings.TrimSpace(domain)) {
+				allowed = true
+				break
+			}
+		}
+		if !allowed {
+			return errors.New("registration is restricted to approved email domains")
+		}
+	}
+
 	// Validate email format and domain
 	if err := s.emailService.ValidateEmail(email); err != nil {
 		return err

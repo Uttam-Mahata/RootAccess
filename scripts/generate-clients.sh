@@ -63,7 +63,7 @@ npm install @rootaccessd/client axios
 import { AuthApi, ChallengesApi, Configuration } from '@rootaccessd/client';
 
 // 1. Point at your backend
-const baseConfig = new Configuration({ basePath: 'http://localhost:8080' });
+const baseConfig = new Configuration({ basePath: 'https://rootaccess.live' });
 
 // 2. Login and extract token
 const authApi = new AuthApi(baseConfig);
@@ -72,7 +72,7 @@ const token = data.token;
 
 // 3. Use Bearer auth for protected endpoints
 const authedConfig = new Configuration({
-  basePath: 'http://localhost:8080',
+  basePath: 'https://rootaccess.live',
   apiKey: () => `Bearer ${token}`,
 });
 
@@ -87,8 +87,8 @@ Clone the repo and set your backend URL in
 
 ```ts
 export const environment = {
-  apiUrl: 'http://your-backend:8080',
-  wsUrl:  'ws://your-backend:8080',
+  apiUrl: 'https://rootaccess.live',
+  wsUrl:  'wss://rootaccess.live',
 };
 ```
 
@@ -106,6 +106,15 @@ npx @openapitools/openapi-generator-cli generate \
     --skip-validate-spec \
     --additional-properties=packageName=rootaccessd_client,projectName=rootaccessd-client
 
+# Patch Python setup.py: set URL and fix description
+node -e "
+  const fs = require('fs');
+  let content = fs.readFileSync('$OUTPUT_DIR/python/setup.py', 'utf8');
+  content = content.replace(/url=\"\",/, 'url=\"https://github.com/Uttam-Mahata/RootAccess\",');
+  content = content.replace(/long_description=\"\"\"[\\s\\S]*?\"\"\"/, 'long_description=open(\"README.md\").read()');
+  fs.writeFileSync('$OUTPUT_DIR/python/setup.py', content);
+"
+
 # Inject Python client README
 cat > "$OUTPUT_DIR/python/README.md" << 'PYREADME'
 # rootaccessd-client
@@ -119,15 +128,21 @@ OpenAPI spec.
 pip install rootaccessd-client
 ```
 
+## Documentation
+
+Full API documentation and models are available in the [GitHub Repository](https://github.com/Uttam-Mahata/RootAccess/tree/main/clients/python/docs).
+
+- [API Reference](https://github.com/Uttam-Mahata/RootAccess/tree/main/clients/python/docs#documentation-for-api-endpoints)
+- [Models Reference](https://github.com/Uttam-Mahata/RootAccess/tree/main/clients/python/docs#documentation-for-models)
+
 ## Quick Start
 
 ```python
 import rootaccessd_client
 from rootaccessd_client.api import auth_api, challenges_api
-from rootaccessd_client.model.inline_object import InlineObject
 
 # 1. Point at your backend
-config = rootaccessd_client.Configuration(host="http://localhost:8080")
+config = rootaccessd_client.Configuration(host="https://rootaccess.live")
 
 # 2. Login and extract token
 with rootaccessd_client.ApiClient(config) as client:
@@ -137,7 +152,7 @@ with rootaccessd_client.ApiClient(config) as client:
 
 # 3. Authenticated requests
 authed_config = rootaccessd_client.Configuration(
-    host="http://localhost:8080",
+    host="https://rootaccess.live",
     api_key={"Authorization": f"Bearer {token}"},
     api_key_prefix={"Authorization": ""},
 )
