@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-ctf-platform/backend/internal/services"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/services"
 )
 
 type AuthHandler struct {
@@ -51,6 +51,15 @@ type ChangePasswordRequest struct {
 }
 
 // Register creates a new user account and sends verification email
+// @Summary Register a new user
+// @Description Create a new user account with username, email, and password. Role is hardcoded to "user".
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body RegisterRequest true "Registration details"
+// @Success 201 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Router /auth/register [post]
 func (h *AuthHandler) Register(c *gin.Context) {
 	var req RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -69,6 +78,17 @@ func (h *AuthHandler) Register(c *gin.Context) {
 }
 
 // VerifyEmail verifies user's email with token
+// @Summary Verify email address
+// @Description Verify a user's email address using the token sent during registration.
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param token query string false "Verification token"
+// @Param request body VerifyEmailRequest false "Verification token in body"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Router /auth/verify-email [get]
+// @Router /auth/verify-email [post]
 func (h *AuthHandler) VerifyEmail(c *gin.Context) {
 	token := c.Query("token")
 	if token == "" {
@@ -91,6 +111,15 @@ func (h *AuthHandler) VerifyEmail(c *gin.Context) {
 }
 
 // ResendVerification sends a new verification email
+// @Summary Resend verification email
+// @Description Send a new verification email to the user.
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body ResendVerificationRequest true "Email details"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Router /auth/resend-verification [post]
 func (h *AuthHandler) ResendVerification(c *gin.Context) {
 	var req ResendVerificationRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -109,6 +138,15 @@ func (h *AuthHandler) ResendVerification(c *gin.Context) {
 }
 
 // Login authenticates a user and sets JWT token in HTTP-only cookie
+// @Summary Login user
+// @Description Authenticate a user and set a JWT token in an HTTP-only cookie.
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body LoginRequest true "Login credentials"
+// @Success 200 {object} map[string]interface{}
+// @Failure 401 {object} map[string]string
+// @Router /auth/login [post]
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

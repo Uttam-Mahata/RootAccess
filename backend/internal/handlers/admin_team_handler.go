@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-ctf-platform/backend/internal/repositories"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -55,9 +55,13 @@ type TeamMemberInfo struct {
 }
 
 // ListTeams returns all teams with detailed information for admin
-// Note: This uses individual queries per team member for simplicity. For very large
-// datasets with many teams, consider using MongoDB aggregation pipelines for better
-// performance. For typical admin usage with tens of teams, this approach is acceptable.
+// @Summary List all teams
+// @Description Retrieve a list of all teams with detailed administrative information.
+// @Tags Admin Teams
+// @Produce json
+// @Success 200 {array} AdminTeamResponse
+// @Security ApiKeyAuth
+// @Router /admin/teams [get]
 func (h *AdminTeamHandler) ListTeams(c *gin.Context) {
 	teams, err := h.teamRepo.GetAllTeams()
 	if err != nil {
@@ -108,6 +112,15 @@ func (h *AdminTeamHandler) ListTeams(c *gin.Context) {
 }
 
 // GetTeam returns detailed information about a specific team
+// @Summary Get team (admin)
+// @Description Retrieve detailed information about a specific team by its ID.
+// @Tags Admin Teams
+// @Produce json
+// @Param id path string true "Team ID"
+// @Success 200 {object} AdminTeamResponse
+// @Failure 404 {object} map[string]string
+// @Security ApiKeyAuth
+// @Router /admin/teams/{id} [get]
 func (h *AdminTeamHandler) GetTeam(c *gin.Context) {
 	teamID := c.Param("id")
 	
@@ -163,6 +176,18 @@ type AdminUpdateTeamRequest struct {
 }
 
 // UpdateTeam updates team details (admin only)
+// @Summary Update team (admin)
+// @Description Update a team's name or description.
+// @Tags Admin Teams
+// @Accept json
+// @Produce json
+// @Param id path string true "Team ID"
+// @Param request body AdminUpdateTeamRequest true "Team details"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Security ApiKeyAuth
+// @Router /admin/teams/{id} [put]
 func (h *AdminTeamHandler) UpdateTeam(c *gin.Context) {
 	teamID := c.Param("id")
 	objID, err := primitive.ObjectIDFromHex(teamID)
@@ -208,6 +233,18 @@ type UpdateTeamLeaderRequest struct {
 }
 
 // UpdateTeamLeader changes the team leader (admin only)
+// @Summary Change team leader
+// @Description Transfer team leadership to another member of the team.
+// @Tags Admin Teams
+// @Accept json
+// @Produce json
+// @Param id path string true "Team ID"
+// @Param request body UpdateTeamLeaderRequest true "New leader details"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Security ApiKeyAuth
+// @Router /admin/teams/{id}/leader [put]
 func (h *AdminTeamHandler) UpdateTeamLeader(c *gin.Context) {
 	teamID := c.Param("id")
 	objID, err := primitive.ObjectIDFromHex(teamID)
@@ -258,6 +295,17 @@ func (h *AdminTeamHandler) UpdateTeamLeader(c *gin.Context) {
 }
 
 // RemoveMember removes a member from a team (admin only)
+// @Summary Remove team member (admin)
+// @Description Remove a member from a team. The leader cannot be removed.
+// @Tags Admin Teams
+// @Produce json
+// @Param id path string true "Team ID"
+// @Param memberId path string true "Member ID to remove"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Security ApiKeyAuth
+// @Router /admin/teams/{id}/members/{memberId} [delete]
 func (h *AdminTeamHandler) RemoveMember(c *gin.Context) {
 	teamID := c.Param("id")
 	memberID := c.Param("memberId")
@@ -304,6 +352,16 @@ func (h *AdminTeamHandler) RemoveMember(c *gin.Context) {
 }
 
 // DeleteTeam deletes a team (admin only, bypasses normal restrictions)
+// @Summary Delete team (admin)
+// @Description Permanently delete a team and all its invitations.
+// @Tags Admin Teams
+// @Produce json
+// @Param id path string true "Team ID"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Security ApiKeyAuth
+// @Router /admin/teams/{id} [delete]
 func (h *AdminTeamHandler) DeleteTeam(c *gin.Context) {
 	teamID := c.Param("id")
 	objID, err := primitive.ObjectIDFromHex(teamID)

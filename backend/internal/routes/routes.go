@@ -5,13 +5,13 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-ctf-platform/backend/internal/config"
-	"github.com/go-ctf-platform/backend/internal/database"
-	"github.com/go-ctf-platform/backend/internal/handlers"
-	"github.com/go-ctf-platform/backend/internal/middleware"
-	"github.com/go-ctf-platform/backend/internal/repositories"
-	"github.com/go-ctf-platform/backend/internal/services"
-	websocketPkg "github.com/go-ctf-platform/backend/internal/websocket"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/config"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/database"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/handlers"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/middleware"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/services"
+	websocketPkg "github.com/Uttam-Mahata/RootAccess/backend/internal/websocket"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -174,6 +174,9 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 
 	// WebSocket endpoint
 	r.GET("/ws", wsHandler.HandleWebSocket)
+
+	// Swagger documentation (controlled via build tags)
+	registerSwagger(r)
 
 	// Enhanced leaderboard
 	r.GET("/leaderboard/category", leaderboardHandler.GetCategoryLeaderboard)

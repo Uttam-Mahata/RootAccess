@@ -5,10 +5,10 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-ctf-platform/backend/internal/models"
-	"github.com/go-ctf-platform/backend/internal/repositories"
-	"github.com/go-ctf-platform/backend/internal/services"
-	"github.com/go-ctf-platform/backend/internal/utils"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/services"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/utils"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -312,6 +312,15 @@ type ChallengePublicResponse struct {
 	HintCount         int      `json:"hint_count"`
 }
 
+// GetAllChallenges returns all challenges for users
+// @Summary Get all challenges
+// @Description Retrieve a list of all published challenges with public details (no flags).
+// @Tags Challenges
+// @Produce json
+// @Success 200 {array} ChallengePublicResponse
+// @Failure 500 {object} map[string]string
+// @Security ApiKeyAuth
+// @Router /challenges [get]
 func (h *ChallengeHandler) GetAllChallenges(c *gin.Context) {
 	challenges, err := h.challengeService.GetAllChallenges()
 	if err != nil {
@@ -373,6 +382,20 @@ type SubmitFlagRequest struct {
 	Flag string `json:"flag" binding:"required"`
 }
 
+// SubmitFlag submits a flag for a challenge
+// @Summary Submit flag
+// @Description Submit a flag for a specific challenge. If correct, points are awarded.
+// @Tags Challenges
+// @Accept json
+// @Produce json
+// @Param id path string true "Challenge ID"
+// @Param request body SubmitFlagRequest true "Flag submission"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 403 {object} map[string]string
+// @Failure 429 {object} map[string]string
+// @Security ApiKeyAuth
+// @Router /challenges/{id}/submit [post]
 func (h *ChallengeHandler) SubmitFlag(c *gin.Context) {
 	// Check if contest is paused
 	if h.contestService != nil {

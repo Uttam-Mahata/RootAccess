@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-ctf-platform/backend/internal/models"
-	"github.com/go-ctf-platform/backend/internal/services"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/services"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -25,6 +25,17 @@ type CreateWriteupRequest struct {
 }
 
 // CreateWriteup handles creating a new writeup for a challenge
+// @Summary Submit a writeup
+// @Description Submit a writeup for a challenge that the user has already solved.
+// @Tags Writeups
+// @Accept json
+// @Produce json
+// @Param id path string true "Challenge ID"
+// @Param request body CreateWriteupRequest true "Writeup content"
+// @Success 201 {object} models.Writeup
+// @Failure 400 {object} map[string]string
+// @Security ApiKeyAuth
+// @Router /challenges/{id}/writeups [post]
 func (h *WriteupHandler) CreateWriteup(c *gin.Context) {
 	challengeID := c.Param("id")
 	userIDStr, exists := c.Get("user_id")
@@ -65,6 +76,14 @@ func (h *WriteupHandler) CreateWriteup(c *gin.Context) {
 }
 
 // GetWriteups returns approved writeups for a challenge
+// @Summary Get writeups for a challenge
+// @Description Retrieve all approved writeups for a specific challenge.
+// @Tags Writeups
+// @Produce json
+// @Param id path string true "Challenge ID"
+// @Success 200 {array} models.Writeup
+// @Security ApiKeyAuth
+// @Router /challenges/{id}/writeups [get]
 func (h *WriteupHandler) GetWriteups(c *gin.Context) {
 	challengeID := c.Param("id")
 
@@ -82,6 +101,13 @@ func (h *WriteupHandler) GetWriteups(c *gin.Context) {
 }
 
 // GetMyWriteups returns the current user's writeups
+// @Summary Get my writeups
+// @Description Retrieve all writeups submitted by the authenticated user.
+// @Tags Writeups
+// @Produce json
+// @Success 200 {array} models.Writeup
+// @Security ApiKeyAuth
+// @Router /writeups/my [get]
 func (h *WriteupHandler) GetMyWriteups(c *gin.Context) {
 	userIDStr, exists := c.Get("user_id")
 	if !exists {
@@ -105,6 +131,13 @@ func (h *WriteupHandler) GetMyWriteups(c *gin.Context) {
 }
 
 // GetAllWriteups returns all writeups for admin
+// @Summary Get all writeups
+// @Description Retrieve all writeups, including pending and rejected ones.
+// @Tags Admin Writeups
+// @Produce json
+// @Success 200 {array} models.Writeup
+// @Security ApiKeyAuth
+// @Router /admin/writeups [get]
 func (h *WriteupHandler) GetAllWriteups(c *gin.Context) {
 	writeups, err := h.writeupService.GetAllWriteups()
 	if err != nil {
@@ -124,6 +157,17 @@ type UpdateWriteupStatusRequest struct {
 }
 
 // UpdateWriteupStatus updates writeup approval status (admin)
+// @Summary Update writeup status
+// @Description Approve or reject a writeup.
+// @Tags Admin Writeups
+// @Accept json
+// @Produce json
+// @Param id path string true "Writeup ID"
+// @Param request body UpdateWriteupStatusRequest true "New status"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Security ApiKeyAuth
+// @Router /admin/writeups/{id}/status [put]
 func (h *WriteupHandler) UpdateWriteupStatus(c *gin.Context) {
 	id := c.Param("id")
 
@@ -142,6 +186,13 @@ func (h *WriteupHandler) UpdateWriteupStatus(c *gin.Context) {
 }
 
 // DeleteWriteup deletes a writeup (admin)
+// @Summary Delete writeup
+// @Description Permanently delete a writeup.
+// @Tags Admin Writeups
+// @Param id path string true "Writeup ID"
+// @Success 200 {object} map[string]string
+// @Security ApiKeyAuth
+// @Router /admin/writeups/{id} [delete]
 func (h *WriteupHandler) DeleteWriteup(c *gin.Context) {
 	id := c.Param("id")
 
@@ -154,6 +205,17 @@ func (h *WriteupHandler) DeleteWriteup(c *gin.Context) {
 }
 
 // UpdateWriteup allows authors to edit their writeup
+// @Summary Update writeup content
+// @Description Modify the content or format of a writeup. Only the author can perform this action.
+// @Tags Writeups
+// @Accept json
+// @Produce json
+// @Param id path string true "Writeup ID"
+// @Param request body CreateWriteupRequest true "New content"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Security ApiKeyAuth
+// @Router /writeups/{id} [put]
 func (h *WriteupHandler) UpdateWriteup(c *gin.Context) {
 	id := c.Param("id")
 	userIDStr, exists := c.Get("user_id")
@@ -188,6 +250,14 @@ func (h *WriteupHandler) UpdateWriteup(c *gin.Context) {
 }
 
 // ToggleUpvote toggles a user's upvote on a writeup
+// @Summary Toggle writeup upvote
+// @Description Add or remove an upvote for a writeup.
+// @Tags Writeups
+// @Produce json
+// @Param id path string true "Writeup ID"
+// @Success 200 {object} map[string]bool
+// @Security ApiKeyAuth
+// @Router /writeups/{id}/upvote [post]
 func (h *WriteupHandler) ToggleUpvote(c *gin.Context) {
 	id := c.Param("id")
 	userIDStr, exists := c.Get("user_id")

@@ -3,10 +3,10 @@ package services
 import (
 	"context"
 
-	"github.com/go-ctf-platform/backend/internal/database"
-	"github.com/go-ctf-platform/backend/internal/models"
-	"github.com/go-ctf-platform/backend/internal/repositories"
-	"github.com/go-ctf-platform/backend/internal/utils"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/database"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/utils"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 

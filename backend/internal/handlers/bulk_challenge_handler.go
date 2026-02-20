@@ -5,9 +5,9 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-ctf-platform/backend/internal/models"
-	"github.com/go-ctf-platform/backend/internal/services"
-	"github.com/go-ctf-platform/backend/internal/utils"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/services"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/utils"
 )
 
 type BulkChallengeHandler struct {
@@ -32,7 +32,30 @@ type BulkChallengeImport struct {
 	Tags        []string `json:"tags"`
 }
 
+type ExportChallenge struct {
+	Title       string   `json:"title"`
+	Description string   `json:"description"`
+	Category    string   `json:"category"`
+	Difficulty  string   `json:"difficulty"`
+	MaxPoints   int      `json:"max_points"`
+	MinPoints   int      `json:"min_points"`
+	Decay       int      `json:"decay"`
+	ScoringType string   `json:"scoring_type"`
+	Files       []string `json:"files"`
+	Tags        []string `json:"tags"`
+}
+
 // ImportChallenges imports challenges from JSON array
+// @Summary Import challenges in bulk
+// @Description Create multiple challenges at once from a JSON array.
+// @Tags Admin Challenges
+// @Accept json
+// @Produce json
+// @Param request body []BulkChallengeImport true "List of challenges to import"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Security ApiKeyAuth
+// @Router /admin/challenges/import [post]
 func (h *BulkChallengeHandler) ImportChallenges(c *gin.Context) {
 	var challenges []BulkChallengeImport
 	if err := c.ShouldBindJSON(&challenges); err != nil {
@@ -92,24 +115,18 @@ func (h *BulkChallengeHandler) ImportChallenges(c *gin.Context) {
 }
 
 // ExportChallenges exports all challenges as JSON
+// @Summary Export all challenges
+// @Description Retrieve all challenges in a format suitable for bulk import.
+// @Tags Admin Challenges
+// @Produce json
+// @Success 200 {array} ExportChallenge
+// @Security ApiKeyAuth
+// @Router /admin/challenges/export [get]
 func (h *BulkChallengeHandler) ExportChallenges(c *gin.Context) {
 	challenges, err := h.challengeService.GetAllChallenges()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
-	}
-
-	type ExportChallenge struct {
-		Title       string   `json:"title"`
-		Description string   `json:"description"`
-		Category    string   `json:"category"`
-		Difficulty  string   `json:"difficulty"`
-		MaxPoints   int      `json:"max_points"`
-		MinPoints   int      `json:"min_points"`
-		Decay       int      `json:"decay"`
-		ScoringType string   `json:"scoring_type"`
-		Files       []string `json:"files"`
-		Tags        []string `json:"tags"`
 	}
 
 	var result []ExportChallenge
@@ -133,6 +150,15 @@ func (h *BulkChallengeHandler) ExportChallenges(c *gin.Context) {
 }
 
 // DuplicateChallenge clones a challenge
+// @Summary Duplicate a challenge
+// @Description Create a copy of an existing challenge.
+// @Tags Admin Challenges
+// @Produce json
+// @Param id path string true "Challenge ID"
+// @Success 201 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Security ApiKeyAuth
+// @Router /admin/challenges/{id}/duplicate [post]
 func (h *BulkChallengeHandler) DuplicateChallenge(c *gin.Context) {
 	id := c.Param("id")
 	original, err := h.challengeService.GetChallengeByID(id)

@@ -6,9 +6,9 @@ import (
 	"sort"
 	"time"
 
-	"github.com/go-ctf-platform/backend/internal/database"
-	"github.com/go-ctf-platform/backend/internal/models"
-	"github.com/go-ctf-platform/backend/internal/repositories"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/database"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
 )
 
 type ScoreboardService struct {

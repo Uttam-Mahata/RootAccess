@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-ctf-platform/backend/internal/services"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/services"
 )
 
 type ScoreboardHandler struct {
@@ -19,6 +19,14 @@ func NewScoreboardHandler(scoreboardService *services.ScoreboardService, contest
 	}
 }
 
+// GetScoreboard returns the current individual scoreboard
+// @Summary Get individual scoreboard
+// @Description Retrieve the current leaderboard for individual users, sorted by points.
+// @Tags Scoreboard
+// @Produce json
+// @Success 200 {array} services.UserScore
+// @Failure 403 {object} map[string]string
+// @Router /scoreboard [get]
 func (h *ScoreboardHandler) GetScoreboard(c *gin.Context) {
 	// Check scoreboard visibility
 	if h.contestService != nil {
@@ -38,6 +46,14 @@ func (h *ScoreboardHandler) GetScoreboard(c *gin.Context) {
 	c.JSON(http.StatusOK, scores)
 }
 
+// GetTeamScoreboard returns the current team scoreboard
+// @Summary Get team scoreboard
+// @Description Retrieve the current leaderboard for teams, sorted by points.
+// @Tags Scoreboard
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Failure 403 {object} map[string]string
+// @Router /scoreboard/teams [get]
 func (h *ScoreboardHandler) GetTeamScoreboard(c *gin.Context) {
 	// Check scoreboard visibility
 	if h.contestService != nil {

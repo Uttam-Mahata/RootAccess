@@ -53,6 +53,7 @@ backend/admin-tool
 backend/admin-tool.exe
 backend/main
 backend/*.exe
+backend/docs/
 docker-compose.prod.yml
 docker-compose.yml
 
