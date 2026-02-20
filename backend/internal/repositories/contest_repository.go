@@ -48,18 +48,20 @@ func (r *ContestRepository) UpsertContest(config *models.ContestConfig) error {
 		return err
 	}
 
-	update := bson.M{
-		"$set": bson.M{
-			"start_time":             config.StartTime,
-			"end_time":               config.EndTime,
-			"freeze_time":            config.FreezeTime,
-			"title":                  config.Title,
-			"is_active":              config.IsActive,
-			"is_paused":              config.IsPaused,
-			"scoreboard_visibility":  config.ScoreboardVisibility,
-			"updated_at":             config.UpdatedAt,
-		},
+	setFields := bson.M{
+		"start_time":            config.StartTime,
+		"end_time":              config.EndTime,
+		"freeze_time":           config.FreezeTime,
+		"title":                 config.Title,
+		"is_active":             config.IsActive,
+		"is_paused":             config.IsPaused,
+		"scoreboard_visibility": config.ScoreboardVisibility,
+		"updated_at":            config.UpdatedAt,
 	}
+	if !config.ContestID.IsZero() {
+		setFields["contest_id"] = config.ContestID
+	}
+	update := bson.M{"$set": setFields}
 
 	_, err := r.collection.UpdateOne(ctx, bson.M{"_id": config.ID}, update)
 	return err

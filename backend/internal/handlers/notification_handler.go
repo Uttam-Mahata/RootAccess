@@ -6,16 +6,19 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/services"
+	wsHub "github.com/Uttam-Mahata/RootAccess/backend/internal/websocket"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type NotificationHandler struct {
 	notificationService *services.NotificationService
+	hub                *wsHub.Hub
 }
 
-func NewNotificationHandler(notificationService *services.NotificationService) *NotificationHandler {
+func NewNotificationHandler(notificationService *services.NotificationService, hub *wsHub.Hub) *NotificationHandler {
 	return &NotificationHandler{
 		notificationService: notificationService,
+		hub:                hub,
 	}
 }
 
@@ -61,6 +64,11 @@ func (h *NotificationHandler) CreateNotification(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
+	}
+
+	// Push new active notification to all connected clients immediately
+	if notification.IsActive {
+		h.hub.BroadcastMessage("notification:created", notification)
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
@@ -147,6 +155,11 @@ func (h *NotificationHandler) UpdateNotification(c *gin.Context) {
 		return
 	}
 
+	// Broadcast updated notification so clients can add/remove/update in real time
+	if updated, fetchErr := h.notificationService.GetNotificationByID(id); fetchErr == nil {
+		h.hub.BroadcastMessage("notification:updated", updated)
+	}
+
 	c.JSON(http.StatusOK, gin.H{"message": "Notification updated successfully"})
 }
 
@@ -168,6 +181,9 @@ func (h *NotificationHandler) DeleteNotification(c *gin.Context) {
 		return
 	}
 
+	// Notify clients to remove this notification immediately
+	h.hub.BroadcastMessage("notification:deleted", gin.H{"id": id})
+
 	c.JSON(http.StatusOK, gin.H{"message": "Notification deleted successfully"})
 }
 
@@ -187,6 +203,11 @@ func (h *NotificationHandler) ToggleNotificationActive(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
+	}
+
+	// Push toggled state: clients add or remove the notification based on is_active
+	if updated, fetchErr := h.notificationService.GetNotificationByID(id); fetchErr == nil {
+		h.hub.BroadcastMessage("notification:updated", updated)
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Notification status toggled successfully"})

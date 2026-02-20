@@ -1,8 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ChallengeService, Challenge } from '../../services/challenge';
+import { TeamService } from '../../services/team';
 import Showdown from 'showdown';
 
 @Component({
@@ -13,8 +14,12 @@ import Showdown from 'showdown';
   styleUrls: ['./challenge-list.scss']
 })
 export class ChallengeListComponent implements OnInit {
+  private teamService = inject(TeamService);
+
   challenges: Challenge[] = [];
   filteredChallenges: Challenge[] = [];
+  isLoading = true;
+  hasTeam = false;
 
   // Filter state
   searchQuery = '';
@@ -69,6 +74,11 @@ export class ChallengeListComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.teamService.currentTeam$.subscribe(team => {
+      this.hasTeam = team !== null;
+    });
+
+    this.isLoading = true;
     this.challengeService.getChallenges().subscribe({
       next: (data) => {
         this.challenges = data || [];
@@ -78,11 +88,13 @@ export class ChallengeListComponent implements OnInit {
         const allTags = this.challenges.flatMap(c => c.tags || []);
         this.tags = [...new Set(allTags)].sort();
         this.applyFilters();
+        this.isLoading = false;
       },
       error: (err) => {
         console.error(err);
         this.challenges = [];
         this.filteredChallenges = [];
+        this.isLoading = false;
       }
     });
   }

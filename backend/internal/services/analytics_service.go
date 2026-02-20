@@ -1,19 +1,23 @@
 package services
 
 import (
+	"context"
+	"encoding/json"
 	"sort"
 	"time"
 
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/database"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type AnalyticsService struct {
-	userRepo       *repositories.UserRepository
-	submissionRepo *repositories.SubmissionRepository
-	challengeRepo  *repositories.ChallengeRepository
-	teamRepo       *repositories.TeamRepository
+	userRepo        *repositories.UserRepository
+	submissionRepo  *repositories.SubmissionRepository
+	challengeRepo   *repositories.ChallengeRepository
+	teamRepo        *repositories.TeamRepository
+	adjustmentRepo  *repositories.ScoreAdjustmentRepository
 }
 
 func NewAnalyticsService(
@@ -21,16 +25,31 @@ func NewAnalyticsService(
 	submissionRepo *repositories.SubmissionRepository,
 	challengeRepo *repositories.ChallengeRepository,
 	teamRepo *repositories.TeamRepository,
+	adjustmentRepo *repositories.ScoreAdjustmentRepository,
 ) *AnalyticsService {
 	return &AnalyticsService{
 		userRepo:       userRepo,
 		submissionRepo: submissionRepo,
 		challengeRepo:  challengeRepo,
 		teamRepo:       teamRepo,
+		adjustmentRepo: adjustmentRepo,
 	}
 }
 
 func (s *AnalyticsService) GetPlatformAnalytics() (*models.AdminAnalytics, error) {
+	// Admin analytics aggregates a lot of data; cache the final result
+	// briefly in Redis so repeated admin tab visits are fast.
+	ctx := context.Background()
+	const cacheKey = "platform_analytics"
+	if database.RDB != nil {
+		if val, err := database.RDB.Get(ctx, cacheKey).Result(); err == nil {
+			var cached models.AdminAnalytics
+			if err := json.Unmarshal([]byte(val), &cached); err == nil {
+				return &cached, nil
+			}
+		}
+	}
+
 	totalUsers, err := s.userRepo.CountUsers()
 	if err != nil {
 		return nil, err
@@ -58,7 +77,7 @@ func (s *AnalyticsService) GetPlatformAnalytics() (*models.AdminAnalytics, error
 
 	var successRate float64
 	if totalSubmissions > 0 {
-		successRate = float64(totalCorrect) / float64(totalSubmissions) * 100
+		successRate = float64(totalCorrect) / float64(totalSubmissions)
 	}
 
 	// Enhanced user statistics
@@ -128,7 +147,7 @@ func (s *AnalyticsService) GetPlatformAnalytics() (*models.AdminAnalytics, error
 		attempts := attemptCounts[c.ID.Hex()]
 		var rate float64
 		if attempts > 0 {
-			rate = float64(c.SolveCount) / float64(attempts) * 100
+			rate = float64(c.SolveCount) / float64(attempts)
 		}
 		challengePopularity = append(challengePopularity, models.ChallengePopularity{
 			ChallengeID:  c.ID,
@@ -203,6 +222,22 @@ func (s *AnalyticsService) GetPlatformAnalytics() (*models.AdminAnalytics, error
 		solvesOverTime = append(solvesOverTime, models.TimeSeriesEntry{
 			Date:  day,
 			Count: dayCounts[day],
+		})
+	}
+
+	// Submissions over time (last 30 days, all attempts)
+	allSubsSince, _ := s.submissionRepo.GetSubmissionsSince(since)
+	subDayCounts := make(map[string]int)
+	for _, sub := range allSubsSince {
+		day := sub.Timestamp.Format("2006-01-02")
+		subDayCounts[day]++
+	}
+	submissionsOverTime := make([]models.TimeSeriesEntry, 0, 30)
+	for i := 29; i >= 0; i-- {
+		day := time.Now().AddDate(0, 0, -i).Format("2006-01-02")
+		submissionsOverTime = append(submissionsOverTime, models.TimeSeriesEntry{
+			Date:  day,
+			Count: subDayCounts[day],
 		})
 	}
 
@@ -299,6 +334,23 @@ func (s *AnalyticsService) GetPlatformAnalytics() (*models.AdminAnalytics, error
 		}
 	}
 
+	// Apply manual user score adjustments (if any) to analytics as well
+	if s.adjustmentRepo != nil && len(userScores) > 0 {
+		userIDs := make([]primitive.ObjectID, 0, len(userScores))
+		for uid := range userScores {
+			if oid, err := primitive.ObjectIDFromHex(uid); err == nil {
+				userIDs = append(userIDs, oid)
+			}
+		}
+		if len(userIDs) > 0 {
+			if deltas, err := s.adjustmentRepo.GetAdjustmentsForUsers(userIDs); err == nil {
+				for uid, delta := range deltas {
+					userScores[uid] += delta
+				}
+			}
+		}
+	}
+
 	type userScoreEntry struct {
 		ID         string
 		Username   string
@@ -332,7 +384,7 @@ func (s *AnalyticsService) GetPlatformAnalytics() (*models.AdminAnalytics, error
 		})
 	}
 
-	return &models.AdminAnalytics{
+	result := &models.AdminAnalytics{
 		TotalUsers:          int(totalUsers),
 		TotalTeams:          int(totalTeams),
 		TotalChallenges:     int(totalChallenges),
@@ -344,6 +396,7 @@ func (s *AnalyticsService) GetPlatformAnalytics() (*models.AdminAnalytics, error
 		DifficultyBreakdown: difficultyBreakdown,
 		RecentActivity:      recentActivity,
 		SolvesOverTime:      solvesOverTime,
+		SubmissionsOverTime: submissionsOverTime,
 		// Enhanced statistics
 		ActiveUsers:      int(activeUsers),
 		BannedUsers:      int(bannedUsers),
@@ -360,5 +413,14 @@ func (s *AnalyticsService) GetPlatformAnalytics() (*models.AdminAnalytics, error
 		TeamGrowth:       teamGrowth,
 		TopTeams:         topTeams,
 		TopUsers:         topUsers,
-	}, nil
+	}
+
+	// Cache the assembled analytics object with a short TTL.
+	if database.RDB != nil {
+		if data, err := json.Marshal(result); err == nil {
+			_ = database.RDB.Set(ctx, cacheKey, data, 1*time.Minute).Err()
+		}
+	}
+
+	return result, nil
 }

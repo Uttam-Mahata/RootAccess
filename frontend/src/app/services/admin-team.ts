@@ -56,4 +56,11 @@ export class AdminTeamService {
   deleteTeam(id: string): Observable<any> {
     return this.http.delete<any>(`${this.apiUrl}/admin/teams/${id}`);
   }
+
+  adjustScore(id: string, delta: number, reason: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/admin/teams/${id}/score-adjust`, {
+      delta,
+      reason
+    });
+  }
 }

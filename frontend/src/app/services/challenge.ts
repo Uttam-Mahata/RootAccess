@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
+import { shareReplay, tap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 
 // Challenge interface for public view
@@ -18,6 +19,7 @@ export interface Challenge {
   files: string[];
   tags: string[];
   hint_count: number;
+  is_solved: boolean;
 }
 
 // Challenge interface for admin view
@@ -86,16 +88,41 @@ export interface SubmitFlagResponse {
 })
 export class ChallengeService {
   private apiUrl = environment.apiUrl;
+  // Simple in-memory cache to avoid refetching challenge data
+  private challengesCache$?: Observable<Challenge[]>;
+  private challengeByIdCache = new Map<string, Challenge>();
 
   constructor(private http: HttpClient) { }
 
   // Public methods
-  getChallenges(): Observable<Challenge[]> {
-    return this.http.get<Challenge[]>(`${this.apiUrl}/challenges`);
+  getChallenges(forceRefresh: boolean = false): Observable<Challenge[]> {
+    if (!this.challengesCache$ || forceRefresh) {
+      this.challengesCache$ = this.http.get<Challenge[]>(`${this.apiUrl}/challenges`).pipe(
+        tap(challenges => {
+          this.challengeByIdCache.clear();
+          (challenges || []).forEach(ch => {
+            if (ch?.id) {
+              this.challengeByIdCache.set(ch.id, ch);
+            }
+          });
+        }),
+        shareReplay(1)
+      );
+    }
+    return this.challengesCache$;
   }
 
-  getChallenge(id: string): Observable<Challenge> {
-    return this.http.get<Challenge>(`${this.apiUrl}/challenges/${id}`);
+  getChallenge(id: string, forceRefresh: boolean = false): Observable<Challenge> {
+    if (!forceRefresh && this.challengeByIdCache.has(id)) {
+      return of(this.challengeByIdCache.get(id)!);
+    }
+    return this.http.get<Challenge>(`${this.apiUrl}/challenges/${id}`).pipe(
+      tap(challenge => {
+        if (challenge?.id) {
+          this.challengeByIdCache.set(challenge.id, challenge);
+        }
+      })
+    );
   }
 
   getChallengeSolves(id: string): Observable<any[]> {
@@ -155,5 +182,14 @@ export class ChallengeService {
 
   toggleWriteupUpvote(writeupId: string): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/writeups/${writeupId}/upvote`, {});
+  }
+
+  // Official writeup methods (admin)
+  updateOfficialWriteup(challengeId: string, content: string, format: string = 'markdown'): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/admin/challenges/${challengeId}/official-writeup`, { content, format });
+  }
+
+  publishOfficialWriteup(challengeId: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/admin/challenges/${challengeId}/official-writeup/publish`, {});
   }
 }

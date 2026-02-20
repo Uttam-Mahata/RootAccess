@@ -1,9 +1,13 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/database"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -14,6 +18,7 @@ type AdminTeamHandler struct {
 	userRepo       *repositories.UserRepository
 	submissionRepo *repositories.SubmissionRepository
 	invitationRepo *repositories.TeamInvitationRepository
+	adjustmentRepo *repositories.ScoreAdjustmentRepository
 }
 
 func NewAdminTeamHandler(
@@ -21,12 +26,14 @@ func NewAdminTeamHandler(
 	userRepo *repositories.UserRepository,
 	submissionRepo *repositories.SubmissionRepository,
 	invitationRepo *repositories.TeamInvitationRepository,
+	adjustmentRepo *repositories.ScoreAdjustmentRepository,
 ) *AdminTeamHandler {
 	return &AdminTeamHandler{
 		teamRepo:       teamRepo,
 		userRepo:       userRepo,
 		submissionRepo: submissionRepo,
 		invitationRepo: invitationRepo,
+		adjustmentRepo: adjustmentRepo,
 	}
 }
 
@@ -42,8 +49,87 @@ type AdminTeamResponse struct {
 	Members     []TeamMemberInfo    `json:"members"`
 	InviteCode  string              `json:"invite_code"`
 	Score       int                 `json:"score"`
+	// Future: we could expose effective_score including adjustments if needed
 	CreatedAt   string              `json:"created_at"`
 	UpdatedAt   string              `json:"updated_at"`
+}
+
+// AdjustTeamScoreRequest represents a manual team score adjustment
+type AdjustTeamScoreRequest struct {
+	Delta  int    `json:"delta" binding:"required"`
+	Reason string `json:"reason"`
+}
+
+// AdjustTeamScore allows admins to add or deduct points from a team's score.
+// @Summary Adjust team score
+// @Description Apply a manual score delta (positive or negative) to a team.
+// @Tags Admin Teams
+// @Accept json
+// @Produce json
+// @Param id path string true "Team ID"
+// @Param request body AdjustTeamScoreRequest true "Score adjustment"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Security ApiKeyAuth
+// @Router /admin/teams/{id}/score-adjust [post]
+func (h *AdminTeamHandler) AdjustTeamScore(c *gin.Context) {
+	teamID := c.Param("id")
+	if teamID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Team ID is required"})
+		return
+	}
+
+	var req AdjustTeamScoreRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if req.Delta == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Delta must be non-zero"})
+		return
+	}
+
+	// Ensure team exists
+	team, err := h.teamRepo.FindTeamByID(teamID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Team not found"})
+		return
+	}
+
+	// Update the team's stored score so admin views and analytics see it.
+	if err := h.teamRepo.UpdateTeamScore(teamID, req.Delta); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update team score"})
+		return
+	}
+
+	// Record a score adjustment so scoreboard/analytics can apply it
+	if h.adjustmentRepo != nil {
+		adminIDStr, _ := c.Get("user_id")
+		adminIDHex, _ := adminIDStr.(string)
+		adminID, _ := primitive.ObjectIDFromHex(adminIDHex)
+
+		adj := &models.ScoreAdjustment{
+			TargetType: models.ScoreAdjustmentTargetTeam,
+			TargetID:   team.ID,
+			Delta:      req.Delta,
+			Reason:     req.Reason,
+			CreatedBy:  adminID,
+		}
+		_ = h.adjustmentRepo.Create(adj)
+	}
+
+	// Clear relevant scoreboard caches to reflect changes quickly
+	if database.RDB != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		_ = database.RDB.Del(ctx,
+			"team_scoreboard",
+			"team_scoreboard_frozen",
+		).Err()
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Team score adjusted successfully"})
 }
 
 // TeamMemberInfo represents a team member's info

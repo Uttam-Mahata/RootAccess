@@ -35,6 +35,8 @@
     "@tailwindcss/postcss": "^4.1.18",
     "@tailwindcss/typography": "^0.5.19",
     "@tinymce/tinymce-angular": "^9.1.1",
+    "chart.js": "^4.5.1",
+    "flatpickr": "^4.6.13",
     "prismjs": "^1.30.0",
     "rxjs": "~7.8.0",
     "showdown": "^2.1.0",

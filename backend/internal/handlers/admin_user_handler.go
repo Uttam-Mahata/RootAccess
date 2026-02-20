@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -13,17 +14,19 @@ type AdminUserHandler struct {
 	userRepo       *repositories.UserRepository
 	teamRepo       *repositories.TeamRepository
 	submissionRepo *repositories.SubmissionRepository
+	adjustmentRepo *repositories.ScoreAdjustmentRepository
 }
 
 func NewAdminUserHandler(userRepo *repositories.UserRepository) *AdminUserHandler {
 	return &AdminUserHandler{userRepo: userRepo}
 }
 
-func NewAdminUserHandlerWithRepos(userRepo *repositories.UserRepository, teamRepo *repositories.TeamRepository, submissionRepo *repositories.SubmissionRepository) *AdminUserHandler {
+func NewAdminUserHandlerWithRepos(userRepo *repositories.UserRepository, teamRepo *repositories.TeamRepository, submissionRepo *repositories.SubmissionRepository, adjustmentRepo *repositories.ScoreAdjustmentRepository) *AdminUserHandler {
 	return &AdminUserHandler{
 		userRepo:       userRepo,
 		teamRepo:       teamRepo,
 		submissionRepo: submissionRepo,
+		adjustmentRepo: adjustmentRepo,
 	}
 }
 
@@ -240,6 +243,78 @@ func (h *AdminUserHandler) UpdateUserRole(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "User role updated"})
+}
+
+// AdjustUserScoreRequest represents a manual user score adjustment
+type AdjustUserScoreRequest struct {
+	Delta  int    `json:"delta" binding:"required"`
+	Reason string `json:"reason"`
+}
+
+// AdjustUserScore allows admins to apply a manual score delta to a user.
+// This affects the individual scoreboard and analytics but does not create
+// synthetic submissions.
+// @Summary Adjust user score
+// @Description Apply a manual score delta (positive or negative) to a user.
+// @Tags Admin Users
+// @Accept json
+// @Produce json
+// @Param id path string true "User ID"
+// @Param request body AdjustUserScoreRequest true "Score adjustment"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Security ApiKeyAuth
+// @Router /admin/users/{id}/score-adjust [post]
+func (h *AdminUserHandler) AdjustUserScore(c *gin.Context) {
+	if h.adjustmentRepo == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Score adjustments not available"})
+		return
+	}
+
+	userID := c.Param("id")
+	if userID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "User ID is required"})
+		return
+	}
+
+	var req AdjustUserScoreRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if req.Delta == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Delta must be non-zero"})
+		return
+	}
+
+	// Ensure user exists
+	user, err := h.userRepo.FindByID(userID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	adminIDStr, _ := c.Get("user_id")
+	adminIDHex, _ := adminIDStr.(string)
+	adminID, _ := primitive.ObjectIDFromHex(adminIDHex)
+
+	adj := &models.ScoreAdjustment{
+		TargetType: models.ScoreAdjustmentTargetUser,
+		TargetID:   user.ID,
+		Delta:      req.Delta,
+		Reason:     req.Reason,
+		CreatedBy:  adminID,
+	}
+	if err := h.adjustmentRepo.Create(adj); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to record score adjustment"})
+		return
+	}
+
+	// No need to touch Redis here; user scoreboard cache key is "scoreboard"
+	// and expires quickly, and this adjustment is picked up on next recompute.
+
+	c.JSON(http.StatusOK, gin.H{"message": "User score adjusted successfully"})
 }
 
 // DeleteUser deletes a user (admin only)

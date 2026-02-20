@@ -72,6 +72,16 @@ func (s *ChallengeService) DeleteChallenge(id string) error {
 	return err
 }
 
+// UpdateOfficialWriteup updates the official writeup content and format
+func (s *ChallengeService) UpdateOfficialWriteup(id string, content, format string) error {
+	return s.challengeRepo.UpdateOfficialWriteup(id, content, format)
+}
+
+// PublishOfficialWriteup sets OfficialWriteupPublished to true (caller must verify contest has ended)
+func (s *ChallengeService) PublishOfficialWriteup(id string) error {
+	return s.challengeRepo.PublishOfficialWriteup(id)
+}
+
 // SubmitFlagResult contains the result of a flag submission
 type SubmitFlagResult struct {
 	IsCorrect     bool   `json:"is_correct"`

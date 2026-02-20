@@ -50,6 +50,8 @@ export class ChallengeDetailComponent implements OnInit, OnDestroy, AfterViewChe
   message = '';
   isCorrect = false;
   isSubmitting = false;
+  isSolved = false;
+  solvedAt: string | null = null;
   
   // Hints
   hints: HintResponse[] = [];
@@ -157,13 +159,32 @@ export class ChallengeDetailComponent implements OnInit, OnDestroy, AfterViewChe
         body { 
           font-family: 'Space Grotesk', Arial, sans-serif; 
           font-size: 14px; 
-          background-color: #1e293b;
+          background-color: #0f172a;
           color: #e2e8f0;
           padding: 10px;
         }
-        a { color: #f87171; }
-        code { background-color: #0f172a; padding: 3px 8px; border-radius: 4px; color: #fbbf24; }
-        pre { background-color: #0f172a; padding: 16px; border-radius: 8px; color: #e2e8f0; }
+        a { color: #f87171; text-decoration: underline; }
+        code { 
+          background-color: #1e293b; 
+          padding: 3px 8px; 
+          border-radius: 4px; 
+          color: #fbbf24;
+          font-family: 'Courier New', Courier, monospace;
+          font-size: 13px;
+        }
+        pre { 
+          background-color: #0f172a; 
+          padding: 16px; 
+          border-radius: 8px; 
+          overflow-x: auto; 
+          color: #e2e8f0;
+          border: 1px solid #334155;
+        }
+        pre code { 
+          background-color: transparent; 
+          padding: 0; 
+          color: #fbbf24; 
+        }
       ` : `
         body { 
           font-family: 'Space Grotesk', Arial, sans-serif; 
@@ -172,9 +193,28 @@ export class ChallengeDetailComponent implements OnInit, OnDestroy, AfterViewChe
           color: #1e293b;
           padding: 10px;
         }
-        a { color: #dc2626; }
-        code { background-color: #f1f5f9; padding: 3px 8px; border-radius: 4px; color: #b91c1c; }
-        pre { background-color: #f1f5f9; padding: 16px; border-radius: 8px; color: #1e293b; }
+        a { color: #dc2626; text-decoration: underline; }
+        code { 
+          background-color: #f1f5f9; 
+          padding: 3px 8px; 
+          border-radius: 4px; 
+          color: #b91c1c;
+          font-family: 'Courier New', Courier, monospace;
+          font-size: 13px;
+        }
+        pre { 
+          background-color: #f1f5f9; 
+          padding: 16px; 
+          border-radius: 8px; 
+          overflow-x: auto; 
+          color: #1e293b;
+          border: 1px solid #e2e8f0;
+        }
+        pre code { 
+          background-color: transparent; 
+          padding: 0; 
+          color: #b91c1c; 
+        }
       `,
       skin: isDark ? 'oxide-dark' : 'oxide',
       content_css: isDark ? 'dark' : 'default'
@@ -264,7 +304,14 @@ export class ChallengeDetailComponent implements OnInit, OnDestroy, AfterViewChe
       this.challengeService.getChallenge(id).subscribe({
         next: (data) => {
           this.challenge = data;
-          
+
+          // Lock the form if this challenge is already solved
+          if (data.is_solved) {
+            this.isSolved = true;
+            this.isCorrect = true;
+            this.flagForm.get('flag')?.disable();
+          }
+
           // Render description based on format
           if (this.challenge.description) {
             const format = this.challenge.description_format || 'markdown';
@@ -377,43 +424,53 @@ export class ChallengeDetailComponent implements OnInit, OnDestroy, AfterViewChe
   }
 
   onSubmit(): void {
-    if (this.flagForm.valid && this.challenge && !this.isRateLimited && !this.isSubmitting) {
-      this.isSubmitting = true;
-      this.challengeService.submitFlag(this.challenge.id, this.flagForm.value.flag).subscribe({
-        next: (res) => {
-          this.message = res.message;
-          this.isCorrect = res.correct;
-          this.isSubmitting = false;
-          
-          // Update challenge points if correct
-          if (res.correct && res.points) {
-            this.challenge.current_points = res.points;
-          }
-          if (res.solve_count !== undefined) {
-            this.challenge.solve_count = res.solve_count;
-          }
-        },
-        error: (err) => {
-          this.isSubmitting = false;
-          
-          // Handle rate limiting (429 Too Many Requests)
-          if (err.status === 429) {
-            const retryAfter = err.error?.retry_after || 60;
-            this.startRateLimitCooldown(retryAfter);
-            this.message = `Too many attempts! Please wait ${retryAfter} seconds before trying again.`;
-            this.isCorrect = false;
-          } else {
-            this.message = err.error?.error || 'Error submitting flag';
-            this.isCorrect = false;
-          }
+    if (!this.challenge || this.isRateLimited || this.isSubmitting || this.isSolved) return;
+    const flagValue = this.flagForm.getRawValue().flag;
+    if (!flagValue) return;
+
+    this.isSubmitting = true;
+    this.challengeService.submitFlag(this.challenge.id, flagValue).subscribe({
+      next: (res) => {
+        this.isSubmitting = false;
+        this.message = res.message;
+        this.isCorrect = res.correct;
+
+        if (res.correct) {
+          this.isSolved = true;
+          this.solvedAt = new Date().toISOString();
+          this.flagForm.get('flag')?.disable();
+          if (res.points) this.challenge.current_points = res.points;
+          if (res.solve_count !== undefined) this.challenge.solve_count = res.solve_count;
         }
-      });
-    }
+
+        if (res.already_solved) {
+          this.isSolved = true;
+          this.isCorrect = true;
+          this.message = 'You (or your team) already solved this challenge!';
+          this.flagForm.get('flag')?.disable();
+        }
+      },
+      error: (err) => {
+        this.isSubmitting = false;
+        
+        // Handle rate limiting (429 Too Many Requests)
+        if (err.status === 429) {
+          const retryAfter = err.error?.retry_after || 60;
+          this.startRateLimitCooldown(retryAfter);
+          this.message = `Too many attempts! Please wait ${retryAfter} seconds before trying again.`;
+          this.isCorrect = false;
+        } else {
+          this.message = err.error?.error || 'Error submitting flag';
+          this.isCorrect = false;
+        }
+      }
+    });
   }
 
   private startRateLimitCooldown(seconds: number): void {
     this.isRateLimited = true;
     this.rateLimitSeconds = seconds;
+    this.flagForm.get('flag')?.disable();
 
     // Clear any existing interval
     if (this.rateLimitInterval) {
@@ -427,6 +484,10 @@ export class ChallengeDetailComponent implements OnInit, OnDestroy, AfterViewChe
         this.rateLimitSeconds = 0;
         this.message = '';
         clearInterval(this.rateLimitInterval);
+        // Re-enable input only if not already solved
+        if (!this.isSolved) {
+          this.flagForm.get('flag')?.enable();
+        }
       }
     }, 1000);
   }

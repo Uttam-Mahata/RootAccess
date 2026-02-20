@@ -29,9 +29,13 @@ type Challenge struct {
 	FlagHash          string             `bson:"flag_hash" json:"-"` // SHA-256 hashed flag (hidden from API)
 	Files             []string           `bson:"files" json:"files"`
 	Tags              []string           `bson:"tags" json:"tags"`
-	ScheduledAt       *time.Time         `bson:"scheduled_at,omitempty" json:"scheduled_at,omitempty"`
-	IsPublished       bool               `bson:"is_published" json:"is_published"`
-	Hints             []Hint             `bson:"hints,omitempty" json:"hints,omitempty"` // Embedded hints
+	ScheduledAt             *time.Time         `bson:"scheduled_at,omitempty" json:"scheduled_at,omitempty"`
+	IsPublished             bool               `bson:"is_published" json:"is_published"`
+	Hints                   []Hint             `bson:"hints,omitempty" json:"hints,omitempty"` // Embedded hints
+	ContestID               *primitive.ObjectID `bson:"contest_id,omitempty" json:"contest_id,omitempty"`
+	OfficialWriteup         string             `bson:"official_writeup,omitempty" json:"official_writeup,omitempty"`
+	OfficialWriteupFormat   string             `bson:"official_writeup_format,omitempty" json:"official_writeup_format,omitempty"` // "markdown" or "html"
+	OfficialWriteupPublished bool              `bson:"official_writeup_published" json:"official_writeup_published"`
 }
 
 // CurrentPoints calculates points based on scoring type and solve count

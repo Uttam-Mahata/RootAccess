@@ -46,8 +46,9 @@ type AdminAnalytics struct {
 	ChallengePopularity []ChallengePopularity `json:"challenge_popularity"`
 	CategoryBreakdown   map[string]int        `json:"category_breakdown"`
 	DifficultyBreakdown map[string]int        `json:"difficulty_breakdown"`
-	RecentActivity      []RecentActivityEntry `json:"recent_activity"`
-	SolvesOverTime      []TimeSeriesEntry     `json:"solves_over_time"`
+	RecentActivity       []RecentActivityEntry `json:"recent_activity"`
+	SolvesOverTime       []TimeSeriesEntry     `json:"solves_over_time"`
+	SubmissionsOverTime  []TimeSeriesEntry     `json:"submissions_over_time"`
 	// Enhanced statistics
 	ActiveUsers         int               `json:"active_users"`
 	BannedUsers         int               `json:"banned_users"`

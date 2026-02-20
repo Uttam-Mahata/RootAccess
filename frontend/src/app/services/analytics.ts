@@ -43,6 +43,7 @@ export interface AdminAnalytics {
   category_breakdown: { [key: string]: number };
   difficulty_breakdown: { [key: string]: number };
   solves_over_time: TimeSeriesEntry[];
+  submissions_over_time?: TimeSeriesEntry[];
   // Enhanced statistics
   active_users: number;
   banned_users: number;

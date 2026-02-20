@@ -1,12 +1,6 @@
-<div class="min-h-screen w-full max-w-[100vw] overflow-x-hidden bg-gradient-to-br from-gray-50 via-slate-50 to-gray-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 bg-cyber-grid-light dark:bg-cyber-grid-dark bg-grid transition-colors duration-300">
-  <!-- Accent Glow Effects (visible in both themes) -->
-  <div class="fixed inset-0 overflow-hidden pointer-events-none">
-    <div class="absolute -top-40 -right-40 w-80 h-80 bg-red-500/10 dark:bg-red-600/20 rounded-full blur-3xl"></div>
-    <div class="absolute top-1/2 -left-40 w-80 h-80 bg-red-600/10 dark:bg-red-700/20 rounded-full blur-3xl"></div>
-  </div>
-
+<div class="min-h-screen w-full max-w-[100vw] overflow-x-hidden bg-transparent dark:bg-slate-900 transition-colors duration-300">
   <!-- Navigation Bar -->
-  <nav class="relative bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-primary-500/20 shadow-lg dark:shadow-primary-500/5 transition-colors duration-300 z-50">
+  <nav class="relative bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-primary-500/20 shadow-sm transition-colors duration-300 z-50">
     <div class="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-16">
         <!-- Logo/Brand -->
@@ -71,7 +65,7 @@
             <!-- Signed Out State -->
             <div *ngIf="!isLoggedIn()" class="flex items-center space-x-2">
               <a routerLink="/login" 
-                 class="relative px-5 py-2 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 dark:from-red-600 dark:to-red-700 hover:from-red-700 hover:to-red-800 dark:hover:from-red-500 dark:hover:to-red-600 rounded-lg transition-all duration-200 shadow-lg shadow-red-500/25 hover:shadow-red-500/40 hover:scale-105 overflow-hidden group">
+                 class="relative px-5 py-2 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 dark:from-red-600 dark:to-red-700 hover:from-red-700 hover:to-red-800 dark:hover:from-red-500 dark:hover:to-red-600 rounded-lg transition-all duration-200 shadow-sm hover:scale-105 overflow-hidden group">
                 <span class="relative z-10">Login</span>
               </a>
               <a routerLink="/register" 
@@ -99,7 +93,7 @@
 
                 <!-- Notification Dropdown -->
                 <div *ngIf="showNotificationDropdown" 
-                     class="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 z-50 overflow-hidden">
+                     class="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-800 rounded-xl shadow-md border border-slate-200 dark:border-slate-700 z-50 overflow-hidden">
                   <div class="px-4 py-3 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
                     <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Notifications</h3>
                   </div>
@@ -143,7 +137,7 @@
               </div>
 
               <button (click)="logout()" 
-                      class="px-5 py-2 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 dark:from-red-600 dark:to-red-700 dark:hover:from-red-500 dark:hover:to-red-600 rounded-lg transition-all duration-200 shadow-lg shadow-red-500/25 hover:shadow-red-500/40 hover:scale-105">
+                      class="px-5 py-2 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 dark:from-red-600 dark:to-red-700 dark:hover:from-red-500 dark:hover:to-red-600 rounded-lg transition-all duration-200 shadow-sm hover:scale-105">
                 Logout
               </button>
             </div>
@@ -168,7 +162,7 @@
 
             <!-- Mobile Notification Dropdown -->
             <div *ngIf="showNotificationDropdown" 
-                 class="absolute right-0 mt-2 w-72 sm:w-80 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 z-50 overflow-hidden">
+                 class="absolute right-0 mt-2 w-72 sm:w-80 bg-white dark:bg-slate-800 rounded-xl shadow-md border border-slate-200 dark:border-slate-700 z-50 overflow-hidden">
               <div class="px-4 py-3 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
                 <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Notifications</h3>
               </div>
@@ -224,7 +218,7 @@
 
     <!-- Mobile Menu Panel -->
     <div *ngIf="showMobileMenu" 
-         class="lg:hidden absolute top-full left-0 right-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 shadow-xl z-40">
+         class="lg:hidden absolute top-full left-0 right-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 shadow-md z-40">
       <div class="px-4 py-4 space-y-1">
         <!-- Navigation Links -->
         <a routerLink="/" 
@@ -294,7 +288,7 @@
         <div *ngIf="!isLoggedIn()" class="space-y-2 px-2">
           <a routerLink="/login" 
              (click)="closeMobileMenu()"
-             class="block w-full py-3 px-4 text-center text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 rounded-lg transition-all duration-200 shadow-lg shadow-red-500/25">
+             class="block w-full py-3 px-4 text-center text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 rounded-lg transition-all duration-200 shadow-sm">
             Login
           </a>
           <a routerLink="/register" 
@@ -317,7 +311,7 @@
           </div>
           
           <button (click)="logout(); closeMobileMenu()" 
-                  class="w-full py-3 px-4 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 rounded-lg transition-all duration-200 shadow-lg shadow-red-500/25">
+                  class="w-full py-3 px-4 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 rounded-lg transition-all duration-200 shadow-sm">
             Logout
           </button>
         </div>
@@ -332,7 +326,7 @@
   </nav>
 
   <!-- Main Content -->
-  <main class="relative w-full min-w-0 max-w-[1920px] overflow-x-hidden mx-auto px-4 sm:px-6 lg:px-8 py-8 box-border">
+  <main class="relative w-full min-w-0 max-w-[1920px] overflow-x-hidden mx-auto px-4 sm:px-6 lg:px-8 py-8 box-border bg-transparent dark:bg-slate-900 transition-colors duration-300">
     <!-- Notification Banner -->
     <app-notification-banner></app-notification-banner>
     
@@ -340,4 +334,7 @@
       <router-outlet></router-outlet>
     </div>
   </main>
+  
+  <!-- Global Confirmation Modal -->
+  <app-confirmation-modal></app-confirmation-modal>
 </div>

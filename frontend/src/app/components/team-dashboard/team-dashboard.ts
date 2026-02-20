@@ -4,6 +4,8 @@ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angula
 import { RouterModule, Router } from '@angular/router';
 import { TeamService, Team, TeamMember, TeamInvitation } from '../../services/team';
 import { AuthService } from '../../services/auth';
+import { ConfirmationModalService } from '../../services/confirmation-modal.service';
+import { take } from 'rxjs/operators';
 
 @Component({
   selector: 'app-team-dashboard',
@@ -15,6 +17,7 @@ import { AuthService } from '../../services/auth';
 export class TeamDashboardComponent implements OnInit {
   teamService = inject(TeamService);
   authService = inject(AuthService);
+  confirmationModalService = inject(ConfirmationModalService);
   
   team: Team | null = null;
   members: TeamMember[] = [];
@@ -278,56 +281,83 @@ export class TeamDashboardComponent implements OnInit {
 
   // Remove member (leader)
   onRemoveMember(memberId: string): void {
-    if (!this.team || !confirm('Are you sure you want to remove this member?')) return;
-    this.isLoading = true;
-    this.error = '';
-    this.teamService.removeMember(this.team.id, memberId).subscribe({
-      next: () => {
-        this.isLoading = false;
-        this.success = 'Member removed';
-        this.loadTeamData();
-      },
-      error: (err) => {
-        this.isLoading = false;
-        this.error = err.error?.error || 'Failed to remove member';
+    if (!this.team) return;
+    this.confirmationModalService.show({
+      title: 'Remove Team Member',
+      message: 'Are you sure you want to remove this member?',
+      confirmText: 'Remove',
+      cancelText: 'Cancel'
+    }).pipe(take(1)).subscribe(confirmed => {
+      if (confirmed) {
+        this.isLoading = true;
+        this.error = '';
+        this.teamService.removeMember(this.team!.id, memberId).subscribe({
+          next: () => {
+            this.isLoading = false;
+            this.success = 'Member removed';
+            this.loadTeamData();
+          },
+          error: (err) => {
+            this.isLoading = false;
+            this.error = err.error?.error || 'Failed to remove member';
+          }
+        });
       }
     });
   }
 
   // Leave team
   onLeaveTeam(): void {
-    if (!this.team || !confirm('Are you sure you want to leave this team?')) return;
-    this.isLoading = true;
-    this.error = '';
-    this.teamService.leaveTeam(this.team.id).subscribe({
-      next: () => {
-        this.isLoading = false;
-        this.success = 'Left team successfully';
-        this.team = null;
-        this.members = [];
-      },
-      error: (err) => {
-        this.isLoading = false;
-        this.error = err.error?.error || 'Failed to leave team';
+    if (!this.team) return;
+    this.confirmationModalService.show({
+      title: 'Leave Team',
+      message: 'Are you sure you want to leave this team?',
+      confirmText: 'Leave',
+      cancelText: 'Cancel'
+    }).pipe(take(1)).subscribe(confirmed => {
+      if (confirmed) {
+        this.isLoading = true;
+        this.error = '';
+        this.teamService.leaveTeam(this.team!.id).subscribe({
+          next: () => {
+            this.isLoading = false;
+            this.success = 'Left team successfully';
+            this.team = null;
+            this.members = [];
+          },
+          error: (err) => {
+            this.isLoading = false;
+            this.error = err.error?.error || 'Failed to leave team';
+          }
+        });
       }
     });
   }
 
   // Delete team
   onDeleteTeam(): void {
-    if (!this.team || !confirm('Are you sure you want to delete this team? This action cannot be undone.')) return;
-    this.isLoading = true;
-    this.error = '';
-    this.teamService.deleteTeam(this.team.id).subscribe({
-      next: () => {
-        this.isLoading = false;
-        this.success = 'Team deleted successfully';
-        this.team = null;
-        this.members = [];
-      },
-      error: (err) => {
-        this.isLoading = false;
-        this.error = err.error?.error || 'Failed to delete team';
+    if (!this.team) return;
+    this.confirmationModalService.show({
+      title: 'Delete Team',
+      message: 'Are you sure you want to delete this team? This action cannot be undone.',
+      confirmText: 'Delete',
+      cancelText: 'Cancel'
+    }).pipe(take(1)).subscribe(confirmed => {
+      if (confirmed) {
+        this.isLoading = true;
+        this.error = '';
+        this.teamService.deleteTeam(this.team!.id).subscribe({
+          next: () => {
+            this.isLoading = false;
+            this.success = 'Team deleted successfully';
+            this.team = null;
+            this.members = [];
+          },
+          error: (err) => {
+            this.isLoading = false;
+            this.error = err.error?.error || 'Failed to delete team';
+          }
+        });
       }
     });
   }

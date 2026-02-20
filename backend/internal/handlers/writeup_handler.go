@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
@@ -10,12 +11,20 @@ import (
 )
 
 type WriteupHandler struct {
-	writeupService *services.WriteupService
+	writeupService     *services.WriteupService
+	contestAdminService *services.ContestAdminService
 }
 
 func NewWriteupHandler(writeupService *services.WriteupService) *WriteupHandler {
 	return &WriteupHandler{
 		writeupService: writeupService,
+	}
+}
+
+func NewWriteupHandlerWithContestAdmin(writeupService *services.WriteupService, contestAdminService *services.ContestAdminService) *WriteupHandler {
+	return &WriteupHandler{
+		writeupService:      writeupService,
+		contestAdminService: contestAdminService,
 	}
 }
 
@@ -75,7 +84,7 @@ func (h *WriteupHandler) CreateWriteup(c *gin.Context) {
 	})
 }
 
-// GetWriteups returns approved writeups for a challenge
+// GetWriteups returns approved writeups for a challenge (hidden until contest has ended)
 // @Summary Get writeups for a challenge
 // @Description Retrieve all approved writeups for a specific challenge.
 // @Tags Writeups
@@ -86,6 +95,15 @@ func (h *WriteupHandler) CreateWriteup(c *gin.Context) {
 // @Router /challenges/{id}/writeups [get]
 func (h *WriteupHandler) GetWriteups(c *gin.Context) {
 	challengeID := c.Param("id")
+
+	// Hide writeups until the challenge's contest has ended
+	if h.contestAdminService != nil {
+		ended, err := h.contestAdminService.HasContestEndedForChallenge(challengeID, time.Now())
+		if err != nil || !ended {
+			c.JSON(http.StatusOK, []models.Writeup{})
+			return
+		}
+	}
 
 	writeups, err := h.writeupService.GetWriteupsByChallenge(challengeID)
 	if err != nil {
@@ -132,14 +150,16 @@ func (h *WriteupHandler) GetMyWriteups(c *gin.Context) {
 
 // GetAllWriteups returns all writeups for admin
 // @Summary Get all writeups
-// @Description Retrieve all writeups, including pending and rejected ones.
+// @Description Retrieve all writeups, including pending and rejected ones. Optionally filter by team_id query parameter.
 // @Tags Admin Writeups
 // @Produce json
+// @Param team_id query string false "Filter by team ID"
 // @Success 200 {array} models.Writeup
 // @Security ApiKeyAuth
 // @Router /admin/writeups [get]
 func (h *WriteupHandler) GetAllWriteups(c *gin.Context) {
-	writeups, err := h.writeupService.GetAllWriteups()
+	teamID := c.Query("team_id")
+	writeups, err := h.writeupService.GetAllWriteups(teamID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

@@ -11,15 +11,18 @@ import (
 type WriteupService struct {
 	writeupRepo    *repositories.WriteupRepository
 	submissionRepo *repositories.SubmissionRepository
+	teamRepo       *repositories.TeamRepository
 }
 
 func NewWriteupService(
 	writeupRepo *repositories.WriteupRepository,
 	submissionRepo *repositories.SubmissionRepository,
+	teamRepo *repositories.TeamRepository,
 ) *WriteupService {
 	return &WriteupService{
 		writeupRepo:    writeupRepo,
 		submissionRepo: submissionRepo,
+		teamRepo:       teamRepo,
 	}
 }
 
@@ -50,6 +53,17 @@ func (s *WriteupService) CreateWriteup(userID primitive.ObjectID, username strin
 		ContentFormat: contentFormat,
 	}
 
+	// Check if user is in a team and if team has participated (solved any challenges)
+	team, _ := s.teamRepo.FindTeamByMemberID(userID.Hex())
+	if team != nil {
+		// Check if team has any correct submissions (has participated)
+		teamSubmissions, _ := s.submissionRepo.GetTeamSubmissions(team.ID)
+		if len(teamSubmissions) > 0 {
+			// Team has participated, auto-approve the writeup
+			writeup.Status = models.WriteupStatusApproved
+		}
+	}
+
 	if err := s.writeupRepo.CreateWriteup(writeup); err != nil {
 		return nil, err
 	}
@@ -67,7 +81,10 @@ func (s *WriteupService) GetWriteupsByChallenge(challengeID string) ([]models.Wr
 }
 
 // GetAllWriteups returns all writeups for admin
-func (s *WriteupService) GetAllWriteups() ([]models.Writeup, error) {
+func (s *WriteupService) GetAllWriteups(teamID string) ([]models.Writeup, error) {
+	if teamID != "" {
+		return s.writeupRepo.GetWriteupsByTeam(teamID)
+	}
 	return s.writeupRepo.GetAllWriteups()
 }
 

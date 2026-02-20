@@ -62,24 +62,31 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	notificationRepo := repositories.NewNotificationRepository()
 	hintRepo := repositories.NewHintRepository()
 	contestRepo := repositories.NewContestRepository()
+	contestEntityRepo := repositories.NewContestEntityRepository()
+	contestRoundRepo := repositories.NewContestRoundRepository()
+	roundChallengeRepo := repositories.NewRoundChallengeRepository()
 	writeupRepo := repositories.NewWriteupRepository()
 	auditLogRepo := repositories.NewAuditLogRepository()
 	achievementRepo := repositories.NewAchievementRepository()
+	scoreAdjustmentRepo := repositories.NewScoreAdjustmentRepository()
+	teamContestRegistrationRepo := repositories.NewTeamContestRegistrationRepository()
 
 	// Services
 	emailService := services.NewEmailService(cfg)
 	authService := services.NewAuthService(userRepo, emailService, cfg)
 	oauthService := services.NewOAuthService(userRepo, cfg)
 	challengeService := services.NewChallengeService(challengeRepo, submissionRepo, teamRepo)
-	scoreboardService := services.NewScoreboardService(userRepo, submissionRepo, challengeRepo, teamRepo, contestRepo)
+	scoreboardService := services.NewScoreboardService(userRepo, submissionRepo, challengeRepo, teamRepo, contestRepo, scoreAdjustmentRepo)
 	teamService := services.NewTeamService(teamRepo, teamInvitationRepo, userRepo, emailService, submissionRepo, challengeRepo)
 	notificationService := services.NewNotificationService(notificationRepo)
 	hintService := services.NewHintService(hintRepo, challengeRepo, teamRepo)
 	contestService := services.NewContestService(contestRepo)
-	writeupService := services.NewWriteupService(writeupRepo, submissionRepo)
+	contestAdminService := services.NewContestAdminService(contestRepo, contestEntityRepo, contestRoundRepo, roundChallengeRepo, challengeRepo, teamContestRegistrationRepo)
+	contestRegistrationService := services.NewContestRegistrationService(contestEntityRepo, teamContestRegistrationRepo, teamRepo)
+	writeupService := services.NewWriteupService(writeupRepo, submissionRepo, teamRepo)
 	auditLogService := services.NewAuditLogService(auditLogRepo)
 	achievementService := services.NewAchievementService(achievementRepo, submissionRepo, challengeRepo)
-	analyticsService := services.NewAnalyticsService(userRepo, submissionRepo, challengeRepo, teamRepo)
+	analyticsService := services.NewAnalyticsService(userRepo, submissionRepo, challengeRepo, teamRepo, scoreAdjustmentRepo)
 	activityService := services.NewActivityService(userRepo, submissionRepo, challengeRepo, achievementRepo, teamRepo)
 
 	// WebSocket hub
@@ -89,14 +96,16 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	// Handlers
 	authHandler := handlers.NewAuthHandler(authService)
 	oauthHandler := handlers.NewOAuthHandler(oauthService, database.RDB, cfg)
-	challengeHandler := handlers.NewChallengeHandlerWithRepos(challengeService, achievementService, contestService, wsHub, submissionRepo, userRepo, teamRepo)
+	challengeHandler := handlers.NewChallengeHandlerWithRepos(challengeService, achievementService, contestService, contestAdminService, wsHub, submissionRepo, userRepo, teamRepo)
 	scoreboardHandler := handlers.NewScoreboardHandler(scoreboardService, contestService)
 	teamHandler := handlers.NewTeamHandler(teamService)
-	notificationHandler := handlers.NewNotificationHandler(notificationService)
+	notificationHandler := handlers.NewNotificationHandler(notificationService, wsHub)
 	profileHandler := handlers.NewProfileHandler(userRepo, submissionRepo, challengeRepo, teamRepo)
 	hintHandler := handlers.NewHintHandler(hintService)
 	contestHandler := handlers.NewContestHandler(contestService)
-	writeupHandler := handlers.NewWriteupHandler(writeupService)
+	contestAdminHandler := handlers.NewContestAdminHandler(contestAdminService)
+	contestRegistrationHandler := handlers.NewContestRegistrationHandler(contestRegistrationService, teamService)
+	writeupHandler := handlers.NewWriteupHandlerWithContestAdmin(writeupService, contestAdminService)
 	auditLogHandler := handlers.NewAuditLogHandler(auditLogService)
 	achievementHandler := handlers.NewAchievementHandler(achievementService)
 	analyticsHandler := handlers.NewAnalyticsHandler(analyticsService)
@@ -104,8 +113,8 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	wsHandler := handlers.NewWebSocketHandler(wsHub, cfg)
 	bulkChallengeHandler := handlers.NewBulkChallengeHandler(challengeService)
 	leaderboardHandler := handlers.NewLeaderboardHandler(scoreboardService)
-	adminUserHandler := handlers.NewAdminUserHandlerWithRepos(userRepo, teamRepo, submissionRepo)
-	adminTeamHandler := handlers.NewAdminTeamHandler(teamRepo, userRepo, submissionRepo, teamInvitationRepo)
+	adminUserHandler := handlers.NewAdminUserHandlerWithRepos(userRepo, teamRepo, submissionRepo, scoreAdjustmentRepo)
+	adminTeamHandler := handlers.NewAdminTeamHandler(teamRepo, userRepo, submissionRepo, teamInvitationRepo, scoreAdjustmentRepo)
 
 	// Public Routes - Authentication (with IP rate limiting)
 	r.POST("/auth/register", middleware.IPRateLimitMiddleware(10, time.Minute), authHandler.Register)
@@ -132,12 +141,26 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	// Public Routes - Scoreboard (team scoreboard)
 	r.GET("/scoreboard", scoreboardHandler.GetScoreboard)
 	r.GET("/scoreboard/teams", scoreboardHandler.GetTeamScoreboard)
+	r.GET("/scoreboard/teams/statistics", scoreboardHandler.GetTeamStatistics)
 
 	// Public Routes - Notifications (active notifications only)
 	r.GET("/notifications", notificationHandler.GetActiveNotifications)
 
 	// Public Routes - Contest Status
 	r.GET("/contest/status", contestHandler.GetContestStatus)
+
+	// Public Routes - Contest Registration (upcoming contests)
+	r.GET("/contests/upcoming", contestRegistrationHandler.GetUpcomingContests)
+	r.GET("/contests/:contest_id/registered-count", contestRegistrationHandler.GetRegisteredTeamsCount)
+
+	// Authenticated Routes - Contest Registration
+	auth := r.Group("/")
+	auth.Use(middleware.AuthMiddleware(cfg))
+	{
+		auth.POST("/contests/:contest_id/register", contestRegistrationHandler.RegisterTeamForContest)
+		auth.POST("/contests/:contest_id/unregister", contestRegistrationHandler.UnregisterTeamFromContest)
+		auth.GET("/contests/:contest_id/registration-status", contestRegistrationHandler.GetTeamRegistrationStatus)
+	}
 
 	// Public Routes - User Profiles
 	r.GET("/users/:username/profile", profileHandler.GetUserProfile)
@@ -253,6 +276,8 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 			admin.POST("/challenges", challengeHandler.CreateChallenge)
 			admin.PUT("/challenges/:id", challengeHandler.UpdateChallenge)
 			admin.DELETE("/challenges/:id", challengeHandler.DeleteChallenge)
+			admin.PUT("/challenges/:id/official-writeup", challengeHandler.UpdateOfficialWriteup)
+			admin.POST("/challenges/:id/official-writeup/publish", challengeHandler.PublishOfficialWriteup)
 
 			// Notification management
 			admin.GET("/notifications", notificationHandler.GetAllNotifications)
@@ -264,6 +289,21 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 			// Contest management
 			admin.GET("/contest", contestHandler.GetContestConfig)
 			admin.PUT("/contest", contestHandler.UpdateContestConfig)
+
+			// Contest entities and rounds (multi-contest support)
+			admin.GET("/contest-entities", contestAdminHandler.ListContests)
+			admin.POST("/contest-entities", contestAdminHandler.CreateContest)
+			admin.POST("/contest-entities/set-active", contestAdminHandler.SetActiveContest)
+			admin.GET("/contest-entities/:id", contestAdminHandler.GetContest)
+			admin.PUT("/contest-entities/:id", contestAdminHandler.UpdateContest)
+			admin.DELETE("/contest-entities/:id", contestAdminHandler.DeleteContest)
+			admin.GET("/contest-entities/:id/rounds", contestAdminHandler.ListRounds)
+			admin.POST("/contest-entities/:id/rounds", contestAdminHandler.CreateRound)
+			admin.PUT("/contest-entities/:id/rounds/:roundId", contestAdminHandler.UpdateRound)
+			admin.DELETE("/contest-entities/:id/rounds/:roundId", contestAdminHandler.DeleteRound)
+			admin.GET("/contest-entities/:id/rounds/:roundId/challenges", contestAdminHandler.GetRoundChallenges)
+			admin.POST("/contest-entities/:id/rounds/:roundId/challenges", contestAdminHandler.AttachChallenges)
+			admin.DELETE("/contest-entities/:id/rounds/:roundId/challenges", contestAdminHandler.DetachChallenges)
 
 			// Writeup management
 			admin.GET("/writeups", writeupHandler.GetAllWriteups)
@@ -286,6 +326,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 			admin.GET("/users/:id", adminUserHandler.GetUser)
 			admin.PUT("/users/:id/status", adminUserHandler.UpdateUserStatus)
 			admin.PUT("/users/:id/role", adminUserHandler.UpdateUserRole)
+			admin.POST("/users/:id/score-adjust", adminUserHandler.AdjustUserScore)
 			admin.DELETE("/users/:id", adminUserHandler.DeleteUser)
 
 			// Team management (admin)
@@ -293,6 +334,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 			admin.GET("/teams/:id", adminTeamHandler.GetTeam)
 			admin.PUT("/teams/:id", adminTeamHandler.UpdateTeam)
 			admin.PUT("/teams/:id/leader", adminTeamHandler.UpdateTeamLeader)
+			admin.POST("/teams/:id/score-adjust", adminTeamHandler.AdjustTeamScore)
 			admin.DELETE("/teams/:id/members/:memberId", adminTeamHandler.RemoveMember)
 			admin.DELETE("/teams/:id", adminTeamHandler.DeleteTeam)
 		}

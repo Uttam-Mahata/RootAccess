@@ -4,13 +4,14 @@ import { CommonModule } from '@angular/common';
 import { AuthService } from './services/auth';
 import { NotificationService, Notification } from './services/notification';
 import { NotificationBannerComponent } from './components/notification-banner/notification-banner';
+import { ConfirmationModalComponent } from './components/confirmation-modal/confirmation-modal';
 import { Subscription } from 'rxjs';
 import 'zone.js';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, RouterModule, CommonModule, NotificationBannerComponent],
+  imports: [RouterOutlet, RouterModule, CommonModule, NotificationBannerComponent, ConfirmationModalComponent],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
 })

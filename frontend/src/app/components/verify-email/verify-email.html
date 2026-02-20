@@ -6,7 +6,7 @@
       <div class="absolute -inset-0.5 bg-gradient-to-r from-red-600 to-red-700 rounded-2xl blur opacity-20 group-hover:opacity-30 dark:opacity-30 dark:group-hover:opacity-50 transition duration-300"></div>
       
       <!-- Main Card -->
-      <div class="relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-red-600/20 p-8 transition-colors duration-300">
+      <div class="relative bg-white dark:bg-slate-900 rounded-2xl shadow-md border border-slate-200 dark:border-red-600/20 p-8 transition-colors duration-300">
         <!-- Loading State -->
         <div *ngIf="loading" class="text-center py-8">
           <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-red-500/20 to-red-700/20 mb-4 animate-pulse">
@@ -30,7 +30,7 @@
           <div class="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 rounded-lg p-4 mb-6">
             <p class="text-sm text-emerald-700 dark:text-emerald-300">Redirecting to login page in a few seconds...</p>
           </div>
-          <a routerLink="/login" class="inline-block py-2 px-6 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 dark:hover:from-red-500 dark:hover:to-red-600 rounded-lg transition-all duration-200 shadow-lg shadow-red-500/25 hover:shadow-red-500/40">
+          <a routerLink="/login" class="inline-block py-2 px-6 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 dark:hover:from-red-500 dark:hover:to-red-600 rounded-lg transition-all duration-200 shadow-sm">
             Go to Login
           </a>
         </div>
@@ -47,7 +47,7 @@
             <p class="text-sm text-red-700 dark:text-red-300">{{ error }}</p>
           </div>
           <div class="space-y-3">
-            <a routerLink="/resend-verification" class="block py-2 px-6 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 dark:hover:from-red-500 dark:hover:to-red-600 rounded-lg transition-all duration-200 shadow-lg shadow-red-500/25 hover:shadow-red-500/40">
+            <a routerLink="/resend-verification" class="block py-2 px-6 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 dark:hover:from-red-500 dark:hover:to-red-600 rounded-lg transition-all duration-200 shadow-sm">
               Resend Verification Email
             </a>
             <a routerLink="/login" class="block py-2 px-6 text-sm font-medium text-red-600 dark:text-red-500 hover:text-red-700 dark:hover:text-red-400 border border-red-500 dark:border-red-600/50 hover:border-red-600 dark:hover:border-red-500/70 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-all duration-200">

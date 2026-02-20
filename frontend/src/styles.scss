@@ -3,6 +3,87 @@
 /* PrismJS theme */
 @import 'prismjs/themes/prism-tomorrow.css';
 
+/* Flatpickr datetime picker */
+@import 'flatpickr/dist/flatpickr.min.css';
+
+/* Flatpickr dark mode overrides */
+.dark .flatpickr-calendar {
+  background: #1e293b;
+  border-color: #334155;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+}
+.dark .flatpickr-months .flatpickr-month,
+.dark .flatpickr-current-month .flatpickr-monthDropdown-months,
+.dark .flatpickr-weekdays,
+.dark span.flatpickr-weekday {
+  background: #1e293b;
+  color: #e2e8f0;
+}
+.dark .flatpickr-current-month input.cur-year {
+  color: #e2e8f0;
+}
+.dark .flatpickr-day {
+  color: #e2e8f0;
+  &:hover {
+    background: #334155;
+    border-color: #334155;
+  }
+  &.selected {
+    background: #dc2626;
+    border-color: #dc2626;
+    color: #fff;
+  }
+  &.today {
+    border-color: #dc2626;
+  }
+  &.prevMonthDay,
+  &.nextMonthDay {
+    color: #64748b;
+  }
+}
+.dark .flatpickr-time {
+  border-top-color: #334155;
+}
+.dark .flatpickr-time input,
+.dark .flatpickr-time .flatpickr-am-pm {
+  color: #e2e8f0;
+  &:hover {
+    background: #334155;
+  }
+}
+.dark .numInputWrapper span {
+  border-color: #334155;
+  &:hover {
+    background: #334155;
+  }
+  &::after {
+    border-color: #94a3b8 transparent transparent transparent;
+  }
+}
+.dark .numInputWrapper span.arrowUp::after {
+  border-bottom-color: #94a3b8;
+}
+.dark .numInputWrapper span.arrowDown::after {
+  border-top-color: #94a3b8;
+}
+.dark .flatpickr-months .flatpickr-prev-month,
+.dark .flatpickr-months .flatpickr-next-month {
+  color: #e2e8f0;
+  fill: #e2e8f0;
+  &:hover svg {
+    fill: #dc2626;
+  }
+}
+
+/* Flatpickr light mode accent */
+.flatpickr-day.selected {
+  background: #dc2626;
+  border-color: #dc2626;
+}
+.flatpickr-day.today {
+  border-color: #dc2626;
+}
+
 /* ============================================
    GLOBAL OVERFLOW FIX - NO HORIZONTAL SLIDE
    ============================================ */

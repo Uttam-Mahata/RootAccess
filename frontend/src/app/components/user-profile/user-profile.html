@@ -29,10 +29,10 @@
     <!-- Header Section -->
     <div class="relative group">
       <div class="absolute -inset-0.5 bg-gradient-to-r from-red-600 to-red-700 rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-300"></div>
-      <div class="relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-red-600/20 p-8 shadow-xl transition-colors duration-300">
+      <div class="relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-red-600/20 p-8 shadow-md transition-colors duration-300">
         <div class="flex flex-col md:flex-row items-center md:items-start gap-6">
           <!-- Avatar -->
-          <div class="w-24 h-24 bg-gradient-to-br from-red-500 to-red-700 rounded-full flex items-center justify-center text-white text-4xl font-bold shadow-lg shadow-red-500/25 flex-shrink-0">
+          <div class="w-24 h-24 bg-gradient-to-br from-red-500 to-red-700 rounded-full flex items-center justify-center text-white text-4xl font-bold shadow-sm flex-shrink-0">
             {{ profile.username.charAt(0).toUpperCase() }}
           </div>
           
@@ -71,7 +71,7 @@
     <!-- Category Stats -->
     <div *ngIf="profile.category_stats && profile.category_stats.length > 0" class="relative group">
       <div class="absolute -inset-0.5 bg-gradient-to-r from-red-600/50 to-red-700/50 rounded-2xl blur opacity-10 group-hover:opacity-20 transition duration-300"></div>
-      <div class="relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 shadow-xl transition-colors duration-300">
+      <div class="relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 shadow-md transition-colors duration-300">
         <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
           <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
@@ -100,7 +100,7 @@
     <!-- Solved Challenges -->
     <div *ngIf="profile.solved_challenges && profile.solved_challenges.length > 0" class="relative group">
       <div class="absolute -inset-0.5 bg-gradient-to-r from-red-600/50 to-red-700/50 rounded-2xl blur opacity-10 group-hover:opacity-20 transition duration-300"></div>
-      <div class="relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 shadow-xl transition-colors duration-300">
+      <div class="relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 shadow-md transition-colors duration-300">
         <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
           <svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>

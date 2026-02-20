@@ -28,7 +28,10 @@ func (r *WriteupRepository) CreateWriteup(writeup *models.Writeup) error {
 
 	writeup.CreatedAt = time.Now()
 	writeup.UpdatedAt = time.Now()
-	writeup.Status = models.WriteupStatusPending
+	// Only set status to pending if not already set (allows auto-approval)
+	if writeup.Status == "" {
+		writeup.Status = models.WriteupStatusPending
+	}
 
 	_, err := r.collection.InsertOne(ctx, writeup)
 	return err
@@ -178,6 +181,40 @@ func (r *WriteupRepository) UpdateWriteupContent(id string, content string, cont
 	}
 	_, err = r.collection.UpdateOne(ctx, bson.M{"_id": oid}, update)
 	return err
+}
+
+// GetWriteupsByTeam returns all writeups for a specific team
+func (r *WriteupRepository) GetWriteupsByTeam(teamID string) ([]models.Writeup, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	tid, err := primitive.ObjectIDFromHex(teamID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get all users in the team first
+	teamCollection := database.DB.Collection("teams")
+	var team models.Team
+	err = teamCollection.FindOne(ctx, bson.M{"_id": tid}).Decode(&team)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get writeups for all team members
+	filter := bson.M{"user_id": bson.M{"$in": team.MemberIDs}}
+	opts := options.Find().SetSort(bson.M{"created_at": -1})
+	cursor, err := r.collection.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var writeups []models.Writeup
+	if err = cursor.All(ctx, &writeups); err != nil {
+		return nil, err
+	}
+	return writeups, nil
 }
 
 // ToggleUpvote adds or removes a user's upvote on a writeup

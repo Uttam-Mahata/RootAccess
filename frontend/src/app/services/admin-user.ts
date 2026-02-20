@@ -54,4 +54,11 @@ export class AdminUserService {
   deleteUser(id: string): Observable<any> {
     return this.http.delete<any>(`${this.apiUrl}/admin/users/${id}`);
   }
+
+  adjustScore(id: string, delta: number, reason: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/admin/users/${id}/score-adjust`, {
+      delta,
+      reason
+    });
+  }
 }

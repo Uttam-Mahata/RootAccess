@@ -14,8 +14,8 @@
     <!-- Quick Actions Grid -->
     <div class="grid md:grid-cols-3 gap-6 mb-12">
       <!-- Challenges Card -->
-      <a routerLink="/challenges" class="group bg-white dark:bg-slate-800/50 backdrop-blur-xl rounded-xl shadow-xl dark:shadow-2xl border border-slate-200 dark:border-red-500/20 p-6 hover:border-red-400 dark:hover:border-red-500/40 transition-all duration-300 hover:scale-105">
-        <div class="w-14 h-14 bg-gradient-to-br from-red-500 to-red-700 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform shadow-lg shadow-red-500/25">
+      <a routerLink="/challenges" class="group bg-white dark:bg-slate-800/50 backdrop-blur-xl rounded-xl shadow-md border border-slate-200 dark:border-red-500/20 p-6 hover:border-red-400 dark:hover:border-red-500/40 transition-all duration-300 hover:scale-105">
+        <div class="w-14 h-14 bg-gradient-to-br from-red-500 to-red-700 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform shadow-sm">
           <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
           </svg>
@@ -25,8 +25,8 @@
       </a>
 
       <!-- Team Card -->
-      <a routerLink="/team" class="group bg-white dark:bg-slate-800/50 backdrop-blur-xl rounded-xl shadow-xl dark:shadow-2xl border border-slate-200 dark:border-blue-500/20 p-6 hover:border-blue-400 dark:hover:border-blue-500/40 transition-all duration-300 hover:scale-105">
-        <div class="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform shadow-lg shadow-blue-500/25">
+      <a routerLink="/team" class="group bg-white dark:bg-slate-800/50 backdrop-blur-xl rounded-xl shadow-md border border-slate-200 dark:border-blue-500/20 p-6 hover:border-blue-400 dark:hover:border-blue-500/40 transition-all duration-300 hover:scale-105">
+        <div class="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform shadow-sm">
           <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
           </svg>
@@ -36,8 +36,8 @@
       </a>
 
       <!-- Scoreboard Card -->
-      <a routerLink="/scoreboard" class="group bg-white dark:bg-slate-800/50 backdrop-blur-xl rounded-xl shadow-xl dark:shadow-2xl border border-slate-200 dark:border-yellow-500/20 p-6 hover:border-yellow-400 dark:hover:border-yellow-500/40 transition-all duration-300 hover:scale-105">
-        <div class="w-14 h-14 bg-gradient-to-br from-yellow-500 to-yellow-700 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform shadow-lg shadow-yellow-500/25">
+      <a routerLink="/scoreboard" class="group bg-white dark:bg-slate-800/50 backdrop-blur-xl rounded-xl shadow-md border border-slate-200 dark:border-yellow-500/20 p-6 hover:border-yellow-400 dark:hover:border-yellow-500/40 transition-all duration-300 hover:scale-105">
+        <div class="w-14 h-14 bg-gradient-to-br from-yellow-500 to-yellow-700 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform shadow-sm">
           <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
           </svg>
@@ -47,8 +47,131 @@
       </a>
     </div>
 
+    <!-- Upcoming Contests -->
+    <div class="mb-12">
+      <div class="flex items-center justify-center gap-3 mb-6">
+        <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+        </svg>
+        <h2 class="text-2xl font-bold text-slate-900 dark:text-white">Upcoming Contests</h2>
+      </div>
+
+      <div *ngIf="isLoadingContests" class="text-center py-8">
+        <div class="inline-flex items-center gap-2">
+          <svg class="animate-spin h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+          </svg>
+          <p class="text-slate-500 dark:text-slate-400">Loading contests...</p>
+        </div>
+      </div>
+
+      <div *ngIf="!isLoadingContests && upcomingContests.length === 0" class="bg-white dark:bg-slate-800/50 backdrop-blur-xl rounded-xl shadow-md border border-slate-200 dark:border-red-500/20 p-6">
+        <p class="text-slate-600 dark:text-slate-400">No upcoming contests at the moment. Check back later!</p>
+      </div>
+
+      <div *ngIf="!isLoadingContests && upcomingContests.length > 0" class="space-y-4">
+        <div *ngFor="let contest of upcomingContests"
+             class="bg-white dark:bg-slate-800/50 backdrop-blur-xl rounded-xl shadow-md border border-slate-200 dark:border-red-500/20 p-6 hover:border-red-400 dark:hover:border-red-500/40 transition-all duration-300">
+          <div class="flex items-start justify-between gap-4">
+            <div class="flex-1 text-left">
+              <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-2">{{ contest.name }}</h3>
+              <p *ngIf="contest.description" class="text-slate-600 dark:text-slate-400 mb-4">{{ contest.description }}</p>
+              <div class="flex flex-wrap items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
+                <div class="flex items-center gap-2">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                  </svg>
+                  <span>Starts: {{ formatDate(contest.start_time) }}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                  </svg>
+                  <span>Ends: {{ formatDate(contest.end_time) }}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                  <span class="font-medium text-red-600 dark:text-red-400">{{ getRelativeTime(contest.start_time) }}</span>
+                </div>
+              </div>
+              <div *ngIf="registeredTeamsCounts.has(contest.id)" class="flex items-center gap-2 mt-3">
+                <svg class="w-4 h-4 text-slate-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+                <span class="text-sm text-slate-500 dark:text-slate-400">{{ registeredTeamsCounts.get(contest.id) }} teams registered</span>
+              </div>
+            </div>
+            <div class="flex-shrink-0">
+              <!-- Loading state while checking registration status -->
+              <div *ngIf="!hasCheckedRegistrationStatus(contest.id)" class="px-6 py-2 flex items-center justify-center">
+                <svg class="animate-spin h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+              </div>
+              <!-- Register button (only show after status is checked) -->
+              <ng-container *ngIf="hasCheckedRegistrationStatus(contest.id)">
+                <!-- No team state - show disabled button with message -->
+                <div *ngIf="!hasTeam && !isRegistered(contest.id)" class="text-center">
+                  <button disabled
+                    class="px-6 py-2 bg-slate-300 dark:bg-slate-700 text-slate-500 dark:text-slate-400 font-semibold rounded-lg cursor-not-allowed">
+                    Register
+                  </button>
+                  <p class="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                    <a routerLink="/team" class="underline hover:text-amber-700 dark:hover:text-amber-300">Create or join a team</a> to register
+                  </p>
+                </div>
+                <!-- Has team and not registered -->
+                <button
+                  *ngIf="hasTeam && !isRegistered(contest.id)"
+                  (click)="registerForContest(contest.id)"
+                  [disabled]="registeringContests.has(contest.id)"
+                  [class.opacity-50]="registeringContests.has(contest.id)"
+                  [class.cursor-not-allowed]="registeringContests.has(contest.id)"
+                  class="px-6 py-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold rounded-lg transition-all duration-200 shadow-sm hover:shadow-md disabled:hover:shadow-sm">
+                  <span *ngIf="!registeringContests.has(contest.id)">Register</span>
+                  <span *ngIf="registeringContests.has(contest.id)" class="flex items-center gap-2">
+                    <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                    Registering...
+                  </span>
+                </button>
+                <!-- Registered button (show regardless of team status) -->
+                <button
+                  *ngIf="isRegistered(contest.id)"
+                  (click)="unregisterFromContest(contest.id)"
+                  [disabled]="registeringContests.has(contest.id) || !hasTeam"
+                  [class.opacity-50]="registeringContests.has(contest.id) || !hasTeam"
+                  [class.cursor-not-allowed]="registeringContests.has(contest.id) || !hasTeam"
+                  class="px-6 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-900 dark:text-white font-semibold rounded-lg transition-all duration-200">
+                  <span *ngIf="!registeringContests.has(contest.id)" class="flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    Registered
+                  </span>
+                  <span *ngIf="registeringContests.has(contest.id)" class="flex items-center gap-2">
+                    <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                    Unregistering...
+                  </span>
+                </button>
+              </ng-container>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Team Status -->
-    <div class="bg-white dark:bg-slate-800/50 backdrop-blur-xl rounded-xl shadow-xl dark:shadow-2xl border border-slate-200 dark:border-red-500/20 p-6">
+    <div class="bg-white dark:bg-slate-800/50 backdrop-blur-xl rounded-xl shadow-md border border-slate-200 dark:border-red-500/20 p-6">
       <div class="flex items-center justify-center gap-3 mb-4">
         <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
@@ -58,7 +181,7 @@
       <p class="text-slate-600 dark:text-slate-400 mb-4">
         Join or create a team to start competing! Teams earn points together by solving challenges.
       </p>
-      <a routerLink="/team" class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold rounded-lg transition-all duration-200 shadow-lg shadow-red-500/25 hover:shadow-red-500/40 hover:scale-105">
+      <a routerLink="/team" class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold rounded-lg transition-all duration-200 shadow-sm hover:shadow-md hover:scale-105">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
         </svg>

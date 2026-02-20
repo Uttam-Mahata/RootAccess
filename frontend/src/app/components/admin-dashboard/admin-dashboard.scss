@@ -1,1 +1,46 @@
 // All styling is now handled by Tailwind utility classes
+
+// Fix code block line breaks in writeup and challenge modals
+// CRITICAL: Override Tailwind prose classes to preserve whitespace in code blocks
+.prose pre,
+div.prose pre {
+  white-space: pre !important;
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  
+  // Target code inside pre (Showdown generates <pre><code>)
+  code {
+    white-space: pre !important;
+    word-break: normal !important;
+    overflow-wrap: normal !important;
+    display: block !important;
+  }
+}
+
+// Ensure code blocks preserve formatting with maximum specificity
+.prose pre code,
+div.prose pre code,
+.prose pre > code {
+  white-space: pre !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+  display: block !important;
+  font-family: 'Courier New', Courier, monospace !important;
+}
+
+// Override any Tailwind prose styles that might interfere
+.prose code {
+  font-family: 'Courier New', Courier, monospace !important;
+}
+
+// Global override for pre tags to preserve whitespace (highest priority)
+pre {
+  white-space: pre !important;
+  
+  code {
+    white-space: pre !important;
+    display: block !important;
+    word-break: normal !important;
+    overflow-wrap: normal !important;
+  }
+}

@@ -17,7 +17,7 @@
         <div class="absolute -inset-0.5 bg-gradient-to-r from-red-600 to-red-700 rounded-2xl blur opacity-20 group-hover:opacity-30 dark:opacity-30 dark:group-hover:opacity-40 transition duration-300"></div>
         
         <!-- Card -->
-        <div class="relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-red-600/20 p-8 shadow-2xl transition-colors duration-300">
+        <div class="relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-red-600/20 p-8 shadow-md transition-colors duration-300">
           <!-- Header -->
           <div class="mb-6">
             <div class="flex items-start justify-between mb-4">
@@ -98,7 +98,10 @@
                         prose-li:text-slate-700 dark:prose-li:text-slate-300 prose-li:break-words
                         prose-blockquote:border-red-500 dark:prose-blockquote:border-red-500
                         prose-hr:border-slate-300 dark:prose-hr:border-slate-700
-                        prose-table:block prose-table:overflow-x-auto prose-table:max-w-full
+                        prose-table:block prose-table:w-full prose-table:border-collapse prose-table:overflow-x-auto prose-table:max-w-full
+                        prose-thead:border-b prose-thead:border-slate-300 dark:prose-thead:border-slate-600
+                        prose-th:border prose-th:border-slate-200 dark:prose-th:border-slate-600 prose-th:px-4 prose-th:py-2 prose-th:text-left prose-th:font-semibold prose-th:text-slate-900 dark:prose-th:text-white prose-th:bg-slate-50 dark:prose-th:bg-slate-800/50
+                        prose-td:border prose-td:border-slate-200 dark:prose-td:border-slate-600 prose-td:px-4 prose-td:py-2 prose-td:text-slate-700 dark:prose-td:text-slate-300
                         overflow-hidden" 
                  [innerHTML]="renderedDescription"></div>
           </div>
@@ -184,28 +187,6 @@
             <!-- Writeup Form -->
             <div *ngIf="showWriteupForm" class="mb-4 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4">
               <form [formGroup]="writeupForm" (ngSubmit)="submitWriteup()">
-                <!-- Format Selector -->
-                <div class="mb-3 flex gap-4 p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700">
-                  <label class="flex items-center gap-2 cursor-pointer">
-                    <input 
-                      type="radio" 
-                      formControlName="content_format" 
-                      value="markdown"
-                      class="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500"
-                    />
-                    <span class="text-sm font-medium text-slate-900 dark:text-white">Markdown</span>
-                  </label>
-                  <label class="flex items-center gap-2 cursor-pointer">
-                    <input 
-                      type="radio" 
-                      formControlName="content_format" 
-                      value="html"
-                      class="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500"
-                    />
-                    <span class="text-sm font-medium text-slate-900 dark:text-white">HTML</span>
-                  </label>
-                </div>
-
                 <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                   Write your solution (Rich Text Editor)
                 </label>
@@ -270,7 +251,19 @@
           <div class="absolute -inset-0.5 bg-gradient-to-r from-red-700 to-red-600 rounded-2xl blur opacity-20 group-hover:opacity-30 dark:opacity-30 dark:group-hover:opacity-40 transition duration-300"></div>
           
           <!-- Form Card -->
-          <div class="relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-red-600/20 p-6 shadow-2xl transition-colors duration-300">
+          <div class="relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-red-600/20 p-6 shadow-md transition-colors duration-300">
+
+            <!-- Already Solved Banner -->
+            <div *ngIf="isSolved" class="mb-5 p-4 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 rounded-xl flex items-center gap-3">
+              <svg class="w-6 h-6 text-emerald-600 dark:text-emerald-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              <div>
+                <p class="text-emerald-700 dark:text-emerald-300 font-semibold text-sm">Challenge Solved! 🎉</p>
+                <p *ngIf="message" class="text-emerald-600 dark:text-emerald-400 text-xs mt-0.5">{{ message }}</p>
+              </div>
+            </div>
+
             <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-4 flex items-center">
               <svg class="w-6 h-6 text-red-600 dark:text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
@@ -290,7 +283,13 @@
               </div>
             </div>
 
-            <form [formGroup]="flagForm" (ngSubmit)="onSubmit()" class="space-y-4">
+            <!-- Incorrect attempt message -->
+            <div *ngIf="message && !isCorrect && !isSolved"
+                 class="mb-4 p-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-lg text-red-700 dark:text-red-300 text-sm font-medium">
+              {{ message }}
+            </div>
+
+            <form *ngIf="!isSolved" [formGroup]="flagForm" (ngSubmit)="onSubmit()" class="space-y-4">
               <div>
                 <label for="flag" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                   Enter the flag
@@ -300,16 +299,14 @@
                   type="text"
                   formControlName="flag"
                   placeholder="CTF{...}"
-                  required
-                  [disabled]="isRateLimited"
                   class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all duration-200 font-mono disabled:opacity-50 disabled:cursor-not-allowed"
                 />
               </div>
 
               <button
                 type="submit"
-                [disabled]="!flagForm.valid || isRateLimited || isSubmitting"
-                class="w-full py-3 px-4 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 dark:hover:from-red-500 dark:hover:to-red-600 rounded-lg transition-all duration-200 shadow-lg shadow-red-500/25 hover:shadow-red-500/40 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2">
+                [disabled]="flagForm.invalid || isRateLimited || isSubmitting"
+                class="w-full py-3 px-4 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 dark:hover:from-red-500 dark:hover:to-red-600 rounded-lg transition-all duration-200 shadow-sm hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2">
                 <svg *ngIf="isSubmitting" class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
                   <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                   <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -319,6 +316,15 @@
                 <span *ngIf="!isRateLimited && isSubmitting">Submitting...</span>
               </button>
             </form>
+
+            <!-- View solvers link when solved -->
+            <div *ngIf="isSolved" class="mt-4 text-center">
+              <button (click)="loadSolves(); showSolves = true"
+                      class="text-sm text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors underline underline-offset-2">
+                View all solvers →
+              </button>
+            </div>
+
           </div>
         </div>
       </div>

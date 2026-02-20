@@ -178,3 +178,81 @@ func (r *ChallengeRepository) CountChallenges() (int64, error) {
 
 	return r.collection.CountDocuments(ctx, bson.M{})
 }
+
+// GetChallengesByIDs returns challenges with the given IDs that are published
+func (r *ChallengeRepository) GetChallengesByIDs(ids []primitive.ObjectID, publishedOnly bool) ([]models.Challenge, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	filter := bson.M{"_id": bson.M{"$in": ids}}
+	if publishedOnly {
+		filter["is_published"] = true
+	}
+
+	cursor, err := r.collection.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var challenges []models.Challenge
+	if err = cursor.All(ctx, &challenges); err != nil {
+		return nil, err
+	}
+	return challenges, nil
+}
+
+// UpdateOfficialWriteup updates the official writeup fields on a challenge
+func (r *ChallengeRepository) UpdateOfficialWriteup(id string, content, format string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	oid, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+
+	_, err = r.collection.UpdateOne(ctx, bson.M{"_id": oid}, bson.M{
+		"$set": bson.M{
+			"official_writeup":         content,
+			"official_writeup_format":  format,
+		},
+	})
+	return err
+}
+
+// SetContestID sets the contest_id on a challenge
+func (r *ChallengeRepository) SetContestID(id string, contestID primitive.ObjectID) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	oid, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+
+	_, err = r.collection.UpdateOne(ctx, bson.M{"_id": oid}, bson.M{
+		"$set": bson.M{"contest_id": contestID},
+	})
+	return err
+}
+
+// PublishOfficialWriteup sets OfficialWriteupPublished to true
+func (r *ChallengeRepository) PublishOfficialWriteup(id string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	oid, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+
+	_, err = r.collection.UpdateOne(ctx, bson.M{"_id": oid}, bson.M{
+		"$set": bson.M{"official_writeup_published": true},
+	})
+	return err
+}

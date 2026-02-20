@@ -17,13 +17,10 @@ export class NotificationBannerComponent implements OnInit, OnDestroy {
   constructor(private notificationService: NotificationService) {}
 
   ngOnInit(): void {
-    // Start polling for notifications
-    this.subscription = this.notificationService.startPolling(30000).subscribe({
-      error: (err) => console.error('Failed to fetch notifications:', err)
-    });
+    // Initialize once: HTTP fetch + WebSocket push listeners (no polling)
+    this.notificationService.initialize();
 
-    // Subscribe to notifications changes
-    this.notificationService.notifications$.subscribe(notifications => {
+    this.subscription = this.notificationService.notifications$.subscribe(notifications => {
       this.notifications = notifications;
     });
   }

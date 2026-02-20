@@ -13,13 +13,14 @@ import (
 )
 
 type ChallengeHandler struct {
-	challengeService   *services.ChallengeService
-	achievementService *services.AchievementService
-	contestService     *services.ContestService
-	submissionRepo     *repositories.SubmissionRepository
-	userRepo           *repositories.UserRepository
-	teamRepo           *repositories.TeamRepository
-	wsHub              interface{ BroadcastMessage(string, interface{}) }
+	challengeService    *services.ChallengeService
+	achievementService  *services.AchievementService
+	contestService      *services.ContestService
+	contestAdminService *services.ContestAdminService
+	submissionRepo      *repositories.SubmissionRepository
+	userRepo            *repositories.UserRepository
+	teamRepo            *repositories.TeamRepository
+	wsHub               interface{ BroadcastMessage(string, interface{}) }
 }
 
 func NewChallengeHandler(challengeService *services.ChallengeService, achievementService *services.AchievementService, contestService *services.ContestService, wsHub interface{ BroadcastMessage(string, interface{}) }) *ChallengeHandler {
@@ -31,11 +32,12 @@ func NewChallengeHandler(challengeService *services.ChallengeService, achievemen
 	}
 }
 
-func NewChallengeHandlerWithRepos(challengeService *services.ChallengeService, achievementService *services.AchievementService, contestService *services.ContestService, wsHub interface{ BroadcastMessage(string, interface{}) }, submissionRepo *repositories.SubmissionRepository, userRepo *repositories.UserRepository, teamRepo *repositories.TeamRepository) *ChallengeHandler {
+func NewChallengeHandlerWithRepos(challengeService *services.ChallengeService, achievementService *services.AchievementService, contestService *services.ContestService, contestAdminService *services.ContestAdminService, wsHub interface{ BroadcastMessage(string, interface{}) }, submissionRepo *repositories.SubmissionRepository, userRepo *repositories.UserRepository, teamRepo *repositories.TeamRepository) *ChallengeHandler {
 	return &ChallengeHandler{
-		challengeService:   challengeService,
-		achievementService: achievementService,
+		challengeService:    challengeService,
+		achievementService:  achievementService,
 		contestService:     contestService,
+		contestAdminService: contestAdminService,
 		submissionRepo:     submissionRepo,
 		userRepo:           userRepo,
 		teamRepo:           teamRepo,
@@ -297,22 +299,25 @@ func (h *ChallengeHandler) GetAllChallengesWithFlags(c *gin.Context) {
 
 // ChallengePublicResponse is the response struct for public challenge view
 type ChallengePublicResponse struct {
-	ID                string   `json:"id"`
-	Title             string   `json:"title"`
-	Description       string   `json:"description"`
-	DescriptionFormat string   `json:"description_format"`
-	Category          string   `json:"category"`
-	Difficulty        string   `json:"difficulty"`
-	MaxPoints         int      `json:"max_points"`
-	CurrentPoints     int      `json:"current_points"`
-	ScoringType       string   `json:"scoring_type"`
-	SolveCount        int      `json:"solve_count"`
-	Files             []string `json:"files"`
-	Tags              []string `json:"tags"`
-	HintCount         int      `json:"hint_count"`
+	ID                    string   `json:"id"`
+	Title                 string   `json:"title"`
+	Description           string   `json:"description"`
+	DescriptionFormat     string   `json:"description_format"`
+	Category              string   `json:"category"`
+	Difficulty            string   `json:"difficulty"`
+	MaxPoints             int      `json:"max_points"`
+	CurrentPoints         int      `json:"current_points"`
+	ScoringType           string   `json:"scoring_type"`
+	SolveCount            int      `json:"solve_count"`
+	Files                 []string `json:"files"`
+	Tags                  []string `json:"tags"`
+	HintCount             int      `json:"hint_count"`
+	IsSolved              bool     `json:"is_solved"`
+	OfficialWriteup       string   `json:"official_writeup,omitempty"`
+	OfficialWriteupFormat string   `json:"official_writeup_format,omitempty"`
 }
 
-// GetAllChallenges returns all challenges for users
+// GetAllChallenges returns all challenges for users (filtered by active contest/round visibility)
 // @Summary Get all challenges
 // @Description Retrieve a list of all published challenges with public details (no flags).
 // @Tags Challenges
@@ -322,14 +327,48 @@ type ChallengePublicResponse struct {
 // @Security ApiKeyAuth
 // @Router /challenges [get]
 func (h *ChallengeHandler) GetAllChallenges(c *gin.Context) {
-	challenges, err := h.challengeService.GetAllChallenges()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
+	// Determine current user and their team
+	var userID primitive.ObjectID
+	var teamID *primitive.ObjectID
+	if userIDStr, exists := c.Get("user_id"); exists {
+		userID, _ = primitive.ObjectIDFromHex(userIDStr.(string))
+		if h.teamRepo != nil && !userID.IsZero() {
+			if team, err := h.teamRepo.FindTeamByMemberID(userID.Hex()); err == nil && team != nil {
+				teamID = &team.ID
+			}
+		}
+	}
+
+	var challenges []models.Challenge
+	var err error
+	if h.contestAdminService != nil {
+		challenges, err = h.contestAdminService.GetVisibleChallenges(time.Now(), teamID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		// nil from GetVisibleChallenges means no active contest; challenges is already empty
+	} else {
+		challenges, err = h.challengeService.GetAllChallenges()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
 	}
 
 	var result []ChallengePublicResponse
 	for _, ch := range challenges {
+		isSolved := false
+		if h.submissionRepo != nil && !userID.IsZero() {
+			if sub, _ := h.submissionRepo.FindByChallengeAndUser(ch.ID, userID); sub != nil {
+				isSolved = true
+			}
+			if !isSolved && teamID != nil && !teamID.IsZero() {
+				if teamSub, _ := h.submissionRepo.FindByChallengeAndTeam(ch.ID, *teamID); teamSub != nil {
+					isSolved = true
+				}
+			}
+		}
 		result = append(result, ChallengePublicResponse{
 			ID:                ch.ID.Hex(),
 			Title:             ch.Title,
@@ -344,6 +383,7 @@ func (h *ChallengeHandler) GetAllChallenges(c *gin.Context) {
 			Files:             ch.Files,
 			Tags:              ch.Tags,
 			HintCount:         len(ch.Hints),
+			IsSolved:          isSolved,
 		})
 	}
 
@@ -358,7 +398,46 @@ func (h *ChallengeHandler) GetChallengeByID(c *gin.Context) {
 		return
 	}
 
-	// Return public response (no flag hash)
+	// Enforce visibility for non-admin users: challenge must be in active contest/round and team must be registered
+	if h.contestAdminService != nil {
+		role, _ := c.Get("role")
+		if role != "admin" {
+			var teamID *primitive.ObjectID
+			if userIDStr, exists := c.Get("user_id"); exists && h.teamRepo != nil {
+				userID, _ := primitive.ObjectIDFromHex(userIDStr.(string))
+				if !userID.IsZero() {
+					if team, err := h.teamRepo.FindTeamByMemberID(userIDStr.(string)); err == nil && team != nil {
+						teamID = &team.ID
+					}
+				}
+			}
+			visible, err := h.contestAdminService.IsChallengeVisible(id, time.Now(), teamID)
+			if err != nil || !visible {
+				c.JSON(http.StatusNotFound, gin.H{"error": "Challenge not found"})
+				return
+			}
+		}
+	}
+
+	// Determine if the current user (or their team) has already solved this challenge
+	isSolved := false
+	if userIDStr, exists := c.Get("user_id"); exists && h.submissionRepo != nil {
+		userID, _ := primitive.ObjectIDFromHex(userIDStr.(string))
+		if !userID.IsZero() {
+			if sub, _ := h.submissionRepo.FindByChallengeAndUser(challenge.ID, userID); sub != nil {
+				isSolved = true
+			}
+			if !isSolved && h.teamRepo != nil {
+				if team, err := h.teamRepo.FindTeamByMemberID(userID.Hex()); err == nil && team != nil {
+					if teamSub, _ := h.submissionRepo.FindByChallengeAndTeam(challenge.ID, team.ID); teamSub != nil {
+						isSolved = true
+					}
+				}
+			}
+		}
+	}
+
+	// Build public response (no flag hash)
 	response := ChallengePublicResponse{
 		ID:                challenge.ID.Hex(),
 		Title:             challenge.Title,
@@ -373,9 +452,74 @@ func (h *ChallengeHandler) GetChallengeByID(c *gin.Context) {
 		Files:             challenge.Files,
 		Tags:              challenge.Tags,
 		HintCount:         len(challenge.Hints),
+		IsSolved:          isSolved,
+	}
+	// Include official writeup only when contest has ended and it is published
+	if challenge.OfficialWriteupPublished && challenge.OfficialWriteup != "" {
+		ended := true
+		if h.contestAdminService != nil {
+			ended, _ = h.contestAdminService.HasContestEndedForChallenge(id, time.Now())
+		}
+		if ended {
+			response.OfficialWriteup = challenge.OfficialWriteup
+			response.OfficialWriteupFormat = challenge.OfficialWriteupFormat
+		}
 	}
 
 	c.JSON(http.StatusOK, response)
+}
+
+type UpdateOfficialWriteupRequest struct {
+	Content string `json:"content" binding:"required"`
+	Format  string `json:"format"` // "markdown" or "html"
+}
+
+// UpdateOfficialWriteup updates the official writeup for a challenge (admin only)
+func (h *ChallengeHandler) UpdateOfficialWriteup(c *gin.Context) {
+	id := c.Param("id")
+	var req UpdateOfficialWriteupRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	format := req.Format
+	if format == "" {
+		format = "markdown"
+	}
+	if format != "markdown" && format != "html" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "format must be 'markdown' or 'html'"})
+		return
+	}
+	if _, err := h.challengeService.GetChallengeByID(id); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Challenge not found"})
+		return
+	}
+	if err := h.challengeService.UpdateOfficialWriteup(id, req.Content, format); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Official writeup updated"})
+}
+
+// PublishOfficialWriteup publishes the official writeup (admin only, contest must have ended)
+func (h *ChallengeHandler) PublishOfficialWriteup(c *gin.Context) {
+	id := c.Param("id")
+	if _, err := h.challengeService.GetChallengeByID(id); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Challenge not found"})
+		return
+	}
+	if h.contestAdminService != nil {
+		ended, err := h.contestAdminService.HasContestEndedForChallenge(id, time.Now())
+		if err != nil || !ended {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Cannot publish official writeup until the contest has ended"})
+			return
+		}
+	}
+	if err := h.challengeService.PublishOfficialWriteup(id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Official writeup published"})
 }
 
 type SubmitFlagRequest struct {
@@ -411,6 +555,21 @@ func (h *ChallengeHandler) SubmitFlag(c *gin.Context) {
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
+	}
+
+	// Reject submissions to non-visible challenges (not in active contest/round or team not registered)
+	if h.contestAdminService != nil {
+		var teamID *primitive.ObjectID
+		if h.teamRepo != nil {
+			if team, err := h.teamRepo.FindTeamByMemberID(userIDStr.(string)); err == nil && team != nil {
+				teamID = &team.ID
+			}
+		}
+		visible, err := h.contestAdminService.IsChallengeVisible(challengeID, time.Now(), teamID)
+		if err != nil || !visible {
+			c.JSON(http.StatusForbidden, gin.H{"error": "This challenge is not currently available for submissions."})
+			return
+		}
 	}
 
 	// Convert interface{} to string then ObjectID
