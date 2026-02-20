@@ -33,6 +33,8 @@ type Config struct {
 	DiscordClientID     string
 	DiscordClientSecret string
 	DiscordRedirectURL  string
+	// CORS configuration
+	CORSAllowedOrigins string // comma-separated list of allowed origins
 	// Registration access control
 	RegistrationMode           string // "open" | "domain" | "disabled"
 	RegistrationAllowedDomains string // comma-separated, e.g. "college.edu,university.org"
@@ -47,12 +49,19 @@ func LoadConfig() *Config {
 	smtpPort, _ := strconv.Atoi(getEnv("SMTP_PORT", "587"))
 	redisDB, _ := strconv.Atoi(getEnv("REDIS_DB", "0"))
 
+	jwtSecret := getEnv("JWT_SECRET", "default_secret")
+	environment := getEnv("APP_ENV", "development")
+
+	if environment == "production" && jwtSecret == "default_secret" {
+		log.Fatal("FATAL: JWT_SECRET must be set in production environment")
+	}
+
 	return &Config{
 		Port:           getEnv("PORT", "8080"),
-		Environment:    getEnv("APP_ENV", "development"),
+		Environment:    environment,
 		MongoURI:       getEnv("MONGO_URI", "mongodb://localhost:27017"),
 		DBName:         getEnv("DB_NAME", "go_ctf"),
-		JWTSecret:      getEnv("JWT_SECRET", "default_secret"),
+		JWTSecret:      jwtSecret,
 		FrontendURL:    getEnv("FRONTEND_URL", "http://localhost:4200"),
 		TrustedProxies: getEnv("TRUSTED_PROXIES", ""),
 		SMTPHost:       getEnv("SMTP_HOST", "smtp.gmail.com"),
@@ -72,6 +81,7 @@ func LoadConfig() *Config {
 		DiscordClientID:     getEnv("DISCORD_CLIENT_ID", ""),
 		DiscordClientSecret: getEnv("DISCORD_CLIENT_SECRET", ""),
 		DiscordRedirectURL:  getEnv("DISCORD_REDIRECT_URL", "https://rootaccess.live/auth/discord/callback"),
+		CORSAllowedOrigins:  getEnv("CORS_ALLOWED_ORIGINS", ""),
 		RegistrationMode:           getEnv("REGISTRATION_MODE", "open"),
 		RegistrationAllowedDomains: getEnv("REGISTRATION_ALLOWED_DOMAINS", ""),
 	}

@@ -10,7 +10,7 @@
 /node_modules
 npm-debug.log
 yarn-error.log
-
+couldflare/
 # IDEs and editors
 .idea/
 .project

@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/services"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/utils"
 )
 
 type AuditLogHandler struct {
@@ -38,7 +39,7 @@ func (h *AuditLogHandler) GetAuditLogs(c *gin.Context) {
 
 	logs, total, err := h.auditService.GetLogs(limit, page)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusInternalServerError, err.Error(), err)
 		return
 	}
 

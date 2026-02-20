@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/services"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/utils"
 )
 
 type AuthHandler struct {
@@ -63,12 +64,12 @@ type ChangePasswordRequest struct {
 func (h *AuthHandler) Register(c *gin.Context) {
 	var req RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, "Invalid request format", err)
 		return
 	}
 
 	if err := h.authService.Register(req.Username, req.Email, req.Password); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 
@@ -94,14 +95,14 @@ func (h *AuthHandler) VerifyEmail(c *gin.Context) {
 	if token == "" {
 		var req VerifyEmailRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "verification token is required"})
+			utils.RespondWithError(c, http.StatusBadRequest, "Verification token is required", err)
 			return
 		}
 		token = req.Token
 	}
 
 	if err := h.authService.VerifyEmail(token); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 
@@ -123,12 +124,12 @@ func (h *AuthHandler) VerifyEmail(c *gin.Context) {
 func (h *AuthHandler) ResendVerification(c *gin.Context) {
 	var req ResendVerificationRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, "Invalid request format", err)
 		return
 	}
 
 	if err := h.authService.ResendVerificationEmail(req.Email); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 
@@ -150,13 +151,13 @@ func (h *AuthHandler) ResendVerification(c *gin.Context) {
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, "Invalid request format", err)
 		return
 	}
 
 	token, userInfo, err := h.authService.Login(req.UsernameOrEmail, req.Password)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusUnauthorized, err.Error(), err)
 		return
 	}
 
@@ -165,33 +166,38 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	go h.authService.RecordUserLoginIP(userInfo.ID, clientIP)
 
 	// Set HTTP-only cookie with JWT token
+	isProd := h.authService.GetEnvironment() == "production"
+	
+	c.SetSameSite(http.SameSiteLaxMode)
 	c.SetCookie(
 		"auth_token", // name
 		token,        // value
 		7*24*60*60,   // maxAge (7 days in seconds)
 		"/",          // path
 		"",           // domain (empty = current domain)
-		false,        // secure (set to true in production with HTTPS)
+		isProd,       // secure (set to true in production with HTTPS)
 		true,         // httpOnly
 	)
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Login successful!",
-		"token":   token,
 		"user":    userInfo,
 	})
 }
 
 // Logout clears the authentication cookie
 func (h *AuthHandler) Logout(c *gin.Context) {
+	isProd := h.authService.GetEnvironment() == "production"
+	
 	// Clear the cookie by setting maxAge to -1
+	c.SetSameSite(http.SameSiteLaxMode)
 	c.SetCookie(
 		"auth_token",
 		"",
 		-1,
 		"/",
 		"",
-		false,
+		isProd,
 		true,
 	)
 
@@ -204,7 +210,7 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 func (h *AuthHandler) ForgotPassword(c *gin.Context) {
 	var req ForgotPasswordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, "Invalid request format", err)
 		return
 	}
 
@@ -225,12 +231,12 @@ func (h *AuthHandler) ForgotPassword(c *gin.Context) {
 func (h *AuthHandler) ResetPassword(c *gin.Context) {
 	var req ResetPasswordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, "Invalid request format", err)
 		return
 	}
 
 	if err := h.authService.ResetPassword(req.Token, req.NewPassword); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 
@@ -243,19 +249,19 @@ func (h *AuthHandler) ResetPassword(c *gin.Context) {
 func (h *AuthHandler) ChangePassword(c *gin.Context) {
 	var req ChangePasswordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, "Invalid request format", err)
 		return
 	}
 
 	// Get user ID from context (set by auth middleware)
 	userID, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		utils.RespondWithError(c, http.StatusUnauthorized, "Authentication required", nil)
 		return
 	}
 
 	if err := h.authService.ChangePassword(userID.(string), req.OldPassword, req.NewPassword); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 

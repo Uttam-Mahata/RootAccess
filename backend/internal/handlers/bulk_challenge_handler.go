@@ -59,7 +59,7 @@ type ExportChallenge struct {
 func (h *BulkChallengeHandler) ImportChallenges(c *gin.Context) {
 	var challenges []BulkChallengeImport
 	if err := c.ShouldBindJSON(&challenges); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON format: " + err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, "Invalid JSON format", err)
 		return
 	}
 
@@ -125,7 +125,7 @@ func (h *BulkChallengeHandler) ImportChallenges(c *gin.Context) {
 func (h *BulkChallengeHandler) ExportChallenges(c *gin.Context) {
 	challenges, err := h.challengeService.GetAllChallenges()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusInternalServerError, err.Error(), err)
 		return
 	}
 
@@ -183,7 +183,7 @@ func (h *BulkChallengeHandler) DuplicateChallenge(c *gin.Context) {
 	}
 
 	if err := h.challengeService.CreateChallenge(duplicate); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusInternalServerError, err.Error(), err)
 		return
 	}
 

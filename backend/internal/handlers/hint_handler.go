@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/services"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/utils"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -40,7 +41,7 @@ func (h *HintHandler) GetHints(c *gin.Context) {
 
 	hints, err := h.hintService.GetHintsForChallenge(challengeID, userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusInternalServerError, err.Error(), err)
 		return
 	}
 
@@ -76,7 +77,7 @@ func (h *HintHandler) RevealHint(c *gin.Context) {
 
 	hint, err := h.hintService.RevealHint(challengeID, hintID, userID)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 

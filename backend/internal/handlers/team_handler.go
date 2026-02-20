@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/services"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/utils"
 )
 
 type TeamHandler struct {
@@ -54,7 +55,7 @@ type JoinByCodeRequest struct {
 func (h *TeamHandler) CreateTeam(c *gin.Context) {
 	var req CreateTeamRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 
@@ -66,7 +67,7 @@ func (h *TeamHandler) CreateTeam(c *gin.Context) {
 
 	team, err := h.teamService.CreateTeam(userID.(string), req.Name, req.Description)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 
@@ -114,7 +115,7 @@ func (h *TeamHandler) GetMyTeam(c *gin.Context) {
 	// Get team members with details
 	members, err := h.teamService.GetTeamMembers(team.ID.Hex())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get team members"})
+		utils.RespondWithError(c, http.StatusInternalServerError, "failed to get team members", err)
 		return
 	}
 
@@ -169,7 +170,7 @@ func (h *TeamHandler) UpdateTeam(c *gin.Context) {
 
 	var req UpdateTeamRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 
@@ -181,7 +182,7 @@ func (h *TeamHandler) UpdateTeam(c *gin.Context) {
 
 	team, err := h.teamService.UpdateTeam(teamID, userID.(string), req.Name, req.Description)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 
@@ -223,7 +224,7 @@ func (h *TeamHandler) DeleteTeam(c *gin.Context) {
 	}
 
 	if err := h.teamService.DeleteTeam(teamID, userID.(string)); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 
@@ -249,7 +250,7 @@ func (h *TeamHandler) InviteByUsername(c *gin.Context) {
 
 	var req InviteByUsernameRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 
@@ -261,7 +262,7 @@ func (h *TeamHandler) InviteByUsername(c *gin.Context) {
 
 	invitation, err := h.teamService.InviteByUsername(teamID, userID.(string), req.Username)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 
@@ -288,7 +289,7 @@ func (h *TeamHandler) InviteByEmail(c *gin.Context) {
 
 	var req InviteByEmailRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 
@@ -300,7 +301,7 @@ func (h *TeamHandler) InviteByEmail(c *gin.Context) {
 
 	invitation, err := h.teamService.InviteByEmail(teamID, userID.(string), req.Email)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 
@@ -327,7 +328,7 @@ func (h *TeamHandler) JoinByCode(c *gin.Context) {
 	if code == "" {
 		var req JoinByCodeRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 			return
 		}
 		code = req.InviteCode
@@ -341,7 +342,7 @@ func (h *TeamHandler) JoinByCode(c *gin.Context) {
 
 	team, err := h.teamService.JoinByInviteCode(userID.(string), code)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 
@@ -384,7 +385,7 @@ func (h *TeamHandler) GetPendingInvitations(c *gin.Context) {
 
 	invitations, err := h.teamService.GetPendingInvitations(userID.(string), emailStr)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get invitations"})
+		utils.RespondWithError(c, http.StatusInternalServerError, "failed to get invitations", err)
 		return
 	}
 
@@ -414,7 +415,7 @@ func (h *TeamHandler) AcceptInvitation(c *gin.Context) {
 
 	team, err := h.teamService.AcceptInvitation(invitationID, userID.(string))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 
@@ -457,7 +458,7 @@ func (h *TeamHandler) RejectInvitation(c *gin.Context) {
 	}
 
 	if err := h.teamService.RejectInvitation(invitationID, userID.(string)); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 
@@ -488,7 +489,7 @@ func (h *TeamHandler) RemoveMember(c *gin.Context) {
 	}
 
 	if err := h.teamService.RemoveMember(teamID, userID.(string), memberID); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 
@@ -517,7 +518,7 @@ func (h *TeamHandler) LeaveTeam(c *gin.Context) {
 	}
 
 	if err := h.teamService.LeaveTeam(teamID, userID.(string)); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 
@@ -547,7 +548,7 @@ func (h *TeamHandler) RegenerateInviteCode(c *gin.Context) {
 
 	newCode, err := h.teamService.RegenerateInviteCode(teamID, userID.(string))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 
@@ -578,7 +579,7 @@ func (h *TeamHandler) GetTeamPendingInvitations(c *gin.Context) {
 
 	invitations, err := h.teamService.GetTeamPendingInvitations(teamID, userID.(string))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 
@@ -608,7 +609,7 @@ func (h *TeamHandler) CancelInvitation(c *gin.Context) {
 	}
 
 	if err := h.teamService.CancelInvitation(invitationID, userID.(string)); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 
@@ -627,7 +628,7 @@ func (h *TeamHandler) CancelInvitation(c *gin.Context) {
 func (h *TeamHandler) GetTeamScoreboard(c *gin.Context) {
 	teams, err := h.teamService.GetAllTeamsScoreboard()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get team scoreboard"})
+		utils.RespondWithError(c, http.StatusInternalServerError, "failed to get team scoreboard", err)
 		return
 	}
 

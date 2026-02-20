@@ -52,10 +52,6 @@
 - **Update Docs:** `cd backend && swag init -g cmd/api/main.go`.
 - **Production:** Swagger is **disabled** in production builds (via `-tags production`).
 
-### Client SDK Generation
-Automated clients can be generated from the Swagger spec:
-- **Script:** `./scripts/generate-clients.sh`
-- **Output:** `/clients/typescript` and `/clients/python`.
 
 ## 4. Key Conventions & Architecture
 
@@ -63,9 +59,6 @@ Automated clients can be generated from the Swagger spec:
   - `APP_ENV`: Set to `production` to disable Swagger and enable production optimizations.
   - Backend uses `godotenv` to load `.env`.
 
-- **CI/CD & Releases:**
-  - Pushing a version tag (e.g., `v1.0.0`) triggers a GitHub Action (`.github/workflows/release.yml`).
-  - Automatically generates Swagger docs, packages TS/Python clients, and creates a GitHub Release.
 
 - **Role Management:**
   - Default registration role is **hardcoded** to "user".
@@ -77,6 +70,4 @@ Automated clients can be generated from the Swagger spec:
 ## 5. Important Files
 - `backend/cmd/api/main.go`: Backend entry point & Swagger metadata.
 - `backend/internal/routes/routes.go`: Router setup (with build-tag based Swagger registration).
-- `scripts/generate-clients.sh`: Multi-language SDK generation script.
-- `.github/workflows/release.yml`: Automated release pipeline.
 - `docker-compose.yml`: MongoDB and local service configuration.

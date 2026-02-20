@@ -27,7 +27,9 @@ import (
 // @securityDefinitions.apikey ApiKeyAuth
 // @in header
 // @name Authorization
+
 func main() {
+	// Local development or containerized deployment
 	cfg := config.LoadConfig()
 
 	// Connect to Database

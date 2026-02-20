@@ -47,17 +47,19 @@ func (s *ContestAdminService) GetContest(id string) (*models.Contest, error) {
 }
 
 // CreateContest creates a new contest
-func (s *ContestAdminService) CreateContest(name, description string, startTime, endTime time.Time) (*models.Contest, error) {
+func (s *ContestAdminService) CreateContest(name, description string, startTime, endTime time.Time, freezeTime *time.Time, scoreboardVisibility string) (*models.Contest, error) {
 	if !endTime.After(startTime) {
 		return nil, errors.New("end time must be after start time")
 	}
 
 	contest := &models.Contest{
-		Name:        name,
-		Description: description,
-		StartTime:   startTime,
-		EndTime:     endTime,
-		IsActive:    false,
+		Name:                 name,
+		Description:          description,
+		StartTime:            startTime,
+		EndTime:              endTime,
+		FreezeTime:           freezeTime,
+		ScoreboardVisibility: scoreboardVisibility,
+		IsActive:             false,
 	}
 	if err := s.contestEntityRepo.Create(contest); err != nil {
 		return nil, err
@@ -66,7 +68,7 @@ func (s *ContestAdminService) CreateContest(name, description string, startTime,
 }
 
 // UpdateContest updates a contest
-func (s *ContestAdminService) UpdateContest(id string, name, description string, startTime, endTime time.Time, isActive bool) (*models.Contest, error) {
+func (s *ContestAdminService) UpdateContest(id string, name, description string, startTime, endTime time.Time, isActive bool, freezeTime *time.Time, scoreboardVisibility string) (*models.Contest, error) {
 	contest, err := s.contestEntityRepo.FindByID(id)
 	if err != nil {
 		return nil, err
@@ -81,6 +83,8 @@ func (s *ContestAdminService) UpdateContest(id string, name, description string,
 	contest.StartTime = startTime
 	contest.EndTime = endTime
 	contest.IsActive = isActive
+	contest.FreezeTime = freezeTime
+	contest.ScoreboardVisibility = scoreboardVisibility
 
 	if err := s.contestEntityRepo.Update(contest); err != nil {
 		return nil, err

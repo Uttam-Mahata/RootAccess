@@ -104,13 +104,15 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 	}
 
 	// Set JWT token in HTTP-only cookie
+	isProd := h.config.Environment == "production"
+	c.SetSameSite(http.SameSiteLaxMode)
 	c.SetCookie(
 		"auth_token",   // name
 		token,          // value
 		7*24*60*60,     // maxAge (7 days in seconds)
 		"/",            // path
 		"",             // domain (empty = current domain)
-		false,          // secure (set to true in production with HTTPS)
+		isProd,         // secure (set to true in production with HTTPS)
 		true,           // httpOnly
 	)
 
@@ -176,9 +178,12 @@ func (h *OAuthHandler) GitHubCallback(c *gin.Context) {
 		return
 	}
 
-	c.SetCookie("auth_token", token, 7*24*60*60, "/", "", false, true)
+	isProd := h.config.Environment == "production"
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie("auth_token", token, 7*24*60*60, "/", "", isProd, true)
 
 	successURL := fmt.Sprintf("%s/auth/callback?success=true&username=%s", h.config.FrontendURL, userInfo.Username)
+
 	c.Redirect(http.StatusTemporaryRedirect, successURL)
 }
 
@@ -239,9 +244,12 @@ func (h *OAuthHandler) DiscordCallback(c *gin.Context) {
 		return
 	}
 
-	c.SetCookie("auth_token", token, 7*24*60*60, "/", "", false, true)
+	isProd := h.config.Environment == "production"
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie("auth_token", token, 7*24*60*60, "/", "", isProd, true)
 
 	successURL := fmt.Sprintf("%s/auth/callback?success=true&username=%s", h.config.FrontendURL, userInfo.Username)
+
 	c.Redirect(http.StatusTemporaryRedirect, successURL)
 }
 

@@ -9,6 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type TeamContestRegistrationRepository struct {
@@ -19,6 +20,18 @@ func NewTeamContestRegistrationRepository() *TeamContestRegistrationRepository {
 	return &TeamContestRegistrationRepository{
 		collection: database.DB.Collection("team_contest_registrations"),
 	}
+}
+
+// CreateIndexes creates the unique compound index on (contest_id, team_id).
+func (r *TeamContestRegistrationRepository) CreateIndexes() error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	_, err := r.collection.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys:    bson.D{{Key: "contest_id", Value: 1}, {Key: "team_id", Value: 1}},
+		Options: options.Index().SetUnique(true),
+	})
+	return err
 }
 
 // RegisterTeam registers a team for a contest

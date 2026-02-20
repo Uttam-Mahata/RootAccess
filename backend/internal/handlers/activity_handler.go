@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/services"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/utils"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -38,7 +39,7 @@ func (h *ActivityHandler) GetMyActivity(c *gin.Context) {
 	}
 	activity, err := h.activityService.GetUserActivity(userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusInternalServerError, err.Error(), err)
 		return
 	}
 	c.JSON(http.StatusOK, activity)

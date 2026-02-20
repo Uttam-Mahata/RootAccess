@@ -1,10 +1,12 @@
 package handlers
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/services"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/utils"
 )
 
 type ContestRegistrationHandler struct {
@@ -71,7 +73,7 @@ func (h *ContestRegistrationHandler) RegisterTeamForContest(c *gin.Context) {
 
 	err = h.registrationService.RegisterTeamForContest(team.ID.Hex(), contestID)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 
@@ -111,7 +113,7 @@ func (h *ContestRegistrationHandler) UnregisterTeamFromContest(c *gin.Context) {
 
 	err = h.registrationService.UnregisterTeamFromContest(team.ID.Hex(), contestID)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 
@@ -135,7 +137,7 @@ func (h *ContestRegistrationHandler) GetRegisteredTeamsCount(c *gin.Context) {
 
 	count, err := h.registrationService.GetRegisteredTeamsCount(contestID)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 
@@ -168,6 +170,8 @@ func (h *ContestRegistrationHandler) GetTeamRegistrationStatus(c *gin.Context) {
 	// Get user's team
 	team, err := h.teamService.GetUserTeam(userID.(string))
 	if err != nil {
+		log.Printf("[registration-status] GetUserTeam failed for user %s, contest %s: %v",
+			userID.(string), contestID, err)
 		c.JSON(http.StatusOK, gin.H{"registered": false})
 		return
 	}

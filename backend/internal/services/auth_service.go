@@ -296,3 +296,9 @@ func (s *AuthService) ChangePassword(userID, oldPassword, newPassword string) er
 
 	return s.userRepo.UpdateUser(user)
 }
+
+// GetEnvironment returns the current application environment
+func (s *AuthService) GetEnvironment() string {
+	return s.config.Environment
+}
+

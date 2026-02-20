@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/services"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/utils"
 )
 
 type ContestHandler struct {
@@ -28,7 +29,7 @@ func NewContestHandler(contestService *services.ContestService) *ContestHandler 
 func (h *ContestHandler) GetContestStatus(c *gin.Context) {
 	status, config, err := h.contestService.GetContestStatus()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusInternalServerError, err.Error(), err)
 		return
 	}
 
@@ -77,7 +78,7 @@ type UpdateContestRequest struct {
 func (h *ContestHandler) UpdateContestConfig(c *gin.Context) {
 	var req UpdateContestRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 
@@ -112,7 +113,7 @@ func (h *ContestHandler) UpdateContestConfig(c *gin.Context) {
 
 	config, err := h.contestService.UpdateContestConfig(req.Title, startTime, endTime, freezeTime, req.IsActive, req.IsPaused, visibility)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 

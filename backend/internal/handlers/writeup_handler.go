@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/services"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/utils"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -58,7 +59,7 @@ func (h *WriteupHandler) CreateWriteup(c *gin.Context) {
 
 	var req CreateWriteupRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 
@@ -74,7 +75,7 @@ func (h *WriteupHandler) CreateWriteup(c *gin.Context) {
 
 	writeup, err := h.writeupService.CreateWriteup(userID, username.(string), challengeID, req.Content, contentFormat)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 
@@ -107,7 +108,7 @@ func (h *WriteupHandler) GetWriteups(c *gin.Context) {
 
 	writeups, err := h.writeupService.GetWriteupsByChallenge(challengeID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusInternalServerError, err.Error(), err)
 		return
 	}
 
@@ -137,7 +138,7 @@ func (h *WriteupHandler) GetMyWriteups(c *gin.Context) {
 
 	writeups, err := h.writeupService.GetMyWriteups(userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusInternalServerError, err.Error(), err)
 		return
 	}
 
@@ -161,7 +162,7 @@ func (h *WriteupHandler) GetAllWriteups(c *gin.Context) {
 	teamID := c.Query("team_id")
 	writeups, err := h.writeupService.GetAllWriteups(teamID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusInternalServerError, err.Error(), err)
 		return
 	}
 
@@ -193,12 +194,12 @@ func (h *WriteupHandler) UpdateWriteupStatus(c *gin.Context) {
 
 	var req UpdateWriteupStatusRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 
 	if err := h.writeupService.UpdateWriteupStatus(id, req.Status); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 
@@ -217,7 +218,7 @@ func (h *WriteupHandler) DeleteWriteup(c *gin.Context) {
 	id := c.Param("id")
 
 	if err := h.writeupService.DeleteWriteup(id); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusInternalServerError, err.Error(), err)
 		return
 	}
 
@@ -247,7 +248,7 @@ func (h *WriteupHandler) UpdateWriteup(c *gin.Context) {
 
 	var req CreateWriteupRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 
@@ -262,7 +263,7 @@ func (h *WriteupHandler) UpdateWriteup(c *gin.Context) {
 	}
 
 	if err := h.writeupService.UpdateWriteupContent(id, userID, req.Content, contentFormat); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 
@@ -289,7 +290,7 @@ func (h *WriteupHandler) ToggleUpvote(c *gin.Context) {
 
 	upvoted, err := h.writeupService.ToggleUpvote(id, userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusInternalServerError, err.Error(), err)
 		return
 	}
 

@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/services"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/utils"
 )
 
 type ContestAdminHandler struct {
@@ -28,7 +29,7 @@ func NewContestAdminHandler(contestAdminService *services.ContestAdminService) *
 func (h *ContestAdminHandler) ListContests(c *gin.Context) {
 	contests, err := h.contestAdminService.ListContests()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusInternalServerError, err.Error(), err)
 		return
 	}
 	c.JSON(http.StatusOK, contests)
@@ -54,10 +55,12 @@ func (h *ContestAdminHandler) GetContest(c *gin.Context) {
 
 // CreateContestRequest represents create contest request
 type CreateContestRequest struct {
-	Name        string `json:"name" binding:"required"`
-	Description string `json:"description"`
-	StartTime   string `json:"start_time" binding:"required"`
-	EndTime     string `json:"end_time" binding:"required"`
+	Name                 string `json:"name" binding:"required"`
+	Description          string `json:"description"`
+	StartTime            string `json:"start_time" binding:"required"`
+	EndTime              string `json:"end_time" binding:"required"`
+	FreezeTime           string `json:"freeze_time"`
+	ScoreboardVisibility string `json:"scoreboard_visibility"`
 }
 
 // CreateContest creates a new contest
@@ -72,7 +75,7 @@ type CreateContestRequest struct {
 func (h *ContestAdminHandler) CreateContest(c *gin.Context) {
 	var req CreateContestRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 
@@ -88,9 +91,19 @@ func (h *ContestAdminHandler) CreateContest(c *gin.Context) {
 		return
 	}
 
-	contest, err := h.contestAdminService.CreateContest(req.Name, req.Description, startTime, endTime)
+	var freezeTime *time.Time
+	if req.FreezeTime != "" {
+		ft, err := time.Parse(time.RFC3339, req.FreezeTime)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid freeze_time format, use RFC3339"})
+			return
+		}
+		freezeTime = &ft
+	}
+
+	contest, err := h.contestAdminService.CreateContest(req.Name, req.Description, startTime, endTime, freezeTime, req.ScoreboardVisibility)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 	c.JSON(http.StatusCreated, contest)
@@ -98,11 +111,13 @@ func (h *ContestAdminHandler) CreateContest(c *gin.Context) {
 
 // UpdateContestEntityRequest represents update contest entity request
 type UpdateContestEntityRequest struct {
-	Name        string `json:"name" binding:"required"`
-	Description string `json:"description"`
-	StartTime   string `json:"start_time" binding:"required"`
-	EndTime     string `json:"end_time" binding:"required"`
-	IsActive    bool   `json:"is_active"`
+	Name                 string `json:"name" binding:"required"`
+	Description          string `json:"description"`
+	StartTime            string `json:"start_time" binding:"required"`
+	EndTime              string `json:"end_time" binding:"required"`
+	IsActive             bool   `json:"is_active"`
+	FreezeTime           string `json:"freeze_time"`
+	ScoreboardVisibility string `json:"scoreboard_visibility"`
 }
 
 // UpdateContest updates a contest
@@ -119,7 +134,7 @@ func (h *ContestAdminHandler) UpdateContest(c *gin.Context) {
 	id := c.Param("id")
 	var req UpdateContestEntityRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 
@@ -135,9 +150,19 @@ func (h *ContestAdminHandler) UpdateContest(c *gin.Context) {
 		return
 	}
 
-	contest, err := h.contestAdminService.UpdateContest(id, req.Name, req.Description, startTime, endTime, req.IsActive)
+	var freezeTime *time.Time
+	if req.FreezeTime != "" {
+		ft, err := time.Parse(time.RFC3339, req.FreezeTime)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid freeze_time format, use RFC3339"})
+			return
+		}
+		freezeTime = &ft
+	}
+
+	contest, err := h.contestAdminService.UpdateContest(id, req.Name, req.Description, startTime, endTime, req.IsActive, freezeTime, req.ScoreboardVisibility)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 	c.JSON(http.StatusOK, contest)
@@ -153,7 +178,7 @@ func (h *ContestAdminHandler) UpdateContest(c *gin.Context) {
 func (h *ContestAdminHandler) DeleteContest(c *gin.Context) {
 	id := c.Param("id")
 	if err := h.contestAdminService.DeleteContest(id); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusInternalServerError, err.Error(), err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "Contest deleted"})
@@ -176,12 +201,12 @@ type SetActiveContestRequest struct {
 func (h *ContestAdminHandler) SetActiveContest(c *gin.Context) {
 	var req SetActiveContestRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 
 	if err := h.contestAdminService.SetActiveContest(req.ContestID); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "Active contest updated"})
@@ -199,7 +224,7 @@ func (h *ContestAdminHandler) ListRounds(c *gin.Context) {
 	contestID := c.Param("id")
 	rounds, err := h.contestAdminService.ListRounds(contestID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusInternalServerError, err.Error(), err)
 		return
 	}
 	c.JSON(http.StatusOK, rounds)
@@ -229,7 +254,7 @@ func (h *ContestAdminHandler) CreateRound(c *gin.Context) {
 	contestID := c.Param("id")
 	var req CreateRoundRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 
@@ -253,7 +278,7 @@ func (h *ContestAdminHandler) CreateRound(c *gin.Context) {
 
 	round, err := h.contestAdminService.CreateRound(contestID, req.Name, req.Description, req.Order, visibleFrom, startTime, endTime)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 	c.JSON(http.StatusCreated, round)
@@ -284,7 +309,7 @@ func (h *ContestAdminHandler) UpdateRound(c *gin.Context) {
 	roundID := c.Param("roundId")
 	var req UpdateRoundRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 
@@ -308,7 +333,7 @@ func (h *ContestAdminHandler) UpdateRound(c *gin.Context) {
 
 	round, err := h.contestAdminService.UpdateRound(roundID, req.Name, req.Description, req.Order, visibleFrom, startTime, endTime)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 	c.JSON(http.StatusOK, round)
@@ -325,7 +350,7 @@ func (h *ContestAdminHandler) UpdateRound(c *gin.Context) {
 func (h *ContestAdminHandler) DeleteRound(c *gin.Context) {
 	roundID := c.Param("roundId")
 	if err := h.contestAdminService.DeleteRound(roundID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusInternalServerError, err.Error(), err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "Round deleted"})
@@ -351,12 +376,12 @@ func (h *ContestAdminHandler) AttachChallenges(c *gin.Context) {
 	roundID := c.Param("roundId")
 	var req AttachChallengesRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 
 	if err := h.contestAdminService.AttachChallengesToRound(roundID, req.ChallengeIDs); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "Challenges attached"})
@@ -382,12 +407,12 @@ func (h *ContestAdminHandler) DetachChallenges(c *gin.Context) {
 	roundID := c.Param("roundId")
 	var req DetachChallengesRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 
 	if err := h.contestAdminService.DetachChallengesFromRound(roundID, req.ChallengeIDs); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "Challenges detached"})
@@ -406,7 +431,7 @@ func (h *ContestAdminHandler) GetRoundChallenges(c *gin.Context) {
 	roundID := c.Param("roundId")
 	ids, err := h.contestAdminService.GetChallengesForRound(roundID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusInternalServerError, err.Error(), err)
 		return
 	}
 

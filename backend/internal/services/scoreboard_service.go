@@ -14,12 +14,16 @@ import (
 )
 
 type ScoreboardService struct {
-	userRepo        *repositories.UserRepository
-	submissionRepo  *repositories.SubmissionRepository
-	challengeRepo   *repositories.ChallengeRepository
-	teamRepo        *repositories.TeamRepository
-	contestRepo     *repositories.ContestRepository
-	adjustmentRepo  *repositories.ScoreAdjustmentRepository
+	userRepo           *repositories.UserRepository
+	submissionRepo     *repositories.SubmissionRepository
+	challengeRepo      *repositories.ChallengeRepository
+	teamRepo           *repositories.TeamRepository
+	contestRepo        *repositories.ContestRepository
+	adjustmentRepo     *repositories.ScoreAdjustmentRepository
+	contestEntityRepo  *repositories.ContestEntityRepository
+	contestRoundRepo   *repositories.ContestRoundRepository
+	roundChallengeRepo *repositories.RoundChallengeRepository
+	registrationRepo   *repositories.TeamContestRegistrationRepository
 }
 
 type UserScore struct {
@@ -46,24 +50,83 @@ func NewScoreboardService(
 	teamRepo *repositories.TeamRepository,
 	contestRepo *repositories.ContestRepository,
 	adjustmentRepo *repositories.ScoreAdjustmentRepository,
+	contestEntityRepo *repositories.ContestEntityRepository,
+	contestRoundRepo *repositories.ContestRoundRepository,
+	roundChallengeRepo *repositories.RoundChallengeRepository,
+	registrationRepo *repositories.TeamContestRegistrationRepository,
 ) *ScoreboardService {
 	return &ScoreboardService{
-		userRepo:       userRepo,
-		submissionRepo: submissionRepo,
-		challengeRepo:  challengeRepo,
-		teamRepo:       teamRepo,
-		contestRepo:    contestRepo,
-		adjustmentRepo: adjustmentRepo,
+		userRepo:           userRepo,
+		submissionRepo:     submissionRepo,
+		challengeRepo:      challengeRepo,
+		teamRepo:           teamRepo,
+		contestRepo:        contestRepo,
+		adjustmentRepo:     adjustmentRepo,
+		contestEntityRepo:  contestEntityRepo,
+		contestRoundRepo:   contestRoundRepo,
+		roundChallengeRepo: roundChallengeRepo,
+		registrationRepo:   registrationRepo,
 	}
 }
 
-// getFreezeInfo checks contest config and returns freeze time and appropriate cache key suffix
-func (s *ScoreboardService) getFreezeInfo() *time.Time {
-	if s.contestRepo != nil {
-		contest, err := s.contestRepo.GetActiveContest()
-		if err == nil && contest != nil && contest.IsScoreboardFrozen() {
-			return contest.FreezeTime
-		}
+// getContestChallengeIDs returns the set of challenge IDs belonging to a contest (via its rounds)
+func (s *ScoreboardService) getContestChallengeIDs(contestID string) (map[string]bool, error) {
+	rounds, err := s.contestRoundRepo.ListByContestID(contestID)
+	if err != nil {
+		return nil, err
+	}
+	if len(rounds) == 0 {
+		return map[string]bool{}, nil
+	}
+
+	roundIDs := make([]primitive.ObjectID, len(rounds))
+	for i := range rounds {
+		roundIDs[i] = rounds[i].ID
+	}
+
+	challengeOIDs, err := s.roundChallengeRepo.GetChallengeIDsForRounds(roundIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(map[string]bool, len(challengeOIDs))
+	for _, oid := range challengeOIDs {
+		result[oid.Hex()] = true
+	}
+	return result, nil
+}
+
+// getContestTeamIDs returns the set of team IDs registered for a contest
+func (s *ScoreboardService) getContestTeamIDs(contestID string) (map[string]bool, error) {
+	contestOID, err := primitive.ObjectIDFromHex(contestID)
+	if err != nil {
+		return nil, err
+	}
+
+	teamOIDs, err := s.registrationRepo.GetContestTeams(contestOID)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(map[string]bool, len(teamOIDs))
+	for _, oid := range teamOIDs {
+		result[oid.Hex()] = true
+	}
+	return result, nil
+}
+
+// getFreezeInfoForContest checks per-contest freeze time
+func (s *ScoreboardService) getFreezeInfoForContest(contestID string) *time.Time {
+	if s.contestEntityRepo == nil {
+		return nil
+	}
+	contest, err := s.contestEntityRepo.FindByID(contestID)
+	if err != nil || contest == nil {
+		return nil
+	}
+	now := time.Now()
+	if contest.IsScoreboardFrozen(now) {
+		return contest.FreezeTime
 	}
 	return nil
 }
@@ -76,17 +139,21 @@ func (s *ScoreboardService) getCorrectSubmissions(freezeTime *time.Time) ([]mode
 	return s.submissionRepo.GetAllCorrectSubmissions()
 }
 
-func (s *ScoreboardService) GetScoreboard() ([]UserScore, error) {
-	ctx := context.Background()
-	cacheKey := "scoreboard"
-
-	// Check if scoreboard is frozen
-	freezeTime := s.getFreezeInfo()
-	if freezeTime != nil {
-		cacheKey = "scoreboard_frozen"
+// GetScoreboard returns the individual scoreboard for a specific contest.
+// If contestID is empty, returns an empty slice.
+func (s *ScoreboardService) GetScoreboard(contestID string) ([]UserScore, error) {
+	if contestID == "" {
+		return []UserScore{}, nil
 	}
 
-	// Try to get from Redis
+	ctx := context.Background()
+	freezeTime := s.getFreezeInfoForContest(contestID)
+	cacheKey := fmt.Sprintf("scoreboard:%s", contestID)
+	if freezeTime != nil {
+		cacheKey = fmt.Sprintf("scoreboard:%s:frozen", contestID)
+	}
+
+	// Try Redis cache
 	if database.RDB != nil {
 		val, err := database.RDB.Get(ctx, cacheKey).Result()
 		if err == nil {
@@ -97,12 +164,39 @@ func (s *ScoreboardService) GetScoreboard() ([]UserScore, error) {
 		}
 	}
 
-	// Get submissions - use freeze time if scoreboard is frozen
-	submissions, err := s.getCorrectSubmissions(freezeTime)
+	// Get contest challenge IDs
+	contestChallenges, err := s.getContestChallengeIDs(contestID)
 	if err != nil {
 		return nil, err
 	}
 
+	// Get registered team IDs
+	contestTeams, err := s.getContestTeamIDs(contestID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Build user-to-team membership map (to filter users to registered teams)
+	allTeams, err := s.teamRepo.GetAllTeamsWithScores()
+	if err != nil {
+		return nil, err
+	}
+
+	registeredUserIDs := make(map[string]bool)
+	userTeamMap := make(map[string]string)
+	for _, team := range allTeams {
+		tid := team.ID.Hex()
+		if !contestTeams[tid] {
+			continue
+		}
+		for _, mid := range team.MemberIDs {
+			uid := mid.Hex()
+			registeredUserIDs[uid] = true
+			userTeamMap[uid] = team.Name
+		}
+	}
+
+	// Get all challenges for point calculation
 	challenges, err := s.challengeRepo.GetAllChallenges()
 	if err != nil {
 		return nil, err
@@ -110,19 +204,34 @@ func (s *ScoreboardService) GetScoreboard() ([]UserScore, error) {
 
 	challengePoints := make(map[string]int)
 	for _, c := range challenges {
-		challengePoints[c.ID.Hex()] = c.CurrentPoints()
+		if contestChallenges[c.ID.Hex()] {
+			challengePoints[c.ID.Hex()] = c.CurrentPoints()
+		}
+	}
+
+	// Get submissions
+	submissions, err := s.getCorrectSubmissions(freezeTime)
+	if err != nil {
+		return nil, err
 	}
 
 	userScores := make(map[string]int)
-
-	// Sum points for every user's solve
 	for _, sub := range submissions {
 		userID := sub.UserID.Hex()
-		points := challengePoints[sub.ChallengeID.Hex()]
+		challengeID := sub.ChallengeID.Hex()
+
+		// Only count if user belongs to a registered team AND challenge is in contest
+		if !registeredUserIDs[userID] {
+			continue
+		}
+		points, inContest := challengePoints[challengeID]
+		if !inContest {
+			continue
+		}
 		userScores[userID] += points
 	}
 
-	// Apply manual user score adjustments (if any)
+	// Apply manual user score adjustments
 	if s.adjustmentRepo != nil && len(userScores) > 0 {
 		userIDs := make([]primitive.ObjectID, 0, len(userScores))
 		for uid := range userScores {
@@ -145,25 +254,14 @@ func (s *ScoreboardService) GetScoreboard() ([]UserScore, error) {
 		return nil, err
 	}
 
-	userMap := make(map[string]string)
+	usernameMap := make(map[string]string)
 	for _, u := range users {
-		userMap[u.ID.Hex()] = u.Username
-	}
-
-	// Map user IDs to Team names
-	userTeamMap := make(map[string]string)
-	teams, err := s.teamRepo.GetAllTeamsWithScores()
-	if err == nil {
-		for _, team := range teams {
-			for _, mid := range team.MemberIDs {
-				userTeamMap[mid.Hex()] = team.Name
-			}
-		}
+		usernameMap[u.ID.Hex()] = u.Username
 	}
 
 	var scores []UserScore
 	for uid, score := range userScores {
-		username, exists := userMap[uid]
+		username, exists := usernameMap[uid]
 		if !exists {
 			username = "Unknown"
 		}
@@ -174,7 +272,6 @@ func (s *ScoreboardService) GetScoreboard() ([]UserScore, error) {
 		})
 	}
 
-	// Sort scores by score descending
 	sort.Slice(scores, func(i, j int) bool {
 		if scores[i].Score == scores[j].Score {
 			return scores[i].Username < scores[j].Username
@@ -182,28 +279,32 @@ func (s *ScoreboardService) GetScoreboard() ([]UserScore, error) {
 		return scores[i].Score > scores[j].Score
 	})
 
-	// Store in Redis
+	// Cache in Redis
 	if database.RDB != nil {
 		data, err := json.Marshal(scores)
 		if err == nil {
-			err = database.RDB.Set(ctx, cacheKey, data, 1*time.Minute).Err()
+			_ = database.RDB.Set(ctx, cacheKey, data, 1*time.Minute).Err()
 		}
 	}
 
 	return scores, nil
 }
 
-func (s *ScoreboardService) GetTeamScoreboard() ([]TeamScore, error) {
-	ctx := context.Background()
-	cacheKey := "team_scoreboard"
-
-	// Check if scoreboard is frozen
-	freezeTime := s.getFreezeInfo()
-	if freezeTime != nil {
-		cacheKey = "team_scoreboard_frozen"
+// GetTeamScoreboard returns the team scoreboard for a specific contest.
+// If contestID is empty, returns an empty slice.
+func (s *ScoreboardService) GetTeamScoreboard(contestID string) ([]TeamScore, error) {
+	if contestID == "" {
+		return []TeamScore{}, nil
 	}
 
-	// Try to get from Redis
+	ctx := context.Background()
+	freezeTime := s.getFreezeInfoForContest(contestID)
+	cacheKey := fmt.Sprintf("team_scoreboard:%s", contestID)
+	if freezeTime != nil {
+		cacheKey = fmt.Sprintf("team_scoreboard:%s:frozen", contestID)
+	}
+
+	// Try Redis cache
 	if database.RDB != nil {
 		val, err := database.RDB.Get(ctx, cacheKey).Result()
 		if err == nil {
@@ -214,12 +315,25 @@ func (s *ScoreboardService) GetTeamScoreboard() ([]TeamScore, error) {
 		}
 	}
 
-	// Calculate scores if not in cache
-	teams, err := s.teamRepo.GetAllTeamsWithScores() // Just gets the teams
+	// Get contest challenge IDs
+	contestChallenges, err := s.getContestChallengeIDs(contestID)
 	if err != nil {
 		return nil, err
 	}
 
+	// Get registered team IDs
+	contestTeams, err := s.getContestTeamIDs(contestID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get all teams
+	allTeams, err := s.teamRepo.GetAllTeamsWithScores()
+	if err != nil {
+		return nil, err
+	}
+
+	// Get all challenges for point values
 	challenges, err := s.challengeRepo.GetAllChallenges()
 	if err != nil {
 		return nil, err
@@ -227,16 +341,18 @@ func (s *ScoreboardService) GetTeamScoreboard() ([]TeamScore, error) {
 
 	challengePoints := make(map[string]int)
 	for _, c := range challenges {
-		challengePoints[c.ID.Hex()] = c.CurrentPoints()
+		if contestChallenges[c.ID.Hex()] {
+			challengePoints[c.ID.Hex()] = c.CurrentPoints()
+		}
 	}
 
-	// Get submissions - use freeze time if scoreboard is frozen
+	// Get submissions
 	submissions, err := s.getCorrectSubmissions(freezeTime)
 	if err != nil {
 		return nil, err
 	}
 
-	// Map TeamID -> Set of ChallengeIDs solved
+	// Map TeamID -> Set of ChallengeIDs solved (only contest challenges)
 	teamSolves := make(map[string]map[string]bool)
 	for _, sub := range submissions {
 		if sub.TeamID.IsZero() {
@@ -244,7 +360,11 @@ func (s *ScoreboardService) GetTeamScoreboard() ([]TeamScore, error) {
 		}
 		tid := sub.TeamID.Hex()
 		cid := sub.ChallengeID.Hex()
-		
+
+		if !contestTeams[tid] || !contestChallenges[cid] {
+			continue
+		}
+
 		if teamSolves[tid] == nil {
 			teamSolves[tid] = make(map[string]bool)
 		}
@@ -252,10 +372,13 @@ func (s *ScoreboardService) GetTeamScoreboard() ([]TeamScore, error) {
 	}
 
 	var scores []TeamScore
-	for _, team := range teams {
+	for _, team := range allTeams {
 		tid := team.ID.Hex()
+		if !contestTeams[tid] {
+			continue
+		}
+
 		totalScore := 0
-		
 		if solves, exists := teamSolves[tid]; exists {
 			for cid := range solves {
 				totalScore += challengePoints[cid]
@@ -279,7 +402,7 @@ func (s *ScoreboardService) GetTeamScoreboard() ([]TeamScore, error) {
 		})
 	}
 
-	// Apply manual team score adjustments (if any)
+	// Apply manual team score adjustments
 	if s.adjustmentRepo != nil && len(scores) > 0 {
 		teamIDs := make([]primitive.ObjectID, 0, len(scores))
 		for _, ts := range scores {
@@ -298,7 +421,6 @@ func (s *ScoreboardService) GetTeamScoreboard() ([]TeamScore, error) {
 		}
 	}
 
-	// Sort scores by score descending
 	sort.Slice(scores, func(i, j int) bool {
 		if scores[i].Score == scores[j].Score {
 			return scores[i].Name < scores[j].Name
@@ -306,11 +428,11 @@ func (s *ScoreboardService) GetTeamScoreboard() ([]TeamScore, error) {
 		return scores[i].Score > scores[j].Score
 	})
 
-	// Store in Redis
+	// Cache in Redis
 	if database.RDB != nil {
 		data, err := json.Marshal(scores)
 		if err == nil {
-			err = database.RDB.Set(ctx, cacheKey, data, 1*time.Minute).Err()
+			_ = database.RDB.Set(ctx, cacheKey, data, 1*time.Minute).Err()
 		}
 	}
 
@@ -319,9 +441,9 @@ func (s *ScoreboardService) GetTeamScoreboard() ([]TeamScore, error) {
 
 // TeamScoreProgression represents a team's score at a point in time
 type TeamScoreProgression struct {
-	TeamID string             `json:"team_id"`
-	Name   string             `json:"name"`
-	Data   []TimeSeriesScore  `json:"data"`
+	TeamID string            `json:"team_id"`
+	Name   string            `json:"name"`
+	Data   []TimeSeriesScore `json:"data"`
 }
 
 // TimeSeriesScore represents score at a specific time
@@ -330,19 +452,22 @@ type TimeSeriesScore struct {
 	Score int    `json:"score"`
 }
 
-// GetTeamScoreProgression returns score progression over time for all teams
-func (s *ScoreboardService) GetTeamScoreProgression(days int) ([]TeamScoreProgression, error) {
-	if days <= 0 {
-		days = 30 // Default to 30 days
-	}
-	if days > 90 {
-		days = 90 // Max 90 days
+// GetTeamScoreProgression returns score progression over time for teams in a specific contest.
+// If contestID is empty, returns an empty slice.
+func (s *ScoreboardService) GetTeamScoreProgression(days int, contestID string) ([]TeamScoreProgression, error) {
+	if contestID == "" {
+		return []TeamScoreProgression{}, nil
 	}
 
-	// Try Redis cache first – this endpoint is used for charts and
-	// can be expensive, so we cache it briefly.
+	if days <= 0 {
+		days = 30
+	}
+	if days > 90 {
+		days = 90
+	}
+
 	ctx := context.Background()
-	cacheKey := fmt.Sprintf("team_score_progression:%d", days)
+	cacheKey := fmt.Sprintf("team_score_progression:%s:%d", contestID, days)
 	if database.RDB != nil {
 		if val, err := database.RDB.Get(ctx, cacheKey).Result(); err == nil {
 			var cached []TeamScoreProgression
@@ -352,8 +477,20 @@ func (s *ScoreboardService) GetTeamScoreProgression(days int) ([]TeamScoreProgre
 		}
 	}
 
-	// Get all teams
-	teams, err := s.teamRepo.GetAllTeamsWithScores()
+	// Get contest challenge IDs
+	contestChallenges, err := s.getContestChallengeIDs(contestID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get registered team IDs
+	contestTeams, err := s.getContestTeamIDs(contestID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get all teams (filter to registered)
+	allTeams, err := s.teamRepo.GetAllTeamsWithScores()
 	if err != nil {
 		return nil, err
 	}
@@ -366,7 +503,9 @@ func (s *ScoreboardService) GetTeamScoreProgression(days int) ([]TeamScoreProgre
 
 	challengePoints := make(map[string]int)
 	for _, c := range challenges {
-		challengePoints[c.ID.Hex()] = c.CurrentPoints()
+		if contestChallenges[c.ID.Hex()] {
+			challengePoints[c.ID.Hex()] = c.CurrentPoints()
+		}
 	}
 
 	// Get all correct submissions
@@ -375,24 +514,26 @@ func (s *ScoreboardService) GetTeamScoreProgression(days int) ([]TeamScoreProgre
 		return nil, err
 	}
 
-	// Group submissions by team and date
-	teamSolvesByDate := make(map[string]map[string]map[string]bool)
-	
-	// Sort submissions by timestamp
 	sort.Slice(submissions, func(i, j int) bool {
 		return submissions[i].Timestamp.Before(submissions[j].Timestamp)
 	})
 
+	// Group submissions by team and date (only contest teams + contest challenges)
+	teamSolvesByDate := make(map[string]map[string]map[string]bool)
 	since := time.Now().AddDate(0, 0, -days)
 	for _, sub := range submissions {
 		if sub.TeamID.IsZero() || sub.Timestamp.Before(since) {
 			continue
 		}
-		
+
 		teamID := sub.TeamID.Hex()
-		date := sub.Timestamp.Format("2006-01-02")
 		challengeID := sub.ChallengeID.Hex()
 
+		if !contestTeams[teamID] || !contestChallenges[challengeID] {
+			continue
+		}
+
+		date := sub.Timestamp.Format("2006-01-02")
 		if teamSolvesByDate[teamID] == nil {
 			teamSolvesByDate[teamID] = make(map[string]map[string]bool)
 		}
@@ -402,29 +543,30 @@ func (s *ScoreboardService) GetTeamScoreProgression(days int) ([]TeamScoreProgre
 		teamSolvesByDate[teamID][date][challengeID] = true
 	}
 
-	// Build progression for each team
+	// Build progression for registered teams
 	var progressions []TeamScoreProgression
-	for _, team := range teams {
+	for _, team := range allTeams {
 		teamID := team.ID.Hex()
+		if !contestTeams[teamID] {
+			continue
+		}
+
 		progression := TeamScoreProgression{
 			TeamID: teamID,
 			Name:   team.Name,
 			Data:   make([]TimeSeriesScore, 0, days),
 		}
 
-		// Calculate cumulative score for each day
 		cumulativeSolves := make(map[string]bool)
 		for i := days - 1; i >= 0; i-- {
 			day := time.Now().AddDate(0, 0, -i).Format("2006-01-02")
-			
-			// Add solves from this day to cumulative
+
 			if daySolves, exists := teamSolvesByDate[teamID][day]; exists {
 				for cid := range daySolves {
 					cumulativeSolves[cid] = true
 				}
 			}
 
-			// Calculate score based on cumulative solves (use current challenge points)
 			score := 0
 			for cid := range cumulativeSolves {
 				if points, exists := challengePoints[cid]; exists {
@@ -441,7 +583,7 @@ func (s *ScoreboardService) GetTeamScoreProgression(days int) ([]TeamScoreProgre
 		progressions = append(progressions, progression)
 	}
 
-	// Apply manual team score adjustments as a flat offset across the timeline.
+	// Apply manual team score adjustments as a flat offset
 	if s.adjustmentRepo != nil && len(progressions) > 0 {
 		teamIDs := make([]primitive.ObjectID, 0, len(progressions))
 		for _, p := range progressions {
@@ -462,7 +604,6 @@ func (s *ScoreboardService) GetTeamScoreProgression(days int) ([]TeamScoreProgre
 		}
 	}
 
-	// Sort by current score (highest first)
 	sort.Slice(progressions, func(i, j int) bool {
 		iScore := 0
 		jScore := 0
@@ -478,8 +619,6 @@ func (s *ScoreboardService) GetTeamScoreProgression(days int) ([]TeamScoreProgre
 		return iScore > jScore
 	})
 
-	// Store in Redis with a short TTL – charts don't need
-	// millisecond-level freshness and this keeps tab loads fast.
 	if database.RDB != nil {
 		if data, err := json.Marshal(progressions); err == nil {
 			_ = database.RDB.Set(ctx, cacheKey, data, 1*time.Minute).Err()

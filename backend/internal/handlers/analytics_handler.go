@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/services"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/utils"
 )
 
 type AnalyticsHandler struct {
@@ -27,7 +28,7 @@ func NewAnalyticsHandler(analyticsService *services.AnalyticsService) *Analytics
 func (h *AnalyticsHandler) GetPlatformAnalytics(c *gin.Context) {
 	analytics, err := h.analyticsService.GetPlatformAnalytics()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusInternalServerError, err.Error(), err)
 		return
 	}
 	c.JSON(http.StatusOK, analytics)

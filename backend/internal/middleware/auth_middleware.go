@@ -3,7 +3,6 @@ package middleware
 import (
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/config"
@@ -12,25 +11,13 @@ import (
 
 func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Try to get token from cookie first
+		// Strictly use cookies for authentication
 		tokenString, err := c.Cookie("auth_token")
 		
-		// Fallback to Authorization header for backward compatibility
 		if err != nil || tokenString == "" {
-			authHeader := c.GetHeader("Authorization")
-			if authHeader == "" {
-				c.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication required"})
-				c.Abort()
-				return
-			}
-
-			parts := strings.Split(authHeader, " ")
-			if len(parts) != 2 || parts[0] != "Bearer" {
-				c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid authorization header format"})
-				c.Abort()
-				return
-			}
-			tokenString = parts[1]
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication required"})
+			c.Abort()
+			return
 		}
 
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {

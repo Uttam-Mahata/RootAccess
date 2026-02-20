@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/services"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/utils"
 )
 
 type LeaderboardHandler struct {
@@ -31,10 +32,10 @@ func (h *LeaderboardHandler) GetCategoryLeaderboard(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Category parameter required"})
 		return
 	}
-	// For now, get the full scoreboard - category filtering can be enhanced later
-	scoreboard, err := h.scoreboardService.GetScoreboard()
+	contestID := c.Query("contest_id")
+	scoreboard, err := h.scoreboardService.GetScoreboard(contestID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusInternalServerError, err.Error(), err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -67,9 +68,10 @@ func (h *LeaderboardHandler) GetTimeBasedLeaderboard(c *gin.Context) {
 	}
 
 	_ = since // Will be used for filtered queries
-	scoreboard, err := h.scoreboardService.GetScoreboard()
+	contestID := c.Query("contest_id")
+	scoreboard, err := h.scoreboardService.GetScoreboard(contestID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusInternalServerError, err.Error(), err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{

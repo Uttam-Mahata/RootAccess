@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/services"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/utils"
 	wsHub "github.com/Uttam-Mahata/RootAccess/backend/internal/websocket"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -43,7 +44,7 @@ type CreateNotificationRequest struct {
 func (h *NotificationHandler) CreateNotification(c *gin.Context) {
 	var req CreateNotificationRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 
@@ -62,7 +63,7 @@ func (h *NotificationHandler) CreateNotification(c *gin.Context) {
 
 	notification, err := h.notificationService.CreateNotification(req.Title, req.Content, req.Type, userID)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 
@@ -87,7 +88,7 @@ func (h *NotificationHandler) CreateNotification(c *gin.Context) {
 func (h *NotificationHandler) GetActiveNotifications(c *gin.Context) {
 	notifications, err := h.notificationService.GetActiveNotifications()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusInternalServerError, err.Error(), err)
 		return
 	}
 
@@ -109,7 +110,7 @@ func (h *NotificationHandler) GetActiveNotifications(c *gin.Context) {
 func (h *NotificationHandler) GetAllNotifications(c *gin.Context) {
 	notifications, err := h.notificationService.GetAllNotifications()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusInternalServerError, err.Error(), err)
 		return
 	}
 
@@ -145,13 +146,13 @@ func (h *NotificationHandler) UpdateNotification(c *gin.Context) {
 
 	var req UpdateNotificationRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 
 	err := h.notificationService.UpdateNotification(id, req.Title, req.Content, req.Type, req.IsActive)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusInternalServerError, err.Error(), err)
 		return
 	}
 
@@ -177,7 +178,7 @@ func (h *NotificationHandler) DeleteNotification(c *gin.Context) {
 
 	err := h.notificationService.DeleteNotification(id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusInternalServerError, err.Error(), err)
 		return
 	}
 
@@ -201,7 +202,7 @@ func (h *NotificationHandler) ToggleNotificationActive(c *gin.Context) {
 
 	err := h.notificationService.ToggleNotificationActive(id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusInternalServerError, err.Error(), err)
 		return
 	}
 

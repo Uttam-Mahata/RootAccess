@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/utils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -60,7 +61,7 @@ type AdminUserResponse struct {
 func (h *AdminUserHandler) ListUsers(c *gin.Context) {
 	users, err := h.userRepo.GetUsersWithDetails()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusInternalServerError, err.Error(), err)
 		return
 	}
 
@@ -181,7 +182,7 @@ func (h *AdminUserHandler) UpdateUserStatus(c *gin.Context) {
 	}
 	var req UpdateUserStatusRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 	if req.Status != "active" && req.Status != "banned" && req.Status != "suspended" {
@@ -191,7 +192,7 @@ func (h *AdminUserHandler) UpdateUserStatus(c *gin.Context) {
 	update := bson.M{"status": req.Status, "ban_reason": req.BanReason}
 	err = h.userRepo.UpdateFields(objID, update)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusInternalServerError, err.Error(), err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "User status updated"})
@@ -230,7 +231,7 @@ func (h *AdminUserHandler) UpdateUserRole(c *gin.Context) {
 
 	var req UpdateUserRoleRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 	if req.Role != "admin" && req.Role != "user" {
@@ -239,7 +240,7 @@ func (h *AdminUserHandler) UpdateUserRole(c *gin.Context) {
 	}
 	err = h.userRepo.UpdateFields(objID, bson.M{"role": req.Role})
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusInternalServerError, err.Error(), err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "User role updated"})
@@ -280,7 +281,7 @@ func (h *AdminUserHandler) AdjustUserScore(c *gin.Context) {
 
 	var req AdjustUserScoreRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 	if req.Delta == 0 {
@@ -363,7 +364,7 @@ func (h *AdminUserHandler) DeleteUser(c *gin.Context) {
 	// For a full purge, implement data cleanup in related tables (submissions, teams, etc.)
 	err = h.userRepo.UpdateFields(objID, bson.M{"status": "deleted"})
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusInternalServerError, err.Error(), err)
 		return
 	}
 

@@ -9,6 +9,7 @@ import (
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/database"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/utils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -82,7 +83,7 @@ func (h *AdminTeamHandler) AdjustTeamScore(c *gin.Context) {
 
 	var req AdjustTeamScoreRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 	if req.Delta == 0 {
@@ -151,7 +152,7 @@ type TeamMemberInfo struct {
 func (h *AdminTeamHandler) ListTeams(c *gin.Context) {
 	teams, err := h.teamRepo.GetAllTeams()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusInternalServerError, err.Error(), err)
 		return
 	}
 
@@ -284,7 +285,7 @@ func (h *AdminTeamHandler) UpdateTeam(c *gin.Context) {
 
 	var req AdminUpdateTeamRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 
@@ -305,7 +306,7 @@ func (h *AdminTeamHandler) UpdateTeam(c *gin.Context) {
 
 	if len(update) > 0 {
 		if err := h.teamRepo.UpdateTeamFields(objID, update); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			utils.RespondWithError(c, http.StatusInternalServerError, err.Error(), err)
 			return
 		}
 	}
@@ -341,7 +342,7 @@ func (h *AdminTeamHandler) UpdateTeamLeader(c *gin.Context) {
 
 	var req UpdateTeamLeaderRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 
@@ -373,7 +374,7 @@ func (h *AdminTeamHandler) UpdateTeamLeader(c *gin.Context) {
 	}
 
 	if err := h.teamRepo.AdminUpdateTeamLeader(objID, newLeaderID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusInternalServerError, err.Error(), err)
 		return
 	}
 
@@ -430,7 +431,7 @@ func (h *AdminTeamHandler) RemoveMember(c *gin.Context) {
 	}
 
 	if err := h.teamRepo.RemoveMemberFromTeam(teamID, memberID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusInternalServerError, err.Error(), err)
 		return
 	}
 
@@ -469,7 +470,7 @@ func (h *AdminTeamHandler) DeleteTeam(c *gin.Context) {
 	}
 
 	if err := h.teamRepo.AdminDeleteTeam(objID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusInternalServerError, err.Error(), err)
 		return
 	}
 

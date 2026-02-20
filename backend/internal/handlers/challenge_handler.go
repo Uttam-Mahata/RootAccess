@@ -88,7 +88,7 @@ type HintRequest struct {
 func (h *ChallengeHandler) CreateChallenge(c *gin.Context) {
 	var req CreateChallengeRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 
@@ -144,7 +144,7 @@ func (h *ChallengeHandler) CreateChallenge(c *gin.Context) {
 	}
 
 	if err := h.challengeService.CreateChallenge(challenge); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusInternalServerError, err.Error(), err)
 		return
 	}
 
@@ -155,7 +155,7 @@ func (h *ChallengeHandler) UpdateChallenge(c *gin.Context) {
 	id := c.Param("id")
 	var req UpdateChallengeRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 
@@ -221,7 +221,7 @@ func (h *ChallengeHandler) UpdateChallenge(c *gin.Context) {
 	}
 
 	if err := h.challengeService.UpdateChallenge(id, challenge); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusInternalServerError, err.Error(), err)
 		return
 	}
 
@@ -232,7 +232,7 @@ func (h *ChallengeHandler) DeleteChallenge(c *gin.Context) {
 	id := c.Param("id")
 
 	if err := h.challengeService.DeleteChallenge(id); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusInternalServerError, err.Error(), err)
 		return
 	}
 
@@ -269,7 +269,7 @@ func (h *ChallengeHandler) GetAllChallengesWithFlags(c *gin.Context) {
 		challenges, err = h.challengeService.GetAllChallenges()
 	}
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusInternalServerError, err.Error(), err)
 		return
 	}
 
@@ -344,14 +344,14 @@ func (h *ChallengeHandler) GetAllChallenges(c *gin.Context) {
 	if h.contestAdminService != nil {
 		challenges, err = h.contestAdminService.GetVisibleChallenges(time.Now(), teamID)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			utils.RespondWithError(c, http.StatusInternalServerError, err.Error(), err)
 			return
 		}
 		// nil from GetVisibleChallenges means no active contest; challenges is already empty
 	} else {
 		challenges, err = h.challengeService.GetAllChallenges()
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			utils.RespondWithError(c, http.StatusInternalServerError, err.Error(), err)
 			return
 		}
 	}
@@ -479,7 +479,7 @@ func (h *ChallengeHandler) UpdateOfficialWriteup(c *gin.Context) {
 	id := c.Param("id")
 	var req UpdateOfficialWriteupRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 	format := req.Format
@@ -495,7 +495,7 @@ func (h *ChallengeHandler) UpdateOfficialWriteup(c *gin.Context) {
 		return
 	}
 	if err := h.challengeService.UpdateOfficialWriteup(id, req.Content, format); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusInternalServerError, err.Error(), err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "Official writeup updated"})
@@ -516,7 +516,7 @@ func (h *ChallengeHandler) PublishOfficialWriteup(c *gin.Context) {
 		}
 	}
 	if err := h.challengeService.PublishOfficialWriteup(id); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusInternalServerError, err.Error(), err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "Official writeup published"})
@@ -577,14 +577,14 @@ func (h *ChallengeHandler) SubmitFlag(c *gin.Context) {
 
 	var req SubmitFlagRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 
 	clientIP := c.ClientIP()
 	result, err := h.challengeService.SubmitFlag(userID, challengeID, req.Flag, clientIP)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.RespondWithError(c, http.StatusInternalServerError, err.Error(), err)
 		return
 	}
 

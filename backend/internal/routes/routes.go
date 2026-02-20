@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"log"
 	"strings"
 	"time"
 
@@ -36,10 +37,32 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	r.RemoteIPHeaders = []string{"X-Forwarded-For", "X-Real-IP"}
 
 	// CORS
+	allowedOrigins := map[string]bool{
+		cfg.FrontendURL:                true,
+		"https://rootaccessctf.web.app": true,
+		"https://dev.rootaccess.live":   true,
+		"https://rootaccess.live":       true,
+		"https://ctf.rootaccess.live":   true,
+		"https://ctfapis.rootaccess.live": true,
+	}
+
+	// Add additional origins from config
+	if cfg.CORSAllowedOrigins != "" {
+		additionalOrigins := strings.Split(cfg.CORSAllowedOrigins, ",")
+		for _, origin := range additionalOrigins {
+			allowedOrigins[strings.TrimSpace(origin)] = true
+		}
+	}
+
 	r.Use(func(c *gin.Context) {
 		origin := c.Request.Header.Get("Origin")
 		if origin != "" {
-			c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
+			if allowedOrigins[origin] {
+				c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
+			} else if cfg.Environment == "development" {
+				// In development, be more permissive to allow various local dev setups
+				c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
+			}
 		}
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
@@ -70,13 +93,16 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	achievementRepo := repositories.NewAchievementRepository()
 	scoreAdjustmentRepo := repositories.NewScoreAdjustmentRepository()
 	teamContestRegistrationRepo := repositories.NewTeamContestRegistrationRepository()
+	if err := teamContestRegistrationRepo.CreateIndexes(); err != nil {
+		log.Printf("warning: could not create team_contest_registrations indexes: %v", err)
+	}
 
 	// Services
 	emailService := services.NewEmailService(cfg)
 	authService := services.NewAuthService(userRepo, emailService, cfg)
 	oauthService := services.NewOAuthService(userRepo, cfg)
 	challengeService := services.NewChallengeService(challengeRepo, submissionRepo, teamRepo)
-	scoreboardService := services.NewScoreboardService(userRepo, submissionRepo, challengeRepo, teamRepo, contestRepo, scoreAdjustmentRepo)
+	scoreboardService := services.NewScoreboardService(userRepo, submissionRepo, challengeRepo, teamRepo, contestRepo, scoreAdjustmentRepo, contestEntityRepo, contestRoundRepo, roundChallengeRepo, teamContestRegistrationRepo)
 	teamService := services.NewTeamService(teamRepo, teamInvitationRepo, userRepo, emailService, submissionRepo, challengeRepo)
 	notificationService := services.NewNotificationService(notificationRepo)
 	hintService := services.NewHintService(hintRepo, challengeRepo, teamRepo)
@@ -97,7 +123,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	authHandler := handlers.NewAuthHandler(authService)
 	oauthHandler := handlers.NewOAuthHandler(oauthService, database.RDB, cfg)
 	challengeHandler := handlers.NewChallengeHandlerWithRepos(challengeService, achievementService, contestService, contestAdminService, wsHub, submissionRepo, userRepo, teamRepo)
-	scoreboardHandler := handlers.NewScoreboardHandler(scoreboardService, contestService)
+	scoreboardHandler := handlers.NewScoreboardHandler(scoreboardService, contestEntityRepo)
 	teamHandler := handlers.NewTeamHandler(teamService)
 	notificationHandler := handlers.NewNotificationHandler(notificationService, wsHub)
 	profileHandler := handlers.NewProfileHandler(userRepo, submissionRepo, challengeRepo, teamRepo)
@@ -138,10 +164,13 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	r.GET("/auth/discord", oauthHandler.DiscordLogin)
 	r.GET("/auth/discord/callback", oauthHandler.DiscordCallback)
 
-	// Public Routes - Scoreboard (team scoreboard)
+	// Public Routes - Scoreboard (contest-scoped)
 	r.GET("/scoreboard", scoreboardHandler.GetScoreboard)
 	r.GET("/scoreboard/teams", scoreboardHandler.GetTeamScoreboard)
 	r.GET("/scoreboard/teams/statistics", scoreboardHandler.GetTeamStatistics)
+
+	// Public Routes - Active contests for scoreboard
+	r.GET("/contests/active", scoreboardHandler.GetScoreboardContests)
 
 	// Public Routes - Notifications (active notifications only)
 	r.GET("/notifications", notificationHandler.GetActiveNotifications)
@@ -164,6 +193,14 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 
 	// Public Routes - User Profiles
 	r.GET("/users/:username/profile", profileHandler.GetUserProfile)
+
+	// Health check endpoint
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"status": "healthy",
+			"time":   time.Now().Format(time.RFC3339),
+		})
+	})
 
 	// Get current user info (checks cookie)
 	r.GET("/auth/me", func(c *gin.Context) {
@@ -195,8 +232,8 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 		})
 	})
 
-	// WebSocket endpoint
-	r.GET("/ws", wsHandler.HandleWebSocket)
+	// WebSocket endpoint - Moved to protected routes
+	// r.GET("/ws", wsHandler.HandleWebSocket)
 
 	// Swagger documentation (controlled via build tags)
 	registerSwagger(r)
@@ -209,6 +246,9 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	protected := r.Group("/")
 	protected.Use(middleware.AuthMiddleware(cfg))
 	{
+		// WebSocket endpoint
+		protected.GET("/ws", wsHandler.HandleWebSocket)
+
 		// User Routes
 		protected.POST("/auth/change-password", authHandler.ChangePassword)
 		protected.GET("/challenges", challengeHandler.GetAllChallenges)
