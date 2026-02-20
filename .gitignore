@@ -54,6 +54,7 @@ backend/admin-tool.exe
 backend/main
 backend/*.exe
 backend/docs/
+/clients/
 docker-compose.prod.yml
 docker-compose.yml
 

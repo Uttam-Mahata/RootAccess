@@ -13,7 +13,7 @@ RUN go mod download
 COPY . .
 
 # Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -o main ./cmd/api/main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -tags production -o main ./cmd/api/main.go
 # Build the admin tool
 RUN CGO_ENABLED=0 GOOS=linux go build -o admin-tool ./cmd/admin/main.go
 
