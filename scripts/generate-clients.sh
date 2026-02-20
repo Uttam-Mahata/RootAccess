@@ -25,7 +25,7 @@ npx @openapitools/openapi-generator-cli generate \
     --skip-validate-spec \
     --additional-properties=npmName=@rootaccessd/client,supportsES6=true
 
-# Patch generated package.json: remove prepare hook, pin TypeScript version
+# Patch generated package.json: remove prepare hook, pin TypeScript version, set repo/homepage
 node -e "
   const fs = require('fs');
   const pkg = JSON.parse(fs.readFileSync('$OUTPUT_DIR/typescript/package.json', 'utf8'));
@@ -33,6 +33,14 @@ node -e "
   if (pkg.devDependencies) {
     pkg.devDependencies.typescript = '^5.6.0';
   }
+  pkg.repository = {
+    type: 'git',
+    url: 'git+https://github.com/Uttam-Mahata/RootAccess.git'
+  };
+  pkg.homepage = 'https://github.com/Uttam-Mahata/RootAccess#readme';
+  pkg.bugs = {
+    url: 'https://github.com/Uttam-Mahata/RootAccess/issues'
+  };
   fs.writeFileSync('$OUTPUT_DIR/typescript/package.json', JSON.stringify(pkg, null, 2));
 "
 
