@@ -1,8 +1,9 @@
-import { Injectable, OnDestroy } from '@angular/core';
+import { Injectable, OnDestroy, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject, Subscription } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { WebSocketService } from './websocket';
+import { AuthService } from './auth';
 
 export interface Notification {
   id: string;
@@ -33,11 +34,17 @@ export interface UpdateNotificationRequest {
 export class NotificationService implements OnDestroy {
   private apiUrl = environment.apiUrl;
   private notificationsSubject = new BehaviorSubject<Notification[]>([]);
+  private unreadCountSubject = new BehaviorSubject<number>(0);
   private dismissedNotifications = new Set<string>();
+  private readNotifications = new Set<string>();
   private wsSubscriptions: Subscription[] = [];
   private initialized = false;
+  private authSub?: Subscription;
 
   notifications$ = this.notificationsSubject.asObservable();
+  unreadCount$ = this.unreadCountSubject.asObservable();
+
+  private authService = inject(AuthService);
 
   constructor(private http: HttpClient, private wsService: WebSocketService) {
     const dismissed = localStorage.getItem('dismissed_notifications');
@@ -49,6 +56,27 @@ export class NotificationService implements OnDestroy {
         // Ignore parse errors
       }
     }
+    const read = localStorage.getItem('read_notifications');
+    if (read) {
+      try {
+        const parsed = JSON.parse(read);
+        this.readNotifications = new Set(parsed);
+      } catch (e) {
+        // Ignore parse errors
+      }
+    }
+
+    // Auto-update unread count whenever notifications list changes
+    this.notificationsSubject.subscribe(() => this.updateUnreadCount());
+
+    // Listen for auth changes to initialize or cleanup
+    this.authSub = this.authService.isAuthenticated$.subscribe(isAuth => {
+      if (isAuth) {
+        this.initialize();
+      } else {
+        this.cleanup();
+      }
+    });
   }
 
   /**
@@ -56,7 +84,7 @@ export class NotificationService implements OnDestroy {
    * through WebSocket push events. Call this once at app startup.
    */
   initialize(): void {
-    if (this.initialized) return;
+    if (this.initialized || !this.authService.isLoggedIn()) return;
     this.initialized = true;
 
     // Ensure WebSocket connection is open
@@ -109,10 +137,19 @@ export class NotificationService implements OnDestroy {
     );
   }
 
+  private cleanup(): void {
+    this.wsService.disconnect();
+    this.wsSubscriptions.forEach(s => s.unsubscribe());
+    this.wsSubscriptions = [];
+    this.initialized = false;
+    this.notificationsSubject.next([]);
+  }
+
   private setNotifications(notifications: Notification[]): void {
     const filtered = notifications.filter(n => !this.dismissedNotifications.has(n.id));
     this.notificationsSubject.next(filtered);
   }
+
 
   // Get active notifications (public)
   getActiveNotifications(): Observable<Notification[]> {
@@ -152,6 +189,19 @@ export class NotificationService implements OnDestroy {
     // Update the subject to reflect dismissed notification
     const current = this.notificationsSubject.value;
     this.notificationsSubject.next(current.filter(n => n.id !== id));
+  }
+
+  // Mark all current notifications as read (clears badge)
+  markAllAsRead(): void {
+    const ids = this.notificationsSubject.value.map(n => n.id);
+    ids.forEach(id => this.readNotifications.add(id));
+    localStorage.setItem('read_notifications', JSON.stringify([...this.readNotifications]));
+    this.updateUnreadCount();
+  }
+
+  private updateUnreadCount(): void {
+    const unread = this.notificationsSubject.value.filter(n => !this.readNotifications.has(n.id)).length;
+    this.unreadCountSubject.next(unread);
   }
 
   // Clear all dismissed notifications (useful for testing or reset)

@@ -1,5 +1,5 @@
 import { Component, inject, OnInit, OnDestroy } from '@angular/core';
-import { RouterOutlet, RouterModule } from '@angular/router';
+import { Router, RouterOutlet, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from './services/auth';
 import { NotificationService, Notification } from './services/notification';
@@ -18,20 +18,27 @@ import 'zone.js';
 export class AppComponent implements OnInit, OnDestroy {
   public authService = inject(AuthService);
   public notificationService = inject(NotificationService);
-  
+  private router = inject(Router);
+
   notifications: Notification[] = [];
+  unreadCount = 0;
   showNotificationDropdown = false;
   showMobileMenu = false;
   private notificationSub?: Subscription;
+  private unreadCountSub?: Subscription;
 
   ngOnInit(): void {
     this.notificationSub = this.notificationService.notifications$.subscribe(
       notifications => this.notifications = notifications
     );
+    this.unreadCountSub = this.notificationService.unreadCount$.subscribe(
+      count => this.unreadCount = count
+    );
   }
 
   ngOnDestroy(): void {
     this.notificationSub?.unsubscribe();
+    this.unreadCountSub?.unsubscribe();
   }
 
   isLoggedIn(): boolean {
@@ -70,6 +77,11 @@ export class AppComponent implements OnInit, OnDestroy {
 
   closeNotificationDropdown(): void {
     this.showNotificationDropdown = false;
+  }
+
+  openNotificationsFromDropdown(): void {
+    this.closeNotificationDropdown();
+    this.router.navigate(['/notifications']);
   }
 
   dismissNotification(id: string, event: Event): void {

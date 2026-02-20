@@ -1,4 +1,5 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -15,11 +16,15 @@ import Showdown from 'showdown';
 })
 export class ChallengeListComponent implements OnInit {
   private teamService = inject(TeamService);
+  private destroyRef = inject(DestroyRef);
 
   challenges: Challenge[] = [];
   filteredChallenges: Challenge[] = [];
   isLoading = true;
   hasTeam = false;
+
+  // Precomputed plain-text previews keyed by challenge id
+  plainTextPreviews: Map<string, string> = new Map();
 
   // Filter state
   searchQuery = '';
@@ -32,7 +37,7 @@ export class ChallengeListComponent implements OnInit {
   categories: string[] = [];
   difficulties = ['easy', 'medium', 'hard'];
   tags: string[] = [];
-  
+
   // Markdown converter with enhanced configuration
   private markdownConverter = new Showdown.Converter({
     tables: true,
@@ -50,31 +55,9 @@ export class ChallengeListComponent implements OnInit {
   });
 
   constructor(private challengeService: ChallengeService) { }
-  
-  // Convert markdown/HTML to plain text for preview
-  getPlainTextPreview(challenge: Challenge, maxLength: number = 150): string {
-    if (!challenge.description) return '';
-    
-    const format = challenge.description_format || 'markdown'; // Default to markdown for backward compatibility
-    let html = '';
-    
-    if (format === 'html') {
-      // Already HTML
-      html = challenge.description;
-    } else {
-      // Convert markdown to HTML
-      html = this.markdownConverter.makeHtml(challenge.description);
-    }
-    
-    // Strip HTML tags to get plain text
-    const tmp = document.createElement('div');
-    tmp.innerHTML = html;
-    const plainText = tmp.textContent || tmp.innerText || '';
-    return plainText.length > maxLength ? plainText.slice(0, maxLength) + '...' : plainText;
-  }
 
   ngOnInit(): void {
-    this.teamService.currentTeam$.subscribe(team => {
+    this.teamService.currentTeam$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(team => {
       this.hasTeam = team !== null;
     });
 
@@ -87,6 +70,11 @@ export class ChallengeListComponent implements OnInit {
         // Extract unique tags
         const allTags = this.challenges.flatMap(c => c.tags || []);
         this.tags = [...new Set(allTags)].sort();
+        // Precompute plain-text previews for all challenges
+        this.plainTextPreviews.clear();
+        this.challenges.forEach(c => {
+          this.plainTextPreviews.set(c.id, this.computePlainTextPreview(c, 150));
+        });
         this.applyFilters();
         this.isLoading = false;
       },
@@ -97,6 +85,28 @@ export class ChallengeListComponent implements OnInit {
         this.isLoading = false;
       }
     });
+  }
+
+  // Internal helper — called once per challenge at load time
+  private computePlainTextPreview(challenge: Challenge, maxLength: number = 150): string {
+    if (!challenge.description) return '';
+
+    const format = challenge.description_format || 'markdown'; // Default to markdown for backward compatibility
+    let html = '';
+
+    if (format === 'html') {
+      // Already HTML
+      html = challenge.description;
+    } else {
+      // Convert markdown to HTML
+      html = this.markdownConverter.makeHtml(challenge.description);
+    }
+
+    // Strip HTML tags to get plain text
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    const plainText = tmp.textContent || tmp.innerText || '';
+    return plainText.length > maxLength ? plainText.slice(0, maxLength) + '...' : plainText;
   }
 
   applyFilters(): void {

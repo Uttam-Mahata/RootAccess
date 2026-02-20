@@ -1,7 +1,8 @@
-import { Injectable, OnDestroy } from '@angular/core';
-import { Subject, Observable } from 'rxjs';
+import { Injectable, OnDestroy, inject } from '@angular/core';
+import { Subject, BehaviorSubject, Observable } from 'rxjs';
 import { filter, map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
+import { AuthService } from './auth';
 
 export interface WsMessage {
   type: string;
@@ -14,13 +15,22 @@ export interface WsMessage {
 export class WebSocketService implements OnDestroy {
   private socket: WebSocket | null = null;
   private messagesSubject = new Subject<WsMessage>();
+  private connectedSubject = new BehaviorSubject<boolean>(false);
   private reconnectInterval = 5000;
   private reconnectTimer: any = null;
 
+  private authService = inject(AuthService);
+
   messages$ = this.messagesSubject.asObservable();
+  connected$ = this.connectedSubject.asObservable();
 
   connect(): void {
     if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+      return;
+    }
+
+    // Don't connect if not logged in
+    if (!this.authService.isLoggedIn()) {
       return;
     }
 
@@ -29,6 +39,7 @@ export class WebSocketService implements OnDestroy {
 
     this.socket.onopen = () => {
       console.log('WebSocket connected');
+      this.connectedSubject.next(true);
       if (this.reconnectTimer) {
         clearTimeout(this.reconnectTimer);
         this.reconnectTimer = null;
@@ -46,11 +57,13 @@ export class WebSocketService implements OnDestroy {
 
     this.socket.onclose = () => {
       console.log('WebSocket disconnected, reconnecting...');
+      this.connectedSubject.next(false);
       this.scheduleReconnect();
     };
 
     this.socket.onerror = (error) => {
       console.error('WebSocket error:', error);
+      this.connectedSubject.next(false);
       this.socket?.close();
     };
   }

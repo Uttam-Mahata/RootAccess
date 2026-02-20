@@ -1,0 +1,77 @@
+<div class="min-h-screen bg-slate-50 dark:bg-slate-900 px-4 py-8">
+  <div class="max-w-4xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-slate-900 dark:text-white">
+        Notifications
+      </h1>
+      <p class="mt-2 text-slate-600 dark:text-slate-400 text-sm">
+        All of your in-app announcements and updates are collected here. They stay visible until you dismiss them.
+      </p>
+    </div>
+
+    <!-- Loading state -->
+    <div *ngIf="loading" class="flex items-center justify-center py-12">
+      <div class="flex items-center gap-3 text-slate-600 dark:text-slate-300">
+        <svg class="animate-spin h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+        </svg>
+        <span>Loading notifications...</span>
+      </div>
+    </div>
+
+    <!-- Empty state -->
+    <div *ngIf="!loading && notifications.length === 0"
+         class="bg-white dark:bg-slate-800/80 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 p-10 text-center">
+      <svg class="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+      </svg>
+      <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-1">
+        No notifications
+      </h2>
+      <p class="text-sm text-slate-600 dark:text-slate-400 max-w-md mx-auto">
+        You’re all caught up. New announcements and system messages will show up here and in the bell dropdown.
+      </p>
+    </div>
+
+    <!-- Notifications list -->
+    <div *ngIf="!loading && notifications.length > 0" class="space-y-4">
+      <div *ngFor="let notification of notifications" [ngClass]="getTypeClasses(notification.type)">
+        <div class="flex-shrink-0 mt-0.5">
+          <svg class="w-5 h-5" [ngClass]="getIconColorClasses(notification.type)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  [attr.d]="getIconPath(notification.type)"/>
+          </svg>
+        </div>
+
+        <div class="flex-1 min-w-0">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <p class="text-sm font-semibold text-slate-900 dark:text-white">
+                {{ notification.title }}
+              </p>
+              <p class="mt-1 text-sm text-slate-600 dark:text-slate-300 whitespace-pre-line">
+                {{ notification.content }}
+              </p>
+            </div>
+          </div>
+          <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
+            {{ formatDate(notification.created_at) }}
+          </p>
+        </div>
+
+        <button
+          type="button"
+          class="ml-2 mt-1 p-1 text-slate-400 hover:text-red-500 transition-colors flex-shrink-0"
+          (click)="dismiss(notification.id)">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+

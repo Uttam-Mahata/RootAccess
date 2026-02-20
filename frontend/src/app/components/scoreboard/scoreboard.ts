@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, ChangeDetectionStrategy, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -6,6 +6,7 @@ import { Subscription } from 'rxjs';
 import Chart from 'chart.js/auto';
 import { TeamService, Team } from '../../services/team';
 import { ScoreboardService } from '../../services/scoreboard';
+import { ContestService, ScoreboardContest } from '../../services/contest';
 import { WebSocketService } from '../../services/websocket';
 import { ThemeService } from '../../services/theme';
 import { HttpClient } from '@angular/common/http';
@@ -28,7 +29,8 @@ interface TeamProgression {
   standalone: true,
   imports: [CommonModule, RouterModule, FormsModule],
   templateUrl: './scoreboard.html',
-  styleUrls: ['./scoreboard.scss']
+  styleUrls: ['./scoreboard.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ScoreboardComponent implements OnInit, OnDestroy {
   teams: Team[] = [];
@@ -36,18 +38,34 @@ export class ScoreboardComponent implements OnInit, OnDestroy {
   isLoading = true;
   viewMode: 'teams' | 'individuals' = 'teams';
   private wsSub: Subscription | null = null;
+  private wsConnectedSub: Subscription | null = null;
   private pollingInterval: any = null;
-  
+  private wsConnected = false;
+
+  // Contest state
+  contests: ScoreboardContest[] = [];
+  selectedContestId: string | null = null;
+  contestsLoading = true;
+
   // Chart data
   teamProgressions: TeamProgression[] = [];
   chartsLoading = false;
   private chartInstances: Chart[] = [];
-  showTopTeams = 10; // Show top 10 teams in chart
+  showTopTeams = 10;
   private chartsInitialized = false;
+
+  private _teamChartCanvas: ElementRef<HTMLCanvasElement> | undefined;
+  @ViewChild('teamChartCanvas') set teamChartCanvas(ref: ElementRef<HTMLCanvasElement> | undefined) {
+    this._teamChartCanvas = ref;
+    if (ref && this.teamProgressions.length > 0 && !this.chartsInitialized) {
+      this.initCharts();
+    }
+  }
 
   constructor(
     private teamService: TeamService,
     private scoreboardService: ScoreboardService,
+    private contestService: ContestService,
     private wsService: WebSocketService,
     private themeService: ThemeService,
     private http: HttpClient,
@@ -55,13 +73,17 @@ export class ScoreboardComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit(): void {
-    this.loadTeamScoreboard();
-    this.loadTeamStatistics();
+    this.loadContests();
 
     // Subscribe to WebSocket scoreboard updates
     this.wsService.connect();
+
+    this.wsConnectedSub = this.wsService.connected$.subscribe(connected => {
+      this.wsConnected = connected;
+    });
+
     this.wsSub = this.wsService.on('scoreboard_update').subscribe(() => {
-      console.log('WebSocket scoreboard update received');
+      if (!this.selectedContestId) return;
       if (this.viewMode === 'teams') {
         this.loadTeamScoreboard();
         this.loadTeamStatistics();
@@ -70,62 +92,101 @@ export class ScoreboardComponent implements OnInit, OnDestroy {
       }
     });
 
-    // Polling fallback: refresh data every 10 seconds
+    // Polling fallback
     this.pollingInterval = setInterval(() => {
-      if (this.viewMode === 'teams') {
-        this.loadTeamScoreboard();
-        this.loadTeamStatistics();
-      } else {
-        this.loadIndividualScoreboard();
+      if (!this.wsConnected && this.selectedContestId) {
+        if (this.viewMode === 'teams') {
+          this.loadTeamScoreboard();
+        } else {
+          this.loadIndividualScoreboard();
+        }
       }
-    }, 10000); // 10 seconds
+    }, 10000);
   }
 
   ngOnDestroy(): void {
     this.wsSub?.unsubscribe();
+    this.wsConnectedSub?.unsubscribe();
     if (this.pollingInterval) {
       clearInterval(this.pollingInterval);
     }
     this.destroyCharts();
   }
 
-  loadTeamStatistics(): void {
-    this.chartsLoading = true;
-    console.log('Loading team statistics from:', `${environment.apiUrl}/scoreboard/teams/statistics?days=30`);
-    this.http.get<{ progressions: TeamProgression[] }>(`${environment.apiUrl}/scoreboard/teams/statistics?days=30`, { withCredentials: true }).subscribe({
+  trackTeam(_: number, team: any): string {
+    return team.team_id ?? team.id;
+  }
+
+  trackUser(_: number, user: any): string {
+    return user.user_id ?? user.username;
+  }
+
+  trackContest(_: number, contest: ScoreboardContest): string {
+    return contest.id;
+  }
+
+  loadContests(): void {
+    this.contestsLoading = true;
+    this.contestService.getScoreboardContests().subscribe({
       next: (response) => {
-        console.log('Team statistics response:', response);
-        this.teamProgressions = response.progressions || [];
-        console.log('Loaded progressions:', this.teamProgressions.length, 'teams');
-        if (this.teamProgressions.length > 0) {
-          console.log('First team data:', this.teamProgressions[0]);
+        this.contests = response.contests || [];
+        this.contestsLoading = false;
+
+        if (this.contests.length > 0) {
+          // Prefer the first running contest; otherwise the first in the list
+          const running = this.contests.find(c => c.status === 'running');
+          this.selectedContestId = (running || this.contests[0]).id;
+          this.loadScoreboardData();
         }
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.contests = [];
+        this.contestsLoading = false;
+        this.isLoading = false;
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  selectContest(contestId: string): void {
+    if (this.selectedContestId === contestId) return;
+    this.selectedContestId = contestId;
+    this.destroyCharts();
+    this.loadScoreboardData();
+  }
+
+  private loadScoreboardData(): void {
+    if (this.viewMode === 'teams') {
+      this.loadTeamScoreboard();
+      this.loadTeamStatistics();
+    } else {
+      this.loadIndividualScoreboard();
+    }
+  }
+
+  getSelectedContest(): ScoreboardContest | undefined {
+    return this.contests.find(c => c.id === this.selectedContestId);
+  }
+
+  loadTeamStatistics(): void {
+    if (!this.selectedContestId) return;
+    this.chartsLoading = true;
+    this.cdr.markForCheck();
+
+    this.http.get<{ progressions: TeamProgression[] }>(
+      `${environment.apiUrl}/scoreboard/teams/statistics?days=30&contest_id=${this.selectedContestId}`,
+      { withCredentials: true }
+    ).subscribe({
+      next: (response) => {
+        this.teamProgressions = response.progressions || [];
         this.chartsLoading = false;
         this.cdr.markForCheck();
-        // Wait for Angular to render the canvas element
-        if (this.teamProgressions.length > 0) {
-          // Use multiple attempts to ensure canvas is rendered
-          let attempts = 0;
-          const tryInit = () => {
-            attempts++;
-            const canvas = document.getElementById('teamScoreProgressionChart') as HTMLCanvasElement;
-            if (canvas) {
-              console.log('Canvas found, initializing chart (attempt', attempts, ')');
-              this.initCharts();
-            } else if (attempts < 20) {
-              setTimeout(tryInit, 100);
-            } else {
-              console.error('Failed to find canvas after 20 attempts');
-            }
-          };
-          setTimeout(tryInit, 200);
-        } else {
-          console.log('No team progressions to display');
+        if (this._teamChartCanvas && this.teamProgressions.length > 0) {
+          this.initCharts();
         }
       },
-      error: (err) => {
-        console.error('Error loading team statistics:', err);
-        console.error('Error details:', err.error);
+      error: () => {
         this.chartsLoading = false;
         this.teamProgressions = [];
         this.cdr.markForCheck();
@@ -140,45 +201,18 @@ export class ScoreboardComponent implements OnInit, OnDestroy {
   }
 
   initCharts(): void {
-    console.log('initCharts called', { viewMode: this.viewMode, progressionsLength: this.teamProgressions.length });
-    
-    if (this.viewMode !== 'teams' || !this.teamProgressions.length) {
-      console.log('Charts init skipped:', { viewMode: this.viewMode, progressionsLength: this.teamProgressions.length });
-      return;
-    }
-    
-    const solvesEl = document.getElementById('teamScoreProgressionChart') as HTMLCanvasElement;
-    console.log('Canvas element:', solvesEl ? 'found' : 'NOT FOUND');
-    
-    if (!solvesEl) {
-      console.log('Canvas element not found, retrying...');
-      const retryCount = (this as any)._chartRetryCount || 0;
-      if (retryCount < 15) {
-        (this as any)._chartRetryCount = retryCount + 1;
-        setTimeout(() => this.initCharts(), 200);
-      } else {
-        (this as any)._chartRetryCount = 0;
-        console.error('Failed to find canvas element after 15 retries');
-      }
-      return;
-    }
+    if (this.viewMode !== 'teams' || !this.teamProgressions.length) return;
 
-    // Reset retry counter
-    (this as any)._chartRetryCount = 0;
+    const solvesEl = this._teamChartCanvas?.nativeElement;
+    if (!solvesEl) return;
 
     this.destroyCharts();
     const isDark = this.themeService.isDarkMode();
     const textColor = isDark ? '#f1f5f9' : '#0f172a';
     const gridColor = isDark ? 'rgba(148,163,184,0.2)' : 'rgba(148,163,184,0.3)';
 
-    // Get top N teams
     const topTeams = this.teamProgressions.slice(0, this.showTopTeams);
-    if (topTeams.length === 0) {
-      console.log('No teams to display in chart');
-      return;
-    }
-
-    console.log('Top teams for chart:', topTeams.map(t => ({ name: t.name, dataPoints: t.data?.length || 0 })));
+    if (topTeams.length === 0) return;
 
     const colors = [
       '#3b82f6', '#22c55e', '#f59e0b', '#8b5cf6', '#14b8a6',
@@ -186,48 +220,29 @@ export class ScoreboardComponent implements OnInit, OnDestroy {
       '#0ea5e9', '#a855f7', '#eab308', '#f43f5e', '#10b981'
     ];
 
-    // Prepare labels (dates) - use first team's data dates
     const labels = topTeams[0]?.data?.map(d => d.date.slice(5)) || [];
-    if (labels.length === 0) {
-      console.log('No date labels available, team data:', topTeams[0]);
-      return;
-    }
+    if (labels.length === 0) return;
 
-    console.log('Chart labels:', labels.length, 'dates');
-
-    // Prepare datasets
-    const datasets = topTeams.map((team, index) => {
-      const scores = team.data?.map(d => d.score) || [];
-      console.log(`Team ${team.name}: ${scores.length} data points, max score: ${Math.max(...scores, 0)}`);
-      return {
-        label: team.name,
-        data: scores,
-        borderColor: colors[index % colors.length],
-        backgroundColor: colors[index % colors.length] + '20',
-        fill: false,
-        tension: 0.3,
-        borderWidth: 2,
-        pointRadius: 2,
-        pointHoverRadius: 4
-      };
-    });
-
-    console.log('Initializing chart with', topTeams.length, 'teams,', labels.length, 'data points');
+    const datasets = topTeams.map((team, index) => ({
+      label: team.name,
+      data: team.data?.map(d => d.score) || [],
+      borderColor: colors[index % colors.length],
+      backgroundColor: colors[index % colors.length] + '20',
+      fill: false,
+      tension: 0.3,
+      borderWidth: 2,
+      pointRadius: 2,
+      pointHoverRadius: 4
+    }));
 
     try {
       const chart = new Chart(solvesEl, {
         type: 'line',
-        data: {
-          labels: labels,
-          datasets: datasets
-        },
+        data: { labels, datasets },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          interaction: {
-            mode: 'index',
-            intersect: false
-          },
+          interaction: { mode: 'index', intersect: false },
           plugins: {
             legend: {
               position: 'right',
@@ -235,11 +250,7 @@ export class ScoreboardComponent implements OnInit, OnDestroy {
                 color: textColor,
                 usePointStyle: true,
                 padding: 15,
-                font: {
-                  size: 13,
-                  weight: 500,
-                  family: 'system-ui, -apple-system, sans-serif'
-                }
+                font: { size: 13, weight: 500, family: 'system-ui, -apple-system, sans-serif' }
               }
             },
             tooltip: {
@@ -248,49 +259,22 @@ export class ScoreboardComponent implements OnInit, OnDestroy {
               bodyColor: textColor,
               borderColor: gridColor,
               borderWidth: 1,
-              titleFont: {
-                size: 14,
-                weight: 600
-              },
-              bodyFont: {
-                size: 13,
-                weight: 500
-              },
+              titleFont: { size: 14, weight: 600 },
+              bodyFont: { size: 13, weight: 500 },
               padding: 12
             }
           },
           scales: {
             x: {
-              ticks: {
-                color: textColor,
-                maxTicksLimit: 15,
-                font: {
-                  size: 12,
-                  weight: 500
-                }
-              },
-              grid: {
-                color: gridColor
-              },
-              title: {
-                display: false
-              }
+              ticks: { color: textColor, maxTicksLimit: 15, font: { size: 12, weight: 500 } },
+              grid: { color: gridColor },
+              title: { display: false }
             },
             y: {
               beginAtZero: true,
-              ticks: {
-                color: textColor,
-                font: {
-                  size: 12,
-                  weight: 500
-                }
-              },
-              grid: {
-                color: gridColor
-              },
-              title: {
-                display: false
-              }
+              ticks: { color: textColor, font: { size: 12, weight: 500 } },
+              grid: { color: gridColor },
+              title: { display: false }
             }
           }
         }
@@ -298,15 +282,16 @@ export class ScoreboardComponent implements OnInit, OnDestroy {
 
       this.chartInstances.push(chart);
       this.chartsInitialized = true;
-      console.log('✅ Chart initialized successfully!');
-    } catch (error) {
-      console.error('❌ Error initializing chart:', error);
+    } catch {
       this.chartsInitialized = false;
     }
   }
 
   switchView(mode: 'teams' | 'individuals'): void {
+    if (this.viewMode === mode) return;
     this.viewMode = mode;
+    if (!this.selectedContestId) return;
+
     if (mode === 'teams') {
       this.loadTeamScoreboard();
       if (!this.teamProgressions.length) {
@@ -324,35 +309,42 @@ export class ScoreboardComponent implements OnInit, OnDestroy {
   }
 
   loadTeamScoreboard(): void {
+    if (!this.selectedContestId) return;
     this.isLoading = true;
-    this.teamService.getTeamScoreboard().subscribe({
+    this.cdr.markForCheck();
+
+    this.teamService.getTeamScoreboard(this.selectedContestId).subscribe({
       next: (response) => {
         this.teams = response.teams || [];
         this.isLoading = false;
-        // If statistics already loaded, reinitialize charts
-        if (this.teamProgressions.length > 0 && this.viewMode === 'teams') {
-          setTimeout(() => this.initCharts(), 100);
+        if (this.teamProgressions.length > 0 && this.viewMode === 'teams' && this._teamChartCanvas) {
+          this.initCharts();
         }
+        this.cdr.markForCheck();
       },
-      error: (err) => {
-        console.error(err);
+      error: () => {
         this.teams = [];
         this.isLoading = false;
+        this.cdr.markForCheck();
       }
     });
   }
 
   loadIndividualScoreboard(): void {
+    if (!this.selectedContestId) return;
     this.isLoading = true;
-    this.scoreboardService.getScoreboard().subscribe({
+    this.cdr.markForCheck();
+
+    this.scoreboardService.getScoreboard(this.selectedContestId).subscribe({
       next: (response) => {
         this.users = response || [];
         this.isLoading = false;
+        this.cdr.markForCheck();
       },
-      error: (err) => {
-        console.error(err);
+      error: () => {
         this.users = [];
         this.isLoading = false;
+        this.cdr.markForCheck();
       }
     });
   }

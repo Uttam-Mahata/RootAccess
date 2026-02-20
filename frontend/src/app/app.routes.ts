@@ -1,20 +1,5 @@
 import { Routes } from '@angular/router';
 import { Router } from '@angular/router';
-import { LoginComponent } from './components/login/login';
-import { RegisterComponent } from './components/register/register';
-import { ChallengeListComponent } from './components/challenge-list/challenge-list';
-import { ChallengeDetailComponent } from './components/challenge-detail/challenge-detail';
-import { ScoreboardComponent } from './components/scoreboard/scoreboard';
-import { AdminDashboardComponent } from './components/admin-dashboard/admin-dashboard';
-import { VerifyEmailComponent } from './components/verify-email/verify-email';
-import { AccountSettingsComponent } from './components/account-settings/account-settings';
-import { ForgotPasswordComponent } from './components/forgot-password/forgot-password';
-import { ResetPasswordComponent } from './components/reset-password/reset-password';
-import { TeamDashboardComponent } from './components/team-dashboard/team-dashboard';
-import { HomeComponent } from './components/home/home';
-import { ActivityDashboardComponent } from './components/activity-dashboard/activity-dashboard';
-import { UserProfileComponent } from './components/user-profile/user-profile';
-import { OAuthCallbackComponent } from './components/oauth-callback/oauth-callback';
 import { inject } from '@angular/core';
 import { AuthService } from './services/auth';
 import { map, filter, take } from 'rxjs/operators';
@@ -23,7 +8,7 @@ import { map, filter, take } from 'rxjs/operators';
 const authGuard = () => {
   const authService = inject(AuthService);
   const router = inject(Router);
-  
+
   // Wait for auth check to complete, then check if user is logged in
   return authService.authCheckComplete$.pipe(
     filter(complete => complete),
@@ -42,7 +27,7 @@ const authGuard = () => {
 const adminGuard = () => {
   const authService = inject(AuthService);
   const router = inject(Router);
-  
+
   return authService.authCheckComplete$.pipe(
     filter(complete => complete),
     take(1),
@@ -50,7 +35,7 @@ const adminGuard = () => {
       if (authService.isAdmin()) {
         return true;
       }
-      router.navigate(['/']);
+      router.navigate(['/home']);
       return false;
     })
   );
@@ -60,13 +45,31 @@ const adminGuard = () => {
 const guestGuard = () => {
   const authService = inject(AuthService);
   const router = inject(Router);
-  
+
   return authService.authCheckComplete$.pipe(
     filter(complete => complete),
     take(1),
     map(() => {
       if (authService.isLoggedIn()) {
-        router.navigate(['/']);
+        router.navigate(['/home']);
+        return false;
+      }
+      return true;
+    })
+  );
+};
+
+// Guard for landing page - redirects authenticated users to home
+const landingGuard = () => {
+  const authService = inject(AuthService);
+  const router = inject(Router);
+
+  return authService.authCheckComplete$.pipe(
+    filter(complete => complete),
+    take(1),
+    map(() => {
+      if (authService.isLoggedIn()) {
+        router.navigate(['/home']);
         return false;
       }
       return true;
@@ -76,28 +79,30 @@ const guestGuard = () => {
 
 export const routes: Routes = [
   // Guest routes - redirect to home if logged in
-  { path: 'login', component: LoginComponent, canActivate: [guestGuard] },
-  { path: 'register', component: RegisterComponent, canActivate: [guestGuard] },
-  
+  { path: 'login', loadComponent: () => import('./components/login/login').then(m => m.LoginComponent), canActivate: [guestGuard] },
+  { path: 'register', loadComponent: () => import('./components/register/register').then(m => m.RegisterComponent), canActivate: [guestGuard] },
+
   // Public routes (no guards)
-  { path: 'verify-email', component: VerifyEmailComponent },
-  { path: 'forgot-password', component: ForgotPasswordComponent },
-  { path: 'reset-password', component: ResetPasswordComponent },
-  { path: 'auth/callback', component: OAuthCallbackComponent },
-  { path: 'scoreboard', component: ScoreboardComponent },
-  { path: 'profile/:username', component: UserProfileComponent },
-  
+  { path: 'verify-email', loadComponent: () => import('./components/verify-email/verify-email').then(m => m.VerifyEmailComponent) },
+  { path: 'forgot-password', loadComponent: () => import('./components/forgot-password/forgot-password').then(m => m.ForgotPasswordComponent) },
+  { path: 'reset-password', loadComponent: () => import('./components/reset-password/reset-password').then(m => m.ResetPasswordComponent) },
+  { path: 'auth/callback', loadComponent: () => import('./components/oauth-callback/oauth-callback').then(m => m.OAuthCallbackComponent) },
+  { path: 'legal', loadComponent: () => import('./components/legal/legal').then(m => m.LegalComponent) },
+  { path: 'profile/:username', loadComponent: () => import('./components/user-profile/user-profile').then(m => m.UserProfileComponent) },
+
   // Protected routes - require login
-  { path: 'home', component: HomeComponent, canActivate: [authGuard] },
-  { path: 'settings', component: AccountSettingsComponent, canActivate: [authGuard] },
-  { path: 'team', component: TeamDashboardComponent, canActivate: [authGuard] },
-  { path: 'challenges', component: ChallengeListComponent, canActivate: [authGuard] },
-  { path: 'challenges/:id', component: ChallengeDetailComponent, canActivate: [authGuard] },
-  { path: 'activity', component: ActivityDashboardComponent, canActivate: [authGuard] },
-  
+  { path: 'home', loadComponent: () => import('./components/home/home').then(m => m.HomeComponent), canActivate: [authGuard] },
+  { path: 'scoreboard', loadComponent: () => import('./components/scoreboard/scoreboard').then(m => m.ScoreboardComponent), canActivate: [authGuard] },
+  { path: 'settings', loadComponent: () => import('./components/account-settings/account-settings').then(m => m.AccountSettingsComponent), canActivate: [authGuard] },
+  { path: 'team', loadComponent: () => import('./components/team-dashboard/team-dashboard').then(m => m.TeamDashboardComponent), canActivate: [authGuard] },
+  { path: 'challenges', loadComponent: () => import('./components/challenge-list/challenge-list').then(m => m.ChallengeListComponent), canActivate: [authGuard] },
+  { path: 'challenges/:id', loadComponent: () => import('./components/challenge-detail/challenge-detail').then(m => m.ChallengeDetailComponent), canActivate: [authGuard] },
+  { path: 'activity', loadComponent: () => import('./components/activity-dashboard/activity-dashboard').then(m => m.ActivityDashboardComponent), canActivate: [authGuard] },
+  { path: 'notifications', loadComponent: () => import('./components/notifications/notifications').then(m => m.NotificationsComponent), canActivate: [authGuard] },
+
   // Admin routes
-  { path: 'admin', component: AdminDashboardComponent, canActivate: [adminGuard] },
-  
-  // Default route - show home if logged in, login if not
-  { path: '', component: HomeComponent, canActivate: [authGuard] },
+  { path: 'admin', loadComponent: () => import('./components/admin-dashboard/admin-dashboard').then(m => m.AdminDashboardComponent), canActivate: [adminGuard] },
+
+  // Default route - show landing page for guests, redirect authenticated users to home
+  { path: '', loadComponent: () => import('./components/landing/landing').then(m => m.LandingComponent), canActivate: [landingGuard] },
 ];

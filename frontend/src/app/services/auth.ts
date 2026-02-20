@@ -1,8 +1,9 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
+import { ContestService } from './contest';
 
 export interface RegisterData {
   username: string;
@@ -40,6 +41,8 @@ export class AuthService {
   isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
   currentUser$ = this.currentUserSubject.asObservable();
   authCheckComplete$ = this.authCheckCompleteSubject.asObservable();
+
+  private contestService = inject(ContestService);
 
   constructor(private http: HttpClient) {
     // Check authentication status on init
@@ -105,6 +108,7 @@ export class AuthService {
       tap(() => {
         this.currentUserSubject.next(null);
         this.isAuthenticatedSubject.next(false);
+        this.contestService.clearRegistrationCache();
       })
     );
   }

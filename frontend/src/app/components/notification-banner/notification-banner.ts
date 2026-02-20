@@ -13,6 +13,7 @@ import { Subscription } from 'rxjs';
 export class NotificationBannerComponent implements OnInit, OnDestroy {
   notifications: Notification[] = [];
   private subscription?: Subscription;
+  private hiddenIds = new Set<string>();
 
   constructor(private notificationService: NotificationService) {}
 
@@ -21,7 +22,8 @@ export class NotificationBannerComponent implements OnInit, OnDestroy {
     this.notificationService.initialize();
 
     this.subscription = this.notificationService.notifications$.subscribe(notifications => {
-      this.notifications = notifications;
+      // For the banner, show only notifications the user hasn't hidden locally
+      this.notifications = notifications.filter(n => !this.hiddenIds.has(n.id));
     });
   }
 
@@ -32,7 +34,9 @@ export class NotificationBannerComponent implements OnInit, OnDestroy {
   }
 
   dismiss(id: string): void {
-    this.notificationService.dismissNotification(id);
+    // Only hide from the banner; keep it available in the bell dropdown and notifications page
+    this.hiddenIds.add(id);
+    this.notifications = this.notifications.filter(n => n.id !== id);
   }
 
   getNotificationClasses(type: string): string {

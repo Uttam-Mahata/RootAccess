@@ -11,7 +11,7 @@ export class ScoreboardService {
 
   constructor(private http: HttpClient) { }
 
-  getScoreboard(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/scoreboard`);
+  getScoreboard(contestId: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/scoreboard?contest_id=${contestId}`);
   }
 }

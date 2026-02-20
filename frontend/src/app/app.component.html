@@ -1,6 +1,6 @@
 <div class="min-h-screen w-full max-w-[100vw] overflow-x-hidden bg-transparent dark:bg-slate-900 transition-colors duration-300">
   <!-- Navigation Bar -->
-  <nav class="relative bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-primary-500/20 shadow-sm transition-colors duration-300 z-50">
+  <nav class="relative bg-white dark:bg-slate-900 transition-colors duration-300 z-50">
     <div class="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-16">
         <!-- Logo/Brand -->
@@ -26,6 +26,7 @@
             <span class="relative z-10">Home</span>
           </a>
           <a routerLink="/scoreboard" 
+             *ngIf="isLoggedIn()"
              class="relative px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-300 hover:bg-slate-100 dark:hover:bg-slate-800/50 rounded-lg transition-all duration-200 group">
             <span class="relative z-10">Scoreboard</span>
           </a>
@@ -61,7 +62,7 @@
           </a>
 
           <!-- Desktop Auth Buttons -->
-          <div class="flex items-center space-x-2 ml-4 pl-4 border-l border-slate-300 dark:border-slate-700/50">
+          <div class="flex items-center space-x-2">
             <!-- Signed Out State -->
             <div *ngIf="!isLoggedIn()" class="flex items-center space-x-2">
               <a routerLink="/login" 
@@ -85,19 +86,25 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
                   </svg>
                   <!-- Notification Badge -->
-                  <span *ngIf="notifications.length > 0" 
+                  <span *ngIf="unreadCount > 0"
                         class="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
-                    {{ notifications.length > 9 ? '9+' : notifications.length }}
+                    {{ unreadCount > 9 ? '9+' : unreadCount }}
                   </span>
                 </button>
 
                 <!-- Notification Dropdown -->
-                <div *ngIf="showNotificationDropdown" 
+                <div *ngIf="showNotificationDropdown"
                      class="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-800 rounded-xl shadow-md border border-slate-200 dark:border-slate-700 z-50 overflow-hidden">
-                  <div class="px-4 py-3 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+                  <div class="px-4 py-3 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between gap-3">
                     <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Notifications</h3>
+                    <a
+                      routerLink="/notifications"
+                      (click)="closeNotificationDropdown()"
+                      class="text-[11px] font-medium text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 underline-offset-2 hover:underline">
+                      View all
+                    </a>
                   </div>
-                  
+
                   <div class="max-h-80 overflow-y-auto">
                     <!-- Empty State -->
                     <div *ngIf="notifications.length === 0" class="px-4 py-8 text-center">
@@ -108,8 +115,9 @@
                     </div>
 
                     <!-- Notification Items -->
-                    <div *ngFor="let notification of notifications" 
-                         class="px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 border-b border-slate-100 dark:border-slate-700/50 last:border-0 transition-colors">
+                    <div *ngFor="let notification of notifications"
+                         (click)="openNotificationsFromDropdown()"
+                         class="px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 border-b border-slate-100 dark:border-slate-700/50 last:border-0 transition-colors cursor-pointer">
                       <div class="flex items-start gap-3">
                         <svg [class]="'w-5 h-5 flex-shrink-0 mt-0.5 ' + getNotificationColor(notification.type)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="getNotificationIcon(notification.type)"/>
@@ -154,17 +162,23 @@
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
               </svg>
-              <span *ngIf="notifications.length > 0" 
+              <span *ngIf="unreadCount > 0"
                     class="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
-                {{ notifications.length > 9 ? '9+' : notifications.length }}
+                {{ unreadCount > 9 ? '9+' : unreadCount }}
               </span>
             </button>
 
             <!-- Mobile Notification Dropdown -->
             <div *ngIf="showNotificationDropdown" 
                  class="absolute right-0 mt-2 w-72 sm:w-80 bg-white dark:bg-slate-800 rounded-xl shadow-md border border-slate-200 dark:border-slate-700 z-50 overflow-hidden">
-              <div class="px-4 py-3 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+              <div class="px-4 py-3 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between gap-3">
                 <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Notifications</h3>
+                <a
+                  routerLink="/notifications"
+                  (click)="closeNotificationDropdown()"
+                  class="text-[11px] font-medium text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 underline-offset-2 hover:underline whitespace-nowrap">
+                  View all
+                </a>
               </div>
               <div class="max-h-64 overflow-y-auto">
                 <div *ngIf="notifications.length === 0" class="px-4 py-6 text-center">
@@ -173,8 +187,9 @@
                   </svg>
                   <p class="text-sm text-slate-500 dark:text-slate-400">No notifications</p>
                 </div>
-                <div *ngFor="let notification of notifications" 
-                     class="px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 border-b border-slate-100 dark:border-slate-700/50 last:border-0 transition-colors">
+                <div *ngFor="let notification of notifications"
+                     (click)="openNotificationsFromDropdown()"
+                     class="px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 border-b border-slate-100 dark:border-slate-700/50 last:border-0 transition-colors cursor-pointer">
                   <div class="flex items-start gap-3">
                     <svg [class]="'w-5 h-5 flex-shrink-0 mt-0.5 ' + getNotificationColor(notification.type)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="getNotificationIcon(notification.type)"/>
@@ -183,7 +198,7 @@
                       <p class="text-sm font-medium text-slate-900 dark:text-white truncate">{{ notification.title }}</p>
                       <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">{{ notification.content }}</p>
                     </div>
-                    <button 
+                    <button
                       (click)="dismissNotification(notification.id, $event)"
                       class="p-1 text-slate-400 hover:text-red-500 transition-colors flex-shrink-0">
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -194,7 +209,7 @@
                 </div>
               </div>
             </div>
-            <div *ngIf="showNotificationDropdown" 
+            <div *ngIf="showNotificationDropdown"
                  (click)="closeNotificationDropdown()"
                  class="fixed inset-0 z-40"></div>
           </div>
@@ -232,6 +247,7 @@
         </a>
         
         <a routerLink="/scoreboard" 
+           *ngIf="isLoggedIn()"
            (click)="closeMobileMenu()"
            class="flex items-center gap-3 px-4 py-3 text-slate-700 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all duration-200">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -326,7 +342,7 @@
   </nav>
 
   <!-- Main Content -->
-  <main class="relative w-full min-w-0 max-w-[1920px] overflow-x-hidden mx-auto px-4 sm:px-6 lg:px-8 py-8 box-border bg-transparent dark:bg-slate-900 transition-colors duration-300">
+  <main class="relative w-full min-w-0 max-w-[1920px] overflow-x-hidden mx-auto px-4 sm:px-6 lg:px-8 py-8 box-border bg-white dark:bg-slate-900 transition-colors duration-300">
     <!-- Notification Banner -->
     <app-notification-banner></app-notification-banner>
     
@@ -334,6 +350,30 @@
       <router-outlet></router-outlet>
     </div>
   </main>
+
+  <!-- Footer -->
+  <footer class="w-full border-t border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
+    <div class="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+      <div class="text-center sm:text-left">
+        © RootAccess
+      </div>
+      <div class="flex flex-wrap items-center justify-center sm:justify-end gap-3">
+        <a
+          routerLink="/legal"
+          class="hover:text-red-600 dark:hover:text-red-400 underline-offset-2 hover:underline"
+        >
+          Privacy Policy &amp; Terms
+        </a>
+        <span class="hidden sm:inline text-slate-400 dark:text-slate-600">•</span>
+        <a
+          href="mailto:contact@rootaccess.live"
+          class="hover:text-red-600 dark:hover:text-red-400 underline-offset-2 hover:underline"
+        >
+          contact@rootaccess.live
+        </a>
+      </div>
+    </div>
+  </footer>
   
   <!-- Global Confirmation Modal -->
   <app-confirmation-modal></app-confirmation-modal>

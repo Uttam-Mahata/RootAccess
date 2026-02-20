@@ -56,7 +56,8 @@ export interface TeamScoreboardResponse {
 export class TeamService {
   private apiUrl = `${environment.apiUrl}/teams`;
   private currentTeamSubject = new BehaviorSubject<Team | null>(null);
-  
+  teamChecked = false; // true once the first /my-team HTTP call has completed
+
   currentTeam$ = this.currentTeamSubject.asObservable();
 
   constructor(private http: HttpClient, private authService: AuthService) {
@@ -171,8 +172,8 @@ export class TeamService {
   }
 
   // Scoreboard
-  getTeamScoreboard(): Observable<TeamScoreboardResponse> {
-    return this.http.get<TeamScoreboardResponse>(`${environment.apiUrl}/scoreboard/teams`, { withCredentials: true });
+  getTeamScoreboard(contestId: string): Observable<TeamScoreboardResponse> {
+    return this.http.get<TeamScoreboardResponse>(`${environment.apiUrl}/scoreboard/teams?contest_id=${contestId}`, { withCredentials: true });
   }
 
   // Helper methods
@@ -194,13 +195,11 @@ export class TeamService {
   checkTeamStatus(): void {
     this.http.get<TeamResponse>(`${this.apiUrl}/my-team`, { withCredentials: true }).subscribe({
       next: (response) => {
-        if (response.team) {
-          this.currentTeamSubject.next(response.team);
-        } else {
-          this.currentTeamSubject.next(null);
-        }
+        this.teamChecked = true;
+        this.currentTeamSubject.next(response.team ?? null);
       },
       error: () => {
+        this.teamChecked = true;
         this.currentTeamSubject.next(null);
       }
     });

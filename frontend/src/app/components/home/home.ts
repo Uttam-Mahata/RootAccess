@@ -1,10 +1,17 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, DestroyRef, inject, OnInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { timeout, catchError, of } from 'rxjs';
 import { AuthService } from '../../services/auth';
 import { TeamService } from '../../services/team';
 import { ContestService, Contest } from '../../services/contest';
+
+interface ContestMeta {
+  startFormatted: string;
+  endFormatted: string;
+  relativeTime: string;
+}
 
 @Component({
   selector: 'app-home',
@@ -17,22 +24,36 @@ export class HomeComponent implements OnInit {
   authService = inject(AuthService);
   teamService = inject(TeamService);
   contestService = inject(ContestService);
+  private destroyRef = inject(DestroyRef);
 
   upcomingContests: Contest[] = [];
   isLoadingContests = false;
   registrationStatuses: Map<string, boolean> = new Map();
   checkedRegistrationStatuses: Set<string> = new Set();
+  checkingRegistrationStatuses: Set<string> = new Set();
   registeringContests: Set<string> = new Set();
   registeredTeamsCounts: Map<string, number> = new Map();
-  hasTeam = false;
+  hasTeam: boolean | null = null; // null = loading, false = no team, true = has team
+  contestMeta: Map<string, ContestMeta> = new Map();
 
   ngOnInit(): void {
-    this.teamService.currentTeam$.subscribe(team => {
+    this.teamService.currentTeam$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(team => {
       const hadTeam = this.hasTeam;
-      this.hasTeam = team !== null;
+      if (team !== null) {
+        this.hasTeam = true;
+      } else if (this.teamService.teamChecked) {
+        this.hasTeam = false; // confirmed: HTTP call completed and user has no team
+      }
+      // else: keep hasTeam as null (initial BehaviorSubject emission, call still in-flight)
       // If team just became available after contests were already loaded, re-check statuses
       if (!hadTeam && this.hasTeam && this.upcomingContests.length > 0) {
         this.upcomingContests.forEach(contest => {
+          // Skip if already confirmed registered — no need to re-query
+          if (this.registrationStatuses.get(contest.id) === true) return;
+          // Skip if a check is already in flight — avoid race condition with loadUpcomingContests
+          if (this.checkingRegistrationStatuses.has(contest.id)) return;
+          // Skip if already checked and result was false — will re-check only if not yet resolved
+          if (this.checkedRegistrationStatuses.has(contest.id)) return;
           this.checkRegistrationStatus(contest.id);
         });
       }
@@ -45,6 +66,15 @@ export class HomeComponent implements OnInit {
     this.contestService.getUpcomingContests().subscribe({
       next: (contests) => {
         this.upcomingContests = contests;
+        // Precompute formatted dates and relative times for each contest
+        this.contestMeta.clear();
+        contests.forEach(contest => {
+          this.contestMeta.set(contest.id, {
+            startFormatted: this.formatDate(contest.start_time),
+            endFormatted: this.formatDate(contest.end_time),
+            relativeTime: this.getRelativeTime(contest.start_time),
+          });
+        });
         this.isLoadingContests = false;
         // Load registration statuses for each contest
         contests.forEach(contest => {
@@ -58,12 +88,21 @@ export class HomeComponent implements OnInit {
   }
 
   checkRegistrationStatus(contestId: string): void {
+    // Seed from singleton cache for immediate display on navigation/re-render
+    if (this.contestService.registrationStatusCache.has(contestId)) {
+      this.registrationStatuses.set(contestId, this.contestService.registrationStatusCache.get(contestId)!);
+    }
+
+    // Mark as in-flight to allow callers to avoid duplicate requests
+    this.checkingRegistrationStatuses.add(contestId);
+
     // Fallback timeout to ensure we always mark as checked (safety net)
     const fallbackTimeout = setTimeout(() => {
       if (!this.checkedRegistrationStatuses.has(contestId)) {
         console.warn(`Registration status check fallback triggered for contest ${contestId} - marking as checked`);
         this.registrationStatuses.set(contestId, false);
         this.checkedRegistrationStatuses.add(contestId);
+        this.checkingRegistrationStatuses.delete(contestId);
       }
     }, 12000); // 12 seconds (longer than the 10s timeout)
 
@@ -84,6 +123,7 @@ export class HomeComponent implements OnInit {
         // Always mark as checked, whether successful or errored
         this.registrationStatuses.set(contestId, status?.registered ?? false);
         this.checkedRegistrationStatuses.add(contestId);
+        this.checkingRegistrationStatuses.delete(contestId);
       },
       error: (err) => {
         // Clear fallback timeout
@@ -92,6 +132,7 @@ export class HomeComponent implements OnInit {
         console.error('Unexpected error in registration status check (fallback):', err);
         this.registrationStatuses.set(contestId, false);
         this.checkedRegistrationStatuses.add(contestId);
+        this.checkingRegistrationStatuses.delete(contestId);
       },
       complete: () => {
         // Clear fallback timeout
@@ -101,6 +142,7 @@ export class HomeComponent implements OnInit {
           console.warn(`Registration status check completed but not marked for contest ${contestId} - marking now`);
           this.registrationStatuses.set(contestId, false);
           this.checkedRegistrationStatuses.add(contestId);
+          this.checkingRegistrationStatuses.delete(contestId);
         }
       }
     });
@@ -114,13 +156,9 @@ export class HomeComponent implements OnInit {
     return this.registrationStatuses.get(contestId) || false;
   }
 
-  hasCheckedRegistrationStatus(contestId: string): boolean {
-    return this.checkedRegistrationStatuses.has(contestId);
-  }
-
   registerForContest(contestId: string): void {
     if (this.registeringContests.has(contestId)) return;
-    
+
     this.registeringContests.add(contestId);
     this.contestService.registerTeamForContest(contestId).subscribe({
       next: () => {
@@ -137,7 +175,7 @@ export class HomeComponent implements OnInit {
 
   unregisterFromContest(contestId: string): void {
     if (this.registeringContests.has(contestId)) return;
-    
+
     this.registeringContests.add(contestId);
     this.contestService.unregisterTeamFromContest(contestId).subscribe({
       next: () => {
@@ -152,7 +190,7 @@ export class HomeComponent implements OnInit {
     });
   }
 
-  formatDate(dateStr: string): string {
+  private formatDate(dateStr: string): string {
     const date = new Date(dateStr);
     return date.toLocaleString('en-US', {
       month: 'short',
@@ -163,7 +201,7 @@ export class HomeComponent implements OnInit {
     });
   }
 
-  getRelativeTime(dateStr: string): string {
+  private getRelativeTime(dateStr: string): string {
     const now = new Date();
     const target = new Date(dateStr);
     const diffMs = target.getTime() - now.getTime();

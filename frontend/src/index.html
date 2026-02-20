@@ -5,10 +5,13 @@
   <title>RootAccess CTF</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="icon" type="image/x-icon" href="rootaccess.jpg">
+  <!-- Logo meta tags for SEO and social sharing -->
+  <meta property="og:image" content="rootaccess.jpg">
+  <meta name="twitter:image" content="rootaccess.jpg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
   <script>
     // Initialize theme before page renders to prevent flash
     (function() {
@@ -20,8 +23,78 @@
       }
     })();
   </script>
+  <style>
+    /* Loading screen styles */
+    .app-loading {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: white;
+      z-index: 9999;
+      transition: opacity 0.3s ease-out;
+    }
+    .dark .app-loading {
+      background: #0f172a;
+    }
+    .app-loading.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .app-loading img {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      object-fit: cover;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+      50% {
+        transform: scale(1.05);
+        opacity: 0.9;
+      }
+    }
+    .app-loading-text {
+      margin-top: 20px;
+      font-family: 'Roboto', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 18px;
+      font-weight: 600;
+      color: #dc2626;
+    }
+    .dark .app-loading-text {
+      color: #f87171;
+    }
+  </style>
 </head>
 <body class="antialiased" style="overflow-x: hidden; max-width: 100vw;">
+  <!-- Loading screen with logo -->
+  <div class="app-loading" id="app-loading">
+    <img src="rootaccess.jpg" alt="RootAccess Logo">
+    <div class="app-loading-text">RootAccess CTF</div>
+  </div>
   <app-root></app-root>
+  <script>
+    // Hide loading screen once Angular app is loaded
+    window.addEventListener('load', function() {
+      setTimeout(function() {
+        const loading = document.getElementById('app-loading');
+        if (loading) {
+          loading.classList.add('hidden');
+          setTimeout(function() {
+            loading.remove();
+          }, 300);
+        }
+      }, 500);
+    });
+  </script>
 </body>
 </html>

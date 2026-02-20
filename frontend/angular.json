@@ -37,6 +37,20 @@
             ],
             "styles": [
               "src/styles.scss"
+            ],
+            "allowedCommonJsDependencies": [
+              "showdown",
+              "prismjs",
+              "prismjs/components/prism-python",
+              "prismjs/components/prism-javascript",
+              "prismjs/components/prism-bash",
+              "prismjs/components/prism-java",
+              "prismjs/components/prism-c",
+              "prismjs/components/prism-cpp",
+              "prismjs/components/prism-sql",
+              "prismjs/components/prism-json",
+              "prismjs/components/prism-markup",
+              "prismjs/components/prism-css"
             ]
           },
           "configurations": {

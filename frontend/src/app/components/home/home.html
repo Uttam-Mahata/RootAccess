@@ -82,19 +82,19 @@
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                   </svg>
-                  <span>Starts: {{ formatDate(contest.start_time) }}</span>
+                  <span>Starts: {{ contestMeta.get(contest.id)?.startFormatted }}</span>
                 </div>
                 <div class="flex items-center gap-2">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                   </svg>
-                  <span>Ends: {{ formatDate(contest.end_time) }}</span>
+                  <span>Ends: {{ contestMeta.get(contest.id)?.endFormatted }}</span>
                 </div>
                 <div class="flex items-center gap-2">
                   <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                   </svg>
-                  <span class="font-medium text-red-600 dark:text-red-400">{{ getRelativeTime(contest.start_time) }}</span>
+                  <span class="font-medium text-red-600 dark:text-red-400">{{ contestMeta.get(contest.id)?.relativeTime }}</span>
                 </div>
               </div>
               <div *ngIf="registeredTeamsCounts.has(contest.id)" class="flex items-center gap-2 mt-3">
@@ -105,17 +105,10 @@
               </div>
             </div>
             <div class="flex-shrink-0">
-              <!-- Loading state while checking registration status -->
-              <div *ngIf="!hasCheckedRegistrationStatus(contest.id)" class="px-6 py-2 flex items-center justify-center">
-                <svg class="animate-spin h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                </svg>
-              </div>
-              <!-- Register button (only show after status is checked) -->
-              <ng-container *ngIf="hasCheckedRegistrationStatus(contest.id)">
-                <!-- No team state - show disabled button with message -->
-                <div *ngIf="!hasTeam && !isRegistered(contest.id)" class="text-center">
+              <!-- Register button -->
+              <ng-container>
+                <!-- No team state - only show when confirmed no team (not while loading) -->
+                <div *ngIf="hasTeam === false && !isRegistered(contest.id)" class="text-center">
                   <button disabled
                     class="px-6 py-2 bg-slate-300 dark:bg-slate-700 text-slate-500 dark:text-slate-400 font-semibold rounded-lg cursor-not-allowed">
                     Register
@@ -124,9 +117,9 @@
                     <a routerLink="/team" class="underline hover:text-amber-700 dark:hover:text-amber-300">Create or join a team</a> to register
                   </p>
                 </div>
-                <!-- Has team and not registered -->
+                <!-- Has team (or loading) and not registered -->
                 <button
-                  *ngIf="hasTeam && !isRegistered(contest.id)"
+                  *ngIf="hasTeam !== false && !isRegistered(contest.id)"
                   (click)="registerForContest(contest.id)"
                   [disabled]="registeringContests.has(contest.id)"
                   [class.opacity-50]="registeringContests.has(contest.id)"
@@ -145,9 +138,9 @@
                 <button
                   *ngIf="isRegistered(contest.id)"
                   (click)="unregisterFromContest(contest.id)"
-                  [disabled]="registeringContests.has(contest.id) || !hasTeam"
-                  [class.opacity-50]="registeringContests.has(contest.id) || !hasTeam"
-                  [class.cursor-not-allowed]="registeringContests.has(contest.id) || !hasTeam"
+                  [disabled]="registeringContests.has(contest.id) || hasTeam === false"
+                  [class.opacity-50]="registeringContests.has(contest.id) || hasTeam === false"
+                  [class.cursor-not-allowed]="registeringContests.has(contest.id) || hasTeam === false"
                   class="px-6 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-900 dark:text-white font-semibold rounded-lg transition-all duration-200">
                   <span *ngIf="!registeringContests.has(contest.id)" class="flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
