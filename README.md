@@ -16,6 +16,12 @@ A high-performance, full-stack Capture The Flag (CTF) platform built with Go (Gi
 - **Performance Optimized**: 
   - **Redis Caching**: Frequently accessed data like the scoreboard is cached in-memory.
   - **Connection Pooling**: Optimized MongoDB connection management for high concurrency.
+- **SaaS / Multi-Tenant** *(new)*:
+  - Organizations register once, create events, and get scoped API/event tokens.
+  - No infrastructure needed — point any SDK client at the hosted backend.
+  - **Bring your own MongoDB**: supply a custom MongoDB URI per event for data sovereignty.
+  - **Bring your own S3**: attach an S3-compatible bucket per event for challenge file storage.
+  - See the [SaaS Guide](./SAAS_GUIDE.md) for a full walkthrough.
 
 ## 🏗️ Architecture
 
@@ -108,6 +114,16 @@ Registered users are regular users by default. To create an initial admin:
 - `POST /admin/challenges` - Create new challenge
 - `POST /admin/notifications` - Broadcast an announcement
 - `POST /admin/notifications/:id/toggle` - Activate/Deactivate broadcasts
+
+### SaaS / Multi-Tenant
+- `POST /orgs` - Register an organization → receive one-time API key
+- `GET /orgs/:id` - Get organization details
+- `POST /orgs/:id/events` - Create a CTF event → receive one-time event token *(requires `X-API-Key`)*
+- `GET /orgs/:id/events` - List events for an org
+- `GET /events/:id` - Get event details
+- `PUT /events/:id` - Update event settings *(requires `X-API-Key`)*
+
+See the [SaaS Guide](./SAAS_GUIDE.md) for full request/response examples and SDK usage.
 
 ## 📁 Project Structure
 
