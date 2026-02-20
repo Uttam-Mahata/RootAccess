@@ -34,7 +34,12 @@ jobs:
           node-version: '20'
 
       - name: Generate Clients
-        run: ./scripts/generate-clients.sh
+        run: |
+          ./scripts/generate-clients.sh
+          # Build TS client
+          cd clients/typescript && npm install && npm run build && cd ../..
+          # Build Python client
+          cd clients/python && python3 setup.py sdist bdist_wheel && cd ../..
 
       - name: Package Clients
         run: |
@@ -43,6 +48,22 @@ jobs:
           cd clients
           zip -r ../release-assets/typescript-client.zip typescript
           zip -r ../release-assets/python-client.zip python
+
+      - name: Publish to NPM
+        run: |
+          cd clients/typescript
+          npm set //registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}
+          npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: clients/python/dist/
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
+        continue-on-error: true # Continue if PyPI fails (e.g. version already exists)
 
       - name: Create Release
         uses: softprops/action-gh-release@v1

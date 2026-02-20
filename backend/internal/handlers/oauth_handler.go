@@ -41,6 +41,7 @@ func (h *OAuthHandler) generateStateToken() (string, error) {
 // @Summary Google OAuth login
 // @Description Redirect to Google's OAuth consent page.
 // @Tags Auth
+// @Success 307 {string} string "Redirect to Google"
 // @Router /auth/google [get]
 func (h *OAuthHandler) GoogleLogin(c *gin.Context) {
 	// Generate CSRF state token
@@ -71,6 +72,7 @@ func (h *OAuthHandler) GoogleLogin(c *gin.Context) {
 // @Tags Auth
 // @Param state query string true "CSRF state token"
 // @Param code query string true "Authorization code"
+// @Success 307 {string} string "Redirect to Frontend"
 // @Router /auth/google/callback [get]
 func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 	// Get state and code from query params
@@ -121,6 +123,7 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 // @Summary GitHub OAuth login
 // @Description Redirect to GitHub's OAuth consent page.
 // @Tags Auth
+// @Success 307 {string} string "Redirect to GitHub"
 // @Router /auth/github [get]
 func (h *OAuthHandler) GitHubLogin(c *gin.Context) {
 	state, err := h.generateStateToken()
@@ -146,6 +149,7 @@ func (h *OAuthHandler) GitHubLogin(c *gin.Context) {
 // @Tags Auth
 // @Param state query string true "CSRF state token"
 // @Param code query string true "Authorization code"
+// @Success 307 {string} string "Redirect to Frontend"
 // @Router /auth/github/callback [get]
 func (h *OAuthHandler) GitHubCallback(c *gin.Context) {
 	state := c.Query("state")
@@ -182,6 +186,7 @@ func (h *OAuthHandler) GitHubCallback(c *gin.Context) {
 // @Summary Discord OAuth login
 // @Description Redirect to Discord's OAuth consent page.
 // @Tags Auth
+// @Success 307 {string} string "Redirect to Discord"
 // @Router /auth/discord [get]
 func (h *OAuthHandler) DiscordLogin(c *gin.Context) {
 	state, err := h.generateStateToken()
@@ -207,6 +212,7 @@ func (h *OAuthHandler) DiscordLogin(c *gin.Context) {
 // @Tags Auth
 // @Param state query string true "CSRF state token"
 // @Param code query string true "Authorization code"
+// @Success 307 {string} string "Redirect to Frontend"
 // @Router /auth/discord/callback [get]
 func (h *OAuthHandler) DiscordCallback(c *gin.Context) {
 	state := c.Query("state")

@@ -35,6 +35,7 @@ func NewWebSocketHandler(hub *websocketPkg.Hub, cfg *config.Config) *WebSocketHa
 // @Summary WebSocket connection
 // @Description Establish a WebSocket connection for real-time updates (solves, scoreboard updates).
 // @Tags WebSocket
+// @Success 101 {string} string "Switching Protocols"
 // @Router /ws [get]
 func (h *WebSocketHandler) HandleWebSocket(c *gin.Context) {
 	conn, err := h.upgrader.Upgrade(c.Writer, c.Request, nil)
