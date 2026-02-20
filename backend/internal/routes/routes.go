@@ -65,9 +65,11 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	writeupRepo := repositories.NewWriteupRepository()
 	auditLogRepo := repositories.NewAuditLogRepository()
 	achievementRepo := repositories.NewAchievementRepository()
+	orgRepo := repositories.NewOrganizationRepository()
 
 	// Services
 	emailService := services.NewEmailService(cfg)
+	orgService := services.NewOrganizationService(orgRepo)
 	authService := services.NewAuthService(userRepo, emailService, cfg)
 	oauthService := services.NewOAuthService(userRepo, cfg)
 	challengeService := services.NewChallengeService(challengeRepo, submissionRepo, teamRepo)
@@ -106,6 +108,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	leaderboardHandler := handlers.NewLeaderboardHandler(scoreboardService)
 	adminUserHandler := handlers.NewAdminUserHandlerWithRepos(userRepo, teamRepo, submissionRepo)
 	adminTeamHandler := handlers.NewAdminTeamHandler(teamRepo, userRepo, submissionRepo, teamInvitationRepo)
+	orgHandler := handlers.NewOrganizationHandler(orgService)
 
 	// Public Routes - Authentication (with IP rate limiting)
 	r.POST("/auth/register", middleware.IPRateLimitMiddleware(10, time.Minute), authHandler.Register)
@@ -297,6 +300,20 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 			admin.DELETE("/teams/:id", adminTeamHandler.DeleteTeam)
 		}
 	}
+
+	// SaaS multi-tenant: Organization & Event management
+	// POST /orgs           - register a new organization (public)
+	// GET  /orgs/:id       - get organization details (public)
+	// POST /orgs/:id/events - create an event under an org (requires X-API-Key)
+	// GET  /orgs/:id/events - list events for an org (public)
+	// GET  /events/:id     - get a single event (public)
+	// PUT  /events/:id     - update an event (requires X-API-Key)
+	r.POST("/orgs", orgHandler.CreateOrganization)
+	r.GET("/orgs/:id", orgHandler.GetOrganization)
+	r.POST("/orgs/:id/events", orgHandler.CreateEvent)
+	r.GET("/orgs/:id/events", orgHandler.ListEvents)
+	r.GET("/events/:id", orgHandler.GetEvent)
+	r.PUT("/events/:id", orgHandler.UpdateEvent)
 
 	return r
 }
