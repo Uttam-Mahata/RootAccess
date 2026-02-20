@@ -177,6 +177,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Login successful!",
+		"token":   token,
 		"user":    userInfo,
 	})
 }
