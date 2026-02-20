@@ -9,7 +9,7 @@ import (
 )
 
 // @title RootAccess CTF API
-// @version 1.0
+// @version 1.0.0
 // @description This is the backend API for the RootAccess CTF Platform.
 // @termsOfService http://swagger.io/terms/
 
