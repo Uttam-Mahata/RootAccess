@@ -27,6 +27,7 @@ import (
 // @securityDefinitions.apikey ApiKeyAuth
 // @in header
 // @name Authorization
+// @description JWT token in format: Bearer {token}. Alternatively, the auth_token cookie can be used.
 func main() {
 	cfg := config.LoadConfig()
 
