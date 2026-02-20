@@ -16,19 +16,19 @@ echo "🚀 Generating API Clients..."
 # Generate TypeScript (Axios)
 echo "📦 Generating TypeScript (Axios) client..."
 mkdir -p "$OUTPUT_DIR/typescript"
-npx @openapitools/openapi-generator-cli generate 
-    -i "$SPEC_FILE" 
-    -g typescript-axios 
-    -o "$OUTPUT_DIR/typescript" 
+npx @openapitools/openapi-generator-cli generate \
+    -i "$SPEC_FILE" \
+    -g typescript-axios \
+    -o "$OUTPUT_DIR/typescript" \
     --additional-properties=npmName=@uttam-mahata/rootaccess-client,supportsES6=true
 
 # Generate Python
 echo "📦 Generating Python client..."
 mkdir -p "$OUTPUT_DIR/python"
-npx @openapitools/openapi-generator-cli generate 
-    -i "$SPEC_FILE" 
-    -g python 
-    -o "$OUTPUT_DIR/python" 
+npx @openapitools/openapi-generator-cli generate \
+    -i "$SPEC_FILE" \
+    -g python \
+    -o "$OUTPUT_DIR/python" \
     --additional-properties=packageName=rootaccess_client
 
 echo "✅ All clients generated in the /$OUTPUT_DIR directory!"
