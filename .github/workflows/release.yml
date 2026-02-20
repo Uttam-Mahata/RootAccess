@@ -10,8 +10,10 @@ permissions:
   contents: write
 
 jobs:
-  build-and-release:
+  build-and-package:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get_version.outputs.VERSION }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -35,30 +37,68 @@ jobs:
           node-version: '20'
 
       - name: Generate Clients
-        run: |
-          ./scripts/generate-clients.sh
-          echo "📂 Clients directory after generation:"
-          ls -R clients
-          # Build TS client
-          cd clients/typescript && npm install && npm run build && cd ../..
-          # Build Python client
-          cd clients/python && python3 setup.py sdist bdist_wheel && cd ../..
+        run: ./scripts/generate-clients.sh
 
-      - name: Package Clients
+      - name: Build TS Client
         run: |
-          mkdir -p release-assets
-          cp backend/docs/swagger.json release-assets/
-          cd clients
-          zip -r ../release-assets/typescript-client.zip typescript
-          zip -r ../release-assets/python-client.zip python
+          cd clients/typescript
+          npm install
+          npm run build
+
+      - name: Build Python Client
+        run: |
+          cd clients/python
+          python3 setup.py sdist bdist_wheel
+
+      - name: Get version
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-clients
+          path: |
+            backend/docs/swagger.json
+            clients/typescript/dist/
+            clients/typescript/package.json
+            clients/typescript/README.md
+            clients/python/dist/
+            clients/python/setup.py
+            clients/python/README.md
+
+  publish-npm:
+    needs: build-and-package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: api-clients
+          path: .
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
 
       - name: Publish to NPM
         run: |
           cd clients/typescript
-          npm set //registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}
           npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  publish-pypi:
+    needs: build-and-package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: api-clients
+          path: .
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
@@ -66,7 +106,24 @@ jobs:
           packages-dir: clients/python/dist/
           user: __token__
           password: ${{ secrets.PYPI_API_TOKEN }}
-        continue-on-error: true # Continue if PyPI fails (e.g. version already exists)
+        continue-on-error: true
+
+  github-release:
+    needs: [build-and-package, publish-npm, publish-pypi]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: api-clients
+          path: .
+
+      - name: Prepare Release Assets
+        run: |
+          mkdir -p release-assets
+          cp backend/docs/swagger.json release-assets/
+          zip -r release-assets/typescript-client.zip clients/typescript
+          zip -r release-assets/python-client.zip clients/python
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
