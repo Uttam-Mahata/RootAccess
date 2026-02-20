@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-ctf-platform/backend/internal/models"
-	"github.com/go-ctf-platform/backend/internal/repositories"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
 )
 
 type ProfileHandler struct {
@@ -60,6 +60,14 @@ type UserProfileResponse struct {
 }
 
 // GetUserProfile returns the public profile of a user by username
+// @Summary Get user profile
+// @Description Retrieve the public profile, solve history, and statistics of a user by their username.
+// @Tags Profiles
+// @Produce json
+// @Param username path string true "Username"
+// @Success 200 {object} UserProfileResponse
+// @Failure 404 {object} map[string]string
+// @Router /users/{username}/profile [get]
 func (h *ProfileHandler) GetUserProfile(c *gin.Context) {
 	username := c.Param("username")
 

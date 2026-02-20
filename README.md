@@ -47,8 +47,8 @@ For details on scaling this platform across multiple nodes, see the [Distributed
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/Uttam-Mahata/go-ctf-platform.git
-   cd go-ctf-platform
+   git clone https://github.com/Uttam-Mahata/RootAccess.git
+   cd RootAccess
    ```
 
 2. **Configure Environment:**
@@ -112,7 +112,7 @@ Registered users are regular users by default. To create an initial admin:
 ## 📁 Project Structure
 
 ```
-go-ctf-platform/
+RootAccess/
 ├── backend/
 │   ├── cmd/api/main.go          # API Entry point
 │   ├── cmd/admin/main.go        # Admin CLI tool

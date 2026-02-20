@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/go-ctf-platform/backend/internal/database"
-	"github.com/go-ctf-platform/backend/internal/models"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/database"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"

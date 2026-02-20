@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-ctf-platform/backend/internal/services"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/services"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -16,6 +16,15 @@ func NewActivityHandler(activityService *services.ActivityService) *ActivityHand
 	return &ActivityHandler{activityService: activityService}
 }
 
+// GetMyActivity returns activity stats for the current user
+// @Summary Get user activity
+// @Description Retrieve activity statistics, solve history, and progress for the authenticated user.
+// @Tags Activity
+// @Produce json
+// @Success 200 {object} models.UserActivity
+// @Failure 401 {object} map[string]string
+// @Security ApiKeyAuth
+// @Router /activity/me [get]
 func (h *ActivityHandler) GetMyActivity(c *gin.Context) {
 	userIDStr, exists := c.Get("user_id")
 	if !exists {

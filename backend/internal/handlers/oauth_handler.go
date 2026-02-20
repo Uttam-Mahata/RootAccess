@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-ctf-platform/backend/internal/config"
-	"github.com/go-ctf-platform/backend/internal/services"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/config"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/services"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -38,6 +38,10 @@ func (h *OAuthHandler) generateStateToken() (string, error) {
 }
 
 // GoogleLogin initiates the Google OAuth flow
+// @Summary Google OAuth login
+// @Description Redirect to Google's OAuth consent page.
+// @Tags Auth
+// @Router /auth/google [get]
 func (h *OAuthHandler) GoogleLogin(c *gin.Context) {
 	// Generate CSRF state token
 	state, err := h.generateStateToken()
@@ -62,6 +66,12 @@ func (h *OAuthHandler) GoogleLogin(c *gin.Context) {
 }
 
 // GoogleCallback handles the OAuth callback from Google
+// @Summary Google OAuth callback
+// @Description Callback endpoint for Google OAuth. Validates state and code, then sets JWT cookie.
+// @Tags Auth
+// @Param state query string true "CSRF state token"
+// @Param code query string true "Authorization code"
+// @Router /auth/google/callback [get]
 func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 	// Get state and code from query params
 	state := c.Query("state")
@@ -108,6 +118,10 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 }
 
 // GitHubLogin initiates the GitHub OAuth flow
+// @Summary GitHub OAuth login
+// @Description Redirect to GitHub's OAuth consent page.
+// @Tags Auth
+// @Router /auth/github [get]
 func (h *OAuthHandler) GitHubLogin(c *gin.Context) {
 	state, err := h.generateStateToken()
 	if err != nil {
@@ -127,6 +141,12 @@ func (h *OAuthHandler) GitHubLogin(c *gin.Context) {
 }
 
 // GitHubCallback handles the OAuth callback from GitHub
+// @Summary GitHub OAuth callback
+// @Description Callback endpoint for GitHub OAuth.
+// @Tags Auth
+// @Param state query string true "CSRF state token"
+// @Param code query string true "Authorization code"
+// @Router /auth/github/callback [get]
 func (h *OAuthHandler) GitHubCallback(c *gin.Context) {
 	state := c.Query("state")
 	code := c.Query("code")
@@ -159,6 +179,10 @@ func (h *OAuthHandler) GitHubCallback(c *gin.Context) {
 }
 
 // DiscordLogin initiates the Discord OAuth flow
+// @Summary Discord OAuth login
+// @Description Redirect to Discord's OAuth consent page.
+// @Tags Auth
+// @Router /auth/discord [get]
 func (h *OAuthHandler) DiscordLogin(c *gin.Context) {
 	state, err := h.generateStateToken()
 	if err != nil {
@@ -178,6 +202,12 @@ func (h *OAuthHandler) DiscordLogin(c *gin.Context) {
 }
 
 // DiscordCallback handles the OAuth callback from Discord
+// @Summary Discord OAuth callback
+// @Description Callback endpoint for Discord OAuth.
+// @Tags Auth
+// @Param state query string true "CSRF state token"
+// @Param code query string true "Authorization code"
+// @Router /auth/discord/callback [get]
 func (h *OAuthHandler) DiscordCallback(c *gin.Context) {
 	state := c.Query("state")
 	code := c.Query("code")

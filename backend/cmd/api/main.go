@@ -3,11 +3,30 @@ package main
 import (
 	"log"
 
-	"github.com/go-ctf-platform/backend/internal/config"
-	"github.com/go-ctf-platform/backend/internal/database"
-	"github.com/go-ctf-platform/backend/internal/routes"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/config"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/database"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/routes"
 )
 
+// @title RootAccess CTF API
+// @version 1.0
+// @description This is the backend API for the RootAccess CTF Platform.
+// @termsOfService http://swagger.io/terms/
+
+// @contact.name API Support
+// @contact.url https://github.com/Uttam-Mahata/RootAccess/issues
+// @contact.email support@rootaccess.ctf
+
+// @license.name Apache 2.0
+// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @host localhost:8080
+// @BasePath /
+// @query.collection.format multi
+
+// @securityDefinitions.apikey ApiKeyAuth
+// @in header
+// @name Authorization
 func main() {
 	cfg := config.LoadConfig()
 

@@ -1,4 +1,4 @@
-module github.com/go-ctf-platform/scripts
+module github.com/Uttam-Mahata/RootAccess/scripts
 
 go 1.24.0
 

@@ -3,8 +3,8 @@ package services
 import (
 	"time"
 
-	"github.com/go-ctf-platform/backend/internal/models"
-	"github.com/go-ctf-platform/backend/internal/repositories"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 

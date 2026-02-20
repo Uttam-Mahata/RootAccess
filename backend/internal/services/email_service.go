@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/badoux/checkmail"
-	"github.com/go-ctf-platform/backend/internal/config"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/config"
 	mail "github.com/go-mail/mail/v2"
 )
 

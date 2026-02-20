@@ -7,8 +7,8 @@ import (
 	"github.com/gin-gonic/gin"
 	ws "github.com/gorilla/websocket"
 
-	"github.com/go-ctf-platform/backend/internal/config"
-	websocketPkg "github.com/go-ctf-platform/backend/internal/websocket"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/config"
+	websocketPkg "github.com/Uttam-Mahata/RootAccess/backend/internal/websocket"
 )
 
 type WebSocketHandler struct {
@@ -31,6 +31,11 @@ func NewWebSocketHandler(hub *websocketPkg.Hub, cfg *config.Config) *WebSocketHa
 	}
 }
 
+// HandleWebSocket upgrades HTTP connection to WebSocket
+// @Summary WebSocket connection
+// @Description Establish a WebSocket connection for real-time updates (solves, scoreboard updates).
+// @Tags WebSocket
+// @Router /ws [get]
 func (h *WebSocketHandler) HandleWebSocket(c *gin.Context) {
 	conn, err := h.upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {

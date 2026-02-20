@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-ctf-platform/backend/internal/services"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/services"
 )
 
 type ContestHandler struct {
@@ -19,6 +19,12 @@ func NewContestHandler(contestService *services.ContestService) *ContestHandler 
 }
 
 // GetContestStatus returns the current contest status (public)
+// @Summary Get contest status
+// @Description Retrieve the current status and basic configuration of the contest.
+// @Tags Contest
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Router /contest/status [get]
 func (h *ContestHandler) GetContestStatus(c *gin.Context) {
 	status, config, err := h.contestService.GetContestStatus()
 	if err != nil {
@@ -58,6 +64,16 @@ type UpdateContestRequest struct {
 }
 
 // UpdateContestConfig updates the contest configuration (admin only)
+// @Summary Update contest configuration
+// @Description Update the global contest timing and visibility settings.
+// @Tags Admin Contest
+// @Accept json
+// @Produce json
+// @Param request body UpdateContestRequest true "Contest configuration"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Security ApiKeyAuth
+// @Router /admin/contest [put]
 func (h *ContestHandler) UpdateContestConfig(c *gin.Context) {
 	var req UpdateContestRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -107,6 +123,13 @@ func (h *ContestHandler) UpdateContestConfig(c *gin.Context) {
 }
 
 // GetContestConfig returns the full contest config (admin)
+// @Summary Get contest configuration
+// @Description Retrieve the full contest configuration for administrative purposes.
+// @Tags Admin Contest
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Security ApiKeyAuth
+// @Router /admin/contest [get]
 func (h *ContestHandler) GetContestConfig(c *gin.Context) {
 	config, err := h.contestService.GetContestConfig()
 	if err != nil {

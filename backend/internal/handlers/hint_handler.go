@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-ctf-platform/backend/internal/services"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/services"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -19,6 +19,15 @@ func NewHintHandler(hintService *services.HintService) *HintHandler {
 }
 
 // GetHints returns hints for a challenge with reveal status
+// @Summary Get hints for a challenge
+// @Description Retrieve hints for a specific challenge, including whether they have been revealed by the user or their team.
+// @Tags Challenges
+// @Produce json
+// @Param id path string true "Challenge ID"
+// @Success 200 {array} services.HintResponse
+// @Failure 401 {object} map[string]string
+// @Security ApiKeyAuth
+// @Router /challenges/{id}/hints [get]
 func (h *HintHandler) GetHints(c *gin.Context) {
 	challengeID := c.Param("id")
 	userIDStr, exists := c.Get("user_id")
@@ -43,6 +52,17 @@ func (h *HintHandler) GetHints(c *gin.Context) {
 }
 
 // RevealHint reveals a specific hint for a challenge
+// @Summary Reveal a hint
+// @Description Deduct points and reveal the content of a specific hint.
+// @Tags Challenges
+// @Produce json
+// @Param id path string true "Challenge ID"
+// @Param hintId path string true "Hint ID"
+// @Success 200 {object} services.HintResponse
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Security ApiKeyAuth
+// @Router /challenges/{id}/hints/{hintId}/reveal [post]
 func (h *HintHandler) RevealHint(c *gin.Context) {
 	challengeID := c.Param("id")
 	hintID := c.Param("hintId")

@@ -10,6 +10,7 @@ import (
 
 type Config struct {
 	Port           string
+	Environment    string // "development" or "production"
 	MongoURI       string
 	DBName         string
 	JWTSecret      string
@@ -45,6 +46,7 @@ func LoadConfig() *Config {
 
 	return &Config{
 		Port:           getEnv("PORT", "8080"),
+		Environment:    getEnv("APP_ENV", "development"),
 		MongoURI:       getEnv("MONGO_URI", "mongodb://localhost:27017"),
 		DBName:         getEnv("DB_NAME", "go_ctf"),
 		JWTSecret:      getEnv("JWT_SECRET", "default_secret"),

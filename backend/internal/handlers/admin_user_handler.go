@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-ctf-platform/backend/internal/repositories"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -46,6 +46,14 @@ type AdminUserResponse struct {
 	UpdatedAt      string      `json:"updated_at"`
 }
 
+// ListUsers returns all users with detailed information for admin
+// @Summary List all users
+// @Description Retrieve a list of all users with detailed administrative information.
+// @Tags Admin Users
+// @Produce json
+// @Success 200 {array} AdminUserResponse
+// @Security ApiKeyAuth
+// @Router /admin/users [get]
 func (h *AdminUserHandler) ListUsers(c *gin.Context) {
 	users, err := h.userRepo.GetUsersWithDetails()
 	if err != nil {
@@ -92,6 +100,15 @@ func (h *AdminUserHandler) ListUsers(c *gin.Context) {
 }
 
 // GetUser returns detailed information about a specific user
+// @Summary Get user (admin)
+// @Description Retrieve detailed information about a specific user by their ID.
+// @Tags Admin Users
+// @Produce json
+// @Param id path string true "User ID"
+// @Success 200 {object} AdminUserResponse
+// @Failure 404 {object} map[string]string
+// @Security ApiKeyAuth
+// @Router /admin/users/{id} [get]
 func (h *AdminUserHandler) GetUser(c *gin.Context) {
 	userID := c.Param("id")
 
@@ -140,6 +157,18 @@ type UpdateUserStatusRequest struct {
 	BanReason string `json:"ban_reason"`
 }
 
+// UpdateUserStatus updates user's account status
+// @Summary Update user status
+// @Description Change a user's account status (active, banned, or suspended).
+// @Tags Admin Users
+// @Accept json
+// @Produce json
+// @Param id path string true "User ID"
+// @Param request body UpdateUserStatusRequest true "New status details"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Security ApiKeyAuth
+// @Router /admin/users/{id}/status [put]
 func (h *AdminUserHandler) UpdateUserStatus(c *gin.Context) {
 	id := c.Param("id")
 	objID, err := primitive.ObjectIDFromHex(id)
@@ -169,6 +198,18 @@ type UpdateUserRoleRequest struct {
 	Role string `json:"role" binding:"required"`
 }
 
+// UpdateUserRole updates user's role
+// @Summary Update user role
+// @Description Change a user's role (admin or user). Admins cannot change their own role.
+// @Tags Admin Users
+// @Accept json
+// @Produce json
+// @Param id path string true "User ID"
+// @Param request body UpdateUserRoleRequest true "New role"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Security ApiKeyAuth
+// @Router /admin/users/{id}/role [put]
 func (h *AdminUserHandler) UpdateUserRole(c *gin.Context) {
 	id := c.Param("id")
 	objID, err := primitive.ObjectIDFromHex(id)
@@ -202,6 +243,16 @@ func (h *AdminUserHandler) UpdateUserRole(c *gin.Context) {
 }
 
 // DeleteUser deletes a user (admin only)
+// @Summary Delete user (admin)
+// @Description Perform a soft delete on a user's account by setting status to 'deleted'.
+// @Tags Admin Users
+// @Produce json
+// @Param id path string true "User ID"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Security ApiKeyAuth
+// @Router /admin/users/{id} [delete]
 func (h *AdminUserHandler) DeleteUser(c *gin.Context) {
 	userID := c.Param("id")
 	objID, err := primitive.ObjectIDFromHex(userID)

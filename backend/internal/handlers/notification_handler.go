@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-ctf-platform/backend/internal/models"
-	"github.com/go-ctf-platform/backend/internal/services"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/services"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -27,6 +27,16 @@ type CreateNotificationRequest struct {
 }
 
 // CreateNotification handles creating a new notification (admin only)
+// @Summary Create notification
+// @Description Create a new platform-wide notification.
+// @Tags Admin Notifications
+// @Accept json
+// @Produce json
+// @Param request body CreateNotificationRequest true "Notification details"
+// @Success 201 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Security ApiKeyAuth
+// @Router /admin/notifications [post]
 func (h *NotificationHandler) CreateNotification(c *gin.Context) {
 	var req CreateNotificationRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -60,6 +70,12 @@ func (h *NotificationHandler) CreateNotification(c *gin.Context) {
 }
 
 // GetActiveNotifications returns active notifications for users
+// @Summary Get active notifications
+// @Description Retrieve a list of all currently active platform-wide notifications.
+// @Tags Notifications
+// @Produce json
+// @Success 200 {array} models.Notification
+// @Router /notifications [get]
 func (h *NotificationHandler) GetActiveNotifications(c *gin.Context) {
 	notifications, err := h.notificationService.GetActiveNotifications()
 	if err != nil {
@@ -75,6 +91,13 @@ func (h *NotificationHandler) GetActiveNotifications(c *gin.Context) {
 }
 
 // GetAllNotifications returns all notifications for admin
+// @Summary Get all notifications
+// @Description Retrieve all notifications, including inactive ones.
+// @Tags Admin Notifications
+// @Produce json
+// @Success 200 {array} models.Notification
+// @Security ApiKeyAuth
+// @Router /admin/notifications [get]
 func (h *NotificationHandler) GetAllNotifications(c *gin.Context) {
 	notifications, err := h.notificationService.GetAllNotifications()
 	if err != nil {
@@ -98,6 +121,17 @@ type UpdateNotificationRequest struct {
 }
 
 // UpdateNotification handles updating a notification (admin only)
+// @Summary Update notification
+// @Description Update an existing notification's details or status.
+// @Tags Admin Notifications
+// @Accept json
+// @Produce json
+// @Param id path string true "Notification ID"
+// @Param request body UpdateNotificationRequest true "Updated notification details"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Security ApiKeyAuth
+// @Router /admin/notifications/{id} [put]
 func (h *NotificationHandler) UpdateNotification(c *gin.Context) {
 	id := c.Param("id")
 
@@ -117,6 +151,14 @@ func (h *NotificationHandler) UpdateNotification(c *gin.Context) {
 }
 
 // DeleteNotification handles deleting a notification (admin only)
+// @Summary Delete notification
+// @Description Permanently delete a notification.
+// @Tags Admin Notifications
+// @Produce json
+// @Param id path string true "Notification ID"
+// @Success 200 {object} map[string]string
+// @Security ApiKeyAuth
+// @Router /admin/notifications/{id} [delete]
 func (h *NotificationHandler) DeleteNotification(c *gin.Context) {
 	id := c.Param("id")
 
@@ -130,6 +172,14 @@ func (h *NotificationHandler) DeleteNotification(c *gin.Context) {
 }
 
 // ToggleNotificationActive handles toggling notification active status (admin only)
+// @Summary Toggle notification status
+// @Description Switch a notification between active and inactive.
+// @Tags Admin Notifications
+// @Produce json
+// @Param id path string true "Notification ID"
+// @Success 200 {object} map[string]string
+// @Security ApiKeyAuth
+// @Router /admin/notifications/{id}/toggle [post]
 func (h *NotificationHandler) ToggleNotificationActive(c *gin.Context) {
 	id := c.Param("id")
 

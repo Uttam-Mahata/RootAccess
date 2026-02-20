@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-ctf-platform/backend/internal/services"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/services"
 )
 
 type LeaderboardHandler struct {
@@ -17,6 +17,14 @@ func NewLeaderboardHandler(scoreboardService *services.ScoreboardService) *Leade
 }
 
 // GetCategoryLeaderboard returns scoreboard filtered by category
+// @Summary Get category leaderboard
+// @Description Retrieve the scoreboard filtered by a specific challenge category.
+// @Tags Leaderboard
+// @Produce json
+// @Param category query string true "Challenge category"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Router /leaderboard/category [get]
 func (h *LeaderboardHandler) GetCategoryLeaderboard(c *gin.Context) {
 	category := c.Query("category")
 	if category == "" {
@@ -36,6 +44,13 @@ func (h *LeaderboardHandler) GetCategoryLeaderboard(c *gin.Context) {
 }
 
 // GetTimeBasedLeaderboard returns scoreboard for a time period
+// @Summary Get time-based leaderboard
+// @Description Retrieve the scoreboard for a specific time period (24h, weekly, monthly, or all).
+// @Tags Leaderboard
+// @Produce json
+// @Param period query string false "Time period" Enums(24h, weekly, monthly, all) default(all)
+// @Success 200 {object} map[string]interface{}
+// @Router /leaderboard/time [get]
 func (h *LeaderboardHandler) GetTimeBasedLeaderboard(c *gin.Context) {
 	period := c.DefaultQuery("period", "all")
 	var since time.Time

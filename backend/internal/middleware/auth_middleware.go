@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-ctf-platform/backend/internal/config"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/config"
 	"github.com/golang-jwt/jwt/v5"
 )
 
