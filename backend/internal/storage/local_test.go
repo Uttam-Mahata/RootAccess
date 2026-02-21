@@ -79,5 +79,33 @@ func TestLocalProvider_GetDownloadURL_NotFound(t *testing.T) {
 	}
 }
 
+func TestLocalProvider_PathTraversal(t *testing.T) {
+	dir := t.TempDir()
+	p := NewLocalProvider(dir)
+
+	ctx := context.Background()
+
+	// Attempt to upload outside the basePath via path traversal
+	err := p.UploadFile(ctx, "..", "escape.txt", []byte("bad"))
+	if err == nil {
+		t.Error("expected path traversal error, got nil")
+	}
+
+	err = p.UploadFile(ctx, "bucket", "../../escape.txt", []byte("bad"))
+	if err == nil {
+		t.Error("expected path traversal error, got nil")
+	}
+
+	_, err = p.GetDownloadURL(ctx, "..", "escape.txt")
+	if err == nil {
+		t.Error("expected path traversal error, got nil")
+	}
+
+	err = p.DeleteFile(ctx, "..", "escape.txt")
+	if err == nil {
+		t.Error("expected path traversal error, got nil")
+	}
+}
+
 // Compile-time interface compliance check.
 var _ StorageProvider = (*LocalProvider)(nil)
