@@ -5,21 +5,21 @@ import (
 
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/database"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
-	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories/interfaces"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/utils"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type ChallengeService struct {
-	challengeRepo  *repositories.ChallengeRepository
-	submissionRepo *repositories.SubmissionRepository
-	teamRepo       *repositories.TeamRepository
+	challengeRepo  interfaces.ChallengeRepository
+	submissionRepo interfaces.SubmissionRepository
+	teamRepo       interfaces.TeamRepository
 }
 
 func NewChallengeService(
-	challengeRepo *repositories.ChallengeRepository,
-	submissionRepo *repositories.SubmissionRepository,
-	teamRepo *repositories.TeamRepository,
+	challengeRepo interfaces.ChallengeRepository,
+	submissionRepo interfaces.SubmissionRepository,
+	teamRepo interfaces.TeamRepository,
 ) *ChallengeService {
 	return &ChallengeService{
 		challengeRepo:  challengeRepo,

@@ -4,20 +4,20 @@ import (
 	"errors"
 
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
-	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories/interfaces"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type WriteupService struct {
-	writeupRepo    *repositories.WriteupRepository
-	submissionRepo *repositories.SubmissionRepository
-	teamRepo       *repositories.TeamRepository
+	writeupRepo    interfaces.WriteupRepository
+	submissionRepo interfaces.SubmissionRepository
+	teamRepo       interfaces.TeamRepository
 }
 
 func NewWriteupService(
-	writeupRepo *repositories.WriteupRepository,
-	submissionRepo *repositories.SubmissionRepository,
-	teamRepo *repositories.TeamRepository,
+	writeupRepo interfaces.WriteupRepository,
+	submissionRepo interfaces.SubmissionRepository,
+	teamRepo interfaces.TeamRepository,
 ) *WriteupService {
 	return &WriteupService{
 		writeupRepo:    writeupRepo,

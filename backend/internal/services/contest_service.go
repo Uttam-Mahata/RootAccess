@@ -5,14 +5,14 @@ import (
 	"time"
 
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
-	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories/interfaces"
 )
 
 type ContestService struct {
-	contestRepo *repositories.ContestRepository
+	contestRepo interfaces.ContestRepository
 }
 
-func NewContestService(contestRepo *repositories.ContestRepository) *ContestService {
+func NewContestService(contestRepo interfaces.ContestRepository) *ContestService {
 	return &ContestService{
 		contestRepo: contestRepo,
 	}

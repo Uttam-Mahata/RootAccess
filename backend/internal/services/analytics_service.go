@@ -8,24 +8,24 @@ import (
 
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/database"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
-	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories/interfaces"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type AnalyticsService struct {
-	userRepo        *repositories.UserRepository
-	submissionRepo  *repositories.SubmissionRepository
-	challengeRepo   *repositories.ChallengeRepository
-	teamRepo        *repositories.TeamRepository
-	adjustmentRepo  *repositories.ScoreAdjustmentRepository
+	userRepo        interfaces.UserRepository
+	submissionRepo  interfaces.SubmissionRepository
+	challengeRepo   interfaces.ChallengeRepository
+	teamRepo        interfaces.TeamRepository
+	adjustmentRepo  interfaces.ScoreAdjustmentRepository
 }
 
 func NewAnalyticsService(
-	userRepo *repositories.UserRepository,
-	submissionRepo *repositories.SubmissionRepository,
-	challengeRepo *repositories.ChallengeRepository,
-	teamRepo *repositories.TeamRepository,
-	adjustmentRepo *repositories.ScoreAdjustmentRepository,
+	userRepo interfaces.UserRepository,
+	submissionRepo interfaces.SubmissionRepository,
+	challengeRepo interfaces.ChallengeRepository,
+	teamRepo interfaces.TeamRepository,
+	adjustmentRepo interfaces.ScoreAdjustmentRepository,
 ) *AnalyticsService {
 	return &AnalyticsService{
 		userRepo:       userRepo,

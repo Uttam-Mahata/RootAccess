@@ -9,26 +9,26 @@ import (
 
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/database"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
-	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories/interfaces"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type TeamService struct {
-	teamRepo       *repositories.TeamRepository
-	invitationRepo *repositories.TeamInvitationRepository
-	userRepo       *repositories.UserRepository
+	teamRepo       interfaces.TeamRepository
+	invitationRepo interfaces.TeamInvitationRepository
+	userRepo       interfaces.UserRepository
 	emailService   *EmailService
-	submissionRepo *repositories.SubmissionRepository
-	challengeRepo  *repositories.ChallengeRepository
+	submissionRepo interfaces.SubmissionRepository
+	challengeRepo  interfaces.ChallengeRepository
 }
 
 func NewTeamService(
-	teamRepo *repositories.TeamRepository,
-	invitationRepo *repositories.TeamInvitationRepository,
-	userRepo *repositories.UserRepository,
+	teamRepo interfaces.TeamRepository,
+	invitationRepo interfaces.TeamInvitationRepository,
+	userRepo interfaces.UserRepository,
 	emailService *EmailService,
-	submissionRepo *repositories.SubmissionRepository,
-	challengeRepo *repositories.ChallengeRepository,
+	submissionRepo interfaces.SubmissionRepository,
+	challengeRepo interfaces.ChallengeRepository,
 ) *TeamService {
 	return &TeamService{
 		teamRepo:       teamRepo,

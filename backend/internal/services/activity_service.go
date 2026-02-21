@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
-	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories/interfaces"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -15,19 +15,19 @@ type solveInfo struct {
 }
 
 type ActivityService struct {
-	userRepo        *repositories.UserRepository
-	submissionRepo  *repositories.SubmissionRepository
-	challengeRepo   *repositories.ChallengeRepository
-	achievementRepo *repositories.AchievementRepository
-	teamRepo        *repositories.TeamRepository
+	userRepo        interfaces.UserRepository
+	submissionRepo  interfaces.SubmissionRepository
+	challengeRepo   interfaces.ChallengeRepository
+	achievementRepo interfaces.AchievementRepository
+	teamRepo        interfaces.TeamRepository
 }
 
 func NewActivityService(
-	userRepo *repositories.UserRepository,
-	submissionRepo *repositories.SubmissionRepository,
-	challengeRepo *repositories.ChallengeRepository,
-	achievementRepo *repositories.AchievementRepository,
-	teamRepo *repositories.TeamRepository,
+	userRepo interfaces.UserRepository,
+	submissionRepo interfaces.SubmissionRepository,
+	challengeRepo interfaces.ChallengeRepository,
+	achievementRepo interfaces.AchievementRepository,
+	teamRepo interfaces.TeamRepository,
 ) *ActivityService {
 	return &ActivityService{
 		userRepo:        userRepo,

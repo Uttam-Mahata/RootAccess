@@ -4,20 +4,20 @@ import (
 	"errors"
 
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
-	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories/interfaces"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type HintService struct {
-	hintRepo      *repositories.HintRepository
-	challengeRepo *repositories.ChallengeRepository
-	teamRepo      *repositories.TeamRepository
+	hintRepo      interfaces.HintRepository
+	challengeRepo interfaces.ChallengeRepository
+	teamRepo      interfaces.TeamRepository
 }
 
 func NewHintService(
-	hintRepo *repositories.HintRepository,
-	challengeRepo *repositories.ChallengeRepository,
-	teamRepo *repositories.TeamRepository,
+	hintRepo interfaces.HintRepository,
+	challengeRepo interfaces.ChallengeRepository,
+	teamRepo interfaces.TeamRepository,
 ) *HintService {
 	return &HintService{
 		hintRepo:      hintRepo,

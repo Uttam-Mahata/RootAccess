@@ -5,26 +5,26 @@ import (
 	"time"
 
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
-	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories/interfaces"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type ContestAdminService struct {
-	contestRepo       *repositories.ContestRepository
-	contestEntityRepo  *repositories.ContestEntityRepository
-	contestRoundRepo   *repositories.ContestRoundRepository
-	roundChallengeRepo *repositories.RoundChallengeRepository
-	challengeRepo      *repositories.ChallengeRepository
-	registrationRepo   *repositories.TeamContestRegistrationRepository
+	contestRepo        interfaces.ContestRepository
+	contestEntityRepo  interfaces.ContestEntityRepository
+	contestRoundRepo   interfaces.ContestRoundRepository
+	roundChallengeRepo interfaces.RoundChallengeRepository
+	challengeRepo      interfaces.ChallengeRepository
+	registrationRepo   interfaces.TeamContestRegistrationRepository
 }
 
 func NewContestAdminService(
-	contestRepo *repositories.ContestRepository,
-	contestEntityRepo *repositories.ContestEntityRepository,
-	contestRoundRepo *repositories.ContestRoundRepository,
-	roundChallengeRepo *repositories.RoundChallengeRepository,
-	challengeRepo *repositories.ChallengeRepository,
-	registrationRepo *repositories.TeamContestRegistrationRepository,
+	contestRepo interfaces.ContestRepository,
+	contestEntityRepo interfaces.ContestEntityRepository,
+	contestRoundRepo interfaces.ContestRoundRepository,
+	roundChallengeRepo interfaces.RoundChallengeRepository,
+	challengeRepo interfaces.ChallengeRepository,
+	registrationRepo interfaces.TeamContestRegistrationRepository,
 ) *ContestAdminService {
 	return &ContestAdminService{
 		contestRepo:       contestRepo,

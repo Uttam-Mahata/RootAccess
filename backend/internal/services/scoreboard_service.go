@@ -9,21 +9,21 @@ import (
 
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/database"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
-	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories/interfaces"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type ScoreboardService struct {
-	userRepo           *repositories.UserRepository
-	submissionRepo     *repositories.SubmissionRepository
-	challengeRepo      *repositories.ChallengeRepository
-	teamRepo           *repositories.TeamRepository
-	contestRepo        *repositories.ContestRepository
-	adjustmentRepo     *repositories.ScoreAdjustmentRepository
-	contestEntityRepo  *repositories.ContestEntityRepository
-	contestRoundRepo   *repositories.ContestRoundRepository
-	roundChallengeRepo *repositories.RoundChallengeRepository
-	registrationRepo   *repositories.TeamContestRegistrationRepository
+	userRepo           interfaces.UserRepository
+	submissionRepo     interfaces.SubmissionRepository
+	challengeRepo      interfaces.ChallengeRepository
+	teamRepo           interfaces.TeamRepository
+	contestRepo        interfaces.ContestRepository
+	adjustmentRepo     interfaces.ScoreAdjustmentRepository
+	contestEntityRepo  interfaces.ContestEntityRepository
+	contestRoundRepo   interfaces.ContestRoundRepository
+	roundChallengeRepo interfaces.RoundChallengeRepository
+	registrationRepo   interfaces.TeamContestRegistrationRepository
 }
 
 type UserScore struct {
@@ -44,16 +44,16 @@ type TeamScore struct {
 }
 
 func NewScoreboardService(
-	userRepo *repositories.UserRepository,
-	submissionRepo *repositories.SubmissionRepository,
-	challengeRepo *repositories.ChallengeRepository,
-	teamRepo *repositories.TeamRepository,
-	contestRepo *repositories.ContestRepository,
-	adjustmentRepo *repositories.ScoreAdjustmentRepository,
-	contestEntityRepo *repositories.ContestEntityRepository,
-	contestRoundRepo *repositories.ContestRoundRepository,
-	roundChallengeRepo *repositories.RoundChallengeRepository,
-	registrationRepo *repositories.TeamContestRegistrationRepository,
+	userRepo interfaces.UserRepository,
+	submissionRepo interfaces.SubmissionRepository,
+	challengeRepo interfaces.ChallengeRepository,
+	teamRepo interfaces.TeamRepository,
+	contestRepo interfaces.ContestRepository,
+	adjustmentRepo interfaces.ScoreAdjustmentRepository,
+	contestEntityRepo interfaces.ContestEntityRepository,
+	contestRoundRepo interfaces.ContestRoundRepository,
+	roundChallengeRepo interfaces.RoundChallengeRepository,
+	registrationRepo interfaces.TeamContestRegistrationRepository,
 ) *ScoreboardService {
 	return &ScoreboardService{
 		userRepo:           userRepo,

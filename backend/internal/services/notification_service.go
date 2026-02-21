@@ -4,15 +4,15 @@ import (
 	"errors"
 
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
-	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories/interfaces"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type NotificationService struct {
-	notificationRepo *repositories.NotificationRepository
+	notificationRepo interfaces.NotificationRepository
 }
 
-func NewNotificationService(notificationRepo *repositories.NotificationRepository) *NotificationService {
+func NewNotificationService(notificationRepo interfaces.NotificationRepository) *NotificationService {
 	return &NotificationService{
 		notificationRepo: notificationRepo,
 	}
