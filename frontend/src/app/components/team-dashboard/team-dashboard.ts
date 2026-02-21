@@ -131,7 +131,9 @@ export class TeamDashboardComponent implements OnInit {
         },
         error: (err) => {
           this.isLoading = false;
-          this.error = err.error?.error || 'Failed to create team';
+          // Extract specific error message if available
+          this.error = err.error?.error || err.error?.message || 'Failed to create team. The name might already be taken.';
+          console.error('Team creation error:', err);
         }
       });
     }

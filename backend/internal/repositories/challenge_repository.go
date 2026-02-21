@@ -29,8 +29,15 @@ func (r *ChallengeRepository) CreateChallenge(challenge *models.Challenge) error
 	// Initialize solve count to 0
 	challenge.SolveCount = 0
 
-	_, err := r.collection.InsertOne(ctx, challenge)
-	return err
+	result, err := r.collection.InsertOne(ctx, challenge)
+	if err != nil {
+		return err
+	}
+	// Populate the generated ID back to the challenge struct
+	if oid, ok := result.InsertedID.(primitive.ObjectID); ok {
+		challenge.ID = oid
+	}
+	return nil
 }
 
 func (r *ChallengeRepository) GetAllChallenges() ([]models.Challenge, error) {

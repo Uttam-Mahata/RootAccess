@@ -189,6 +189,11 @@ func (s *AuthService) Login(usernameOrEmail, password string) (string, *UserInfo
 		return "", nil, errors.New("invalid credentials")
 	}
 
+	return s.GenerateToken(user)
+}
+
+// GenerateToken generates a JWT token and UserInfo for a user
+func (s *AuthService) GenerateToken(user *models.User) (string, *UserInfo, error) {
 	// Generate JWT token
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"user_id":  user.ID.Hex(),
@@ -212,6 +217,11 @@ func (s *AuthService) Login(usernameOrEmail, password string) (string, *UserInfo
 	}
 
 	return tokenString, userInfo, nil
+}
+
+// GetUserInfo returns user info for a given user ID
+func (s *AuthService) GetUserInfo(userID string) (*models.User, error) {
+	return s.userRepo.FindByID(userID)
 }
 
 // RecordUserLoginIP records the user's IP address after a successful login
@@ -292,6 +302,35 @@ func (s *AuthService) ChangePassword(userID, oldPassword, newPassword string) er
 	}
 
 	user.PasswordHash = string(hashedPassword)
+	user.UpdatedAt = time.Now()
+
+	return s.userRepo.UpdateUser(user)
+}
+
+// UpdateUsername allows a logged-in user to change their username
+func (s *AuthService) UpdateUsername(userID, newUsername string) error {
+	// Trim whitespace
+	newUsername = strings.TrimSpace(newUsername)
+	if len(newUsername) < 3 || len(newUsername) > 50 {
+		return errors.New("username must be between 3 and 50 characters")
+	}
+
+	user, err := s.userRepo.FindByID(userID)
+	if err != nil {
+		return errors.New("user not found")
+	}
+
+	if user.Username == newUsername {
+		return nil // No change needed
+	}
+
+	// Check if new username is already taken
+	existingUser, _ := s.userRepo.FindByUsername(newUsername)
+	if existingUser != nil {
+		return errors.New("username already exists")
+	}
+
+	user.Username = newUsername
 	user.UpdatedAt = time.Now()
 
 	return s.userRepo.UpdateUser(user)

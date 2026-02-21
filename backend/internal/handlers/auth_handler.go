@@ -51,6 +51,10 @@ type ChangePasswordRequest struct {
 	NewPassword string `json:"new_password" binding:"required,min=8"`
 }
 
+type UpdateUsernameRequest struct {
+	Username string `json:"username" binding:"required,min=3,max=50"`
+}
+
 // Register creates a new user account and sends verification email
 // @Summary Register a new user
 // @Description Create a new user account with username, email, and password. Role is hardcoded to "user".
@@ -267,5 +271,50 @@ func (h *AuthHandler) ChangePassword(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Password changed successfully!",
+	})
+}
+
+// UpdateUsername allows logged-in user to change their username
+func (h *AuthHandler) UpdateUsername(c *gin.Context) {
+	var req UpdateUsernameRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.RespondWithError(c, http.StatusBadRequest, "Invalid request format", err)
+		return
+	}
+
+	// Get user ID from context
+	userID, exists := c.Get("user_id")
+	if !exists {
+		utils.RespondWithError(c, http.StatusUnauthorized, "Authentication required", nil)
+		return
+	}
+
+	if err := h.authService.UpdateUsername(userID.(string), req.Username); err != nil {
+		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
+		return
+	}
+
+	// Update the JWT cookie with the new username
+	user, err := h.authService.GetUserInfo(userID.(string))
+	if err == nil {
+		// Generate new token
+		token, _, err := h.authService.GenerateToken(user)
+		if err == nil {
+			isProd := h.authService.GetEnvironment() == "production"
+			c.SetSameSite(http.SameSiteLaxMode)
+			c.SetCookie(
+				"auth_token",
+				token,
+				7*24*60*60,
+				"/",
+				"",
+				isProd,
+				true,
+			)
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Username updated successfully!",
 	})
 }

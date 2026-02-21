@@ -35,7 +35,7 @@ func (s *ContestRegistrationService) GetUpcomingContests() ([]models.Contest, er
 	}
 
 	now := time.Now()
-	var upcoming []models.Contest
+	upcoming := []models.Contest{} // Initialize as empty slice, not nil
 	for _, contest := range allContests {
 		if contest.StartTime.After(now) {
 			upcoming = append(upcoming, contest)

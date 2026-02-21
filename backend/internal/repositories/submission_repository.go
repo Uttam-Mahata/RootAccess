@@ -27,8 +27,15 @@ func (r *SubmissionRepository) CreateSubmission(submission *models.Submission) e
 	defer cancel()
 
 	submission.Timestamp = time.Now()
-	_, err := r.collection.InsertOne(ctx, submission)
-	return err
+	result, err := r.collection.InsertOne(ctx, submission)
+	if err != nil {
+		return err
+	}
+	// Populate the generated ID back to the submission struct
+	if oid, ok := result.InsertedID.(primitive.ObjectID); ok {
+		submission.ID = oid
+	}
+	return nil
 }
 
 func (r *SubmissionRepository) FindByChallengeAndUser(challengeID, userID primitive.ObjectID) (*models.Submission, error) {

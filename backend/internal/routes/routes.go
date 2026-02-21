@@ -251,6 +251,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 
 		// User Routes
 		protected.POST("/auth/change-password", authHandler.ChangePassword)
+		protected.POST("/auth/update-username", authHandler.UpdateUsername)
 		protected.GET("/challenges", challengeHandler.GetAllChallenges)
 		protected.GET("/challenges/:id", challengeHandler.GetChallengeByID)
 		protected.GET("/challenges/:id/solves", challengeHandler.GetChallengeSolves)

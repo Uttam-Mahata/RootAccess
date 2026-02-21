@@ -35,37 +35,46 @@ export class WebSocketService implements OnDestroy {
     }
 
     const wsUrl = environment.apiUrl.replace(/^http/, 'ws') + '/ws';
-    this.socket = new WebSocket(wsUrl);
+    try {
+      this.socket = new WebSocket(wsUrl);
 
-    this.socket.onopen = () => {
-      console.log('WebSocket connected');
-      this.connectedSubject.next(true);
-      if (this.reconnectTimer) {
-        clearTimeout(this.reconnectTimer);
-        this.reconnectTimer = null;
-      }
-    };
+      this.socket.onopen = () => {
+        console.log('WebSocket connected');
+        this.connectedSubject.next(true);
+        if (this.reconnectTimer) {
+          clearTimeout(this.reconnectTimer);
+          this.reconnectTimer = null;
+        }
+      };
 
-    this.socket.onmessage = (event) => {
-      try {
-        const message: WsMessage = JSON.parse(event.data);
-        this.messagesSubject.next(message);
-      } catch (e) {
-        console.error('WebSocket message parse error:', e);
-      }
-    };
+      this.socket.onmessage = (event) => {
+        try {
+          const message: WsMessage = JSON.parse(event.data);
+          this.messagesSubject.next(message);
+        } catch (e) {
+          // Suppress noise
+        }
+      };
 
-    this.socket.onclose = () => {
-      console.log('WebSocket disconnected, reconnecting...');
+      this.socket.onclose = (event) => {
+        if (this.connectedSubject.value) {
+          console.log('WebSocket disconnected, reconnecting...');
+        }
+        this.connectedSubject.next(false);
+        // Only retry if it wasn't a clean close and we are logged in
+        if (this.authService.isLoggedIn()) {
+          this.scheduleReconnect();
+        }
+      };
+
+      this.socket.onerror = (error) => {
+        // Suppress error noise in console as it's expected on some environments
+        this.connectedSubject.next(false);
+        this.socket?.close();
+      };
+    } catch (err) {
       this.connectedSubject.next(false);
-      this.scheduleReconnect();
-    };
-
-    this.socket.onerror = (error) => {
-      console.error('WebSocket error:', error);
-      this.connectedSubject.next(false);
-      this.socket?.close();
-    };
+    }
   }
 
   private scheduleReconnect(): void {

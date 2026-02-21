@@ -13,9 +13,13 @@ import { AuthService } from '../../services/auth';
 })
 export class AccountSettingsComponent implements OnInit {
   changePasswordForm: FormGroup;
+  usernameForm: FormGroup;
   error = '';
   success = '';
+  usernameError = '';
+  usernameSuccess = '';
   isLoading = false;
+  isUpdatingUsername = false;
   userInfo: any = null;
 
   constructor(
@@ -28,12 +32,20 @@ export class AccountSettingsComponent implements OnInit {
       newPassword: ['', [Validators.required, Validators.minLength(8)]],
       confirmPassword: ['', Validators.required]
     }, { validators: this.passwordMatchValidator });
+
+    this.usernameForm = this.fb.group({
+      username: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(50)]]
+    });
   }
 
   ngOnInit(): void {
     this.userInfo = this.authService.getCurrentUser();
     if (!this.userInfo) {
       this.router.navigate(['/login']);
+    } else {
+      this.usernameForm.patchValue({
+        username: this.userInfo.username
+      });
     }
   }
 
@@ -60,6 +72,31 @@ export class AccountSettingsComponent implements OnInit {
         error: (err) => {
           this.isLoading = false;
           this.error = err.error?.error || 'Failed to change password. Please try again.';
+        }
+      });
+    }
+  }
+
+  onUpdateUsername(): void {
+    if (this.usernameForm.valid && !this.isUpdatingUsername) {
+      const newUsername = this.usernameForm.get('username')?.value;
+      if (newUsername === this.userInfo?.username) {
+        return;
+      }
+
+      this.isUpdatingUsername = true;
+      this.usernameError = '';
+      this.usernameSuccess = '';
+
+      this.authService.updateUsername(newUsername).subscribe({
+        next: (response) => {
+          this.isUpdatingUsername = false;
+          this.usernameSuccess = response.message || 'Username updated successfully!';
+          this.userInfo.username = newUsername;
+        },
+        error: (err) => {
+          this.isUpdatingUsername = false;
+          this.usernameError = err.error?.error || 'Failed to update username. It might be taken.';
         }
       });
     }

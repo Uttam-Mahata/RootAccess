@@ -103,6 +103,23 @@ export class AuthService {
     }, { withCredentials: true });
   }
 
+  updateUsername(newUsername: string): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.apiUrl}/update-username`, {
+      username: newUsername
+    }, { withCredentials: true }).pipe(
+      tap(response => {
+        // Update local user info if provided
+        const currentUser = this.currentUserSubject.value;
+        if (currentUser) {
+          this.currentUserSubject.next({
+            ...currentUser,
+            username: newUsername
+          });
+        }
+      })
+    );
+  }
+
   logout(): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/logout`, {}, { withCredentials: true }).pipe(
       tap(() => {

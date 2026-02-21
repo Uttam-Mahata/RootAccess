@@ -28,8 +28,15 @@ func (r *UserRepository) CreateUser(user *models.User) error {
 
 	user.CreatedAt = time.Now()
 	user.UpdatedAt = time.Now()
-	_, err := r.collection.InsertOne(ctx, user)
-	return err
+	result, err := r.collection.InsertOne(ctx, user)
+	if err != nil {
+		return err
+	}
+	// Populate the generated ID back to the user struct
+	if oid, ok := result.InsertedID.(primitive.ObjectID); ok {
+		user.ID = oid
+	}
+	return nil
 }
 
 func (r *UserRepository) UpdateUser(user *models.User) error {

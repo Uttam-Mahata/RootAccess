@@ -65,23 +65,28 @@ export class HomeComponent implements OnInit {
     this.isLoadingContests = true;
     this.contestService.getUpcomingContests().subscribe({
       next: (contests) => {
-        this.upcomingContests = contests;
-        // Precompute formatted dates and relative times for each contest
+        // Ensure contests is an array
+        this.upcomingContests = contests || [];
+        
+        // Precompute formatted dates and relative times
         this.contestMeta.clear();
-        contests.forEach(contest => {
+        this.upcomingContests.forEach(contest => {
           this.contestMeta.set(contest.id, {
             startFormatted: this.formatDate(contest.start_time),
             endFormatted: this.formatDate(contest.end_time),
             relativeTime: this.getRelativeTime(contest.start_time),
           });
         });
+        
         this.isLoadingContests = false;
-        // Load registration statuses for each contest
-        contests.forEach(contest => {
+        
+        // Load registration statuses
+        this.upcomingContests.forEach(contest => {
           this.checkRegistrationStatus(contest.id);
         });
       },
-      error: () => {
+      error: (err) => {
+        console.error('Error loading upcoming contests:', err);
         this.isLoadingContests = false;
       }
     });
