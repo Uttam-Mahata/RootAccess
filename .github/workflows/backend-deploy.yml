@@ -42,7 +42,7 @@ jobs:
             --stack-name rootaccess-backend \
             --region us-east-1 \
             --capabilities CAPABILITY_IAM \
-            --parameter-overrides "Environment=production SecretName=RootAccess/Backend/Secrets RedisAuthToken=${{ secrets.REDIS_AUTH_TOKEN }}" \
+            --parameter-overrides "Environment=production SecretName=RootAccess/Backend/Secrets RedisAuthToken=${{ secrets.REDIS_AUTH_TOKEN }} LambdaMemorySize=512" \
             --resolve-s3
 
       - name: Post-Deployment Sync (Update Secrets)
