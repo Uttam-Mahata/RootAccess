@@ -8,26 +8,26 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/database"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
-	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories/interfaces"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/utils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type AdminTeamHandler struct {
-	teamRepo       *repositories.TeamRepository
-	userRepo       *repositories.UserRepository
-	submissionRepo *repositories.SubmissionRepository
-	invitationRepo *repositories.TeamInvitationRepository
-	adjustmentRepo *repositories.ScoreAdjustmentRepository
+	teamRepo       interfaces.TeamRepository
+	userRepo       interfaces.UserRepository
+	submissionRepo interfaces.SubmissionRepository
+	invitationRepo interfaces.TeamInvitationRepository
+	adjustmentRepo interfaces.ScoreAdjustmentRepository
 }
 
 func NewAdminTeamHandler(
-	teamRepo *repositories.TeamRepository,
-	userRepo *repositories.UserRepository,
-	submissionRepo *repositories.SubmissionRepository,
-	invitationRepo *repositories.TeamInvitationRepository,
-	adjustmentRepo *repositories.ScoreAdjustmentRepository,
+	teamRepo interfaces.TeamRepository,
+	userRepo interfaces.UserRepository,
+	submissionRepo interfaces.SubmissionRepository,
+	invitationRepo interfaces.TeamInvitationRepository,
+	adjustmentRepo interfaces.ScoreAdjustmentRepository,
 ) *AdminTeamHandler {
 	return &AdminTeamHandler{
 		teamRepo:       teamRepo,

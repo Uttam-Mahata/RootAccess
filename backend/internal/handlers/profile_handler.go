@@ -5,21 +5,21 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
-	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories/interfaces"
 )
 
 type ProfileHandler struct {
-	userRepo       *repositories.UserRepository
-	submissionRepo *repositories.SubmissionRepository
-	challengeRepo  *repositories.ChallengeRepository
-	teamRepo       *repositories.TeamRepository
+	userRepo       interfaces.UserRepository
+	submissionRepo interfaces.SubmissionRepository
+	challengeRepo  interfaces.ChallengeRepository
+	teamRepo       interfaces.TeamRepository
 }
 
 func NewProfileHandler(
-	userRepo *repositories.UserRepository,
-	submissionRepo *repositories.SubmissionRepository,
-	challengeRepo *repositories.ChallengeRepository,
-	teamRepo *repositories.TeamRepository,
+	userRepo interfaces.UserRepository,
+	submissionRepo interfaces.SubmissionRepository,
+	challengeRepo interfaces.ChallengeRepository,
+	teamRepo interfaces.TeamRepository,
 ) *ProfileHandler {
 	return &ProfileHandler{
 		userRepo:       userRepo,

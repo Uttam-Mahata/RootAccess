@@ -6,7 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
-	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories/interfaces"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/services"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/utils"
 	websocketPkg "github.com/Uttam-Mahata/RootAccess/backend/internal/websocket"
@@ -18,9 +18,9 @@ type ChallengeHandler struct {
 	achievementService  *services.AchievementService
 	contestService      *services.ContestService
 	contestAdminService *services.ContestAdminService
-	submissionRepo      *repositories.SubmissionRepository
-	userRepo            *repositories.UserRepository
-	teamRepo            *repositories.TeamRepository
+	submissionRepo      interfaces.SubmissionRepository
+	userRepo            interfaces.UserRepository
+	teamRepo            interfaces.TeamRepository
 	wsHub               websocketPkg.Hub
 }
 
@@ -33,7 +33,7 @@ func NewChallengeHandler(challengeService *services.ChallengeService, achievemen
 	}
 }
 
-func NewChallengeHandlerWithRepos(challengeService *services.ChallengeService, achievementService *services.AchievementService, contestService *services.ContestService, contestAdminService *services.ContestAdminService, wsHub websocketPkg.Hub, submissionRepo *repositories.SubmissionRepository, userRepo *repositories.UserRepository, teamRepo *repositories.TeamRepository) *ChallengeHandler {
+func NewChallengeHandlerWithRepos(challengeService *services.ChallengeService, achievementService *services.AchievementService, contestService *services.ContestService, contestAdminService *services.ContestAdminService, wsHub websocketPkg.Hub, submissionRepo interfaces.SubmissionRepository, userRepo interfaces.UserRepository, teamRepo interfaces.TeamRepository) *ChallengeHandler {
 	return &ChallengeHandler{
 		challengeService:    challengeService,
 		achievementService:  achievementService,

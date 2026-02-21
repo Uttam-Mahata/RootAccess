@@ -5,24 +5,24 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
-	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories/interfaces"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/utils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type AdminUserHandler struct {
-	userRepo       *repositories.UserRepository
-	teamRepo       *repositories.TeamRepository
-	submissionRepo *repositories.SubmissionRepository
-	adjustmentRepo *repositories.ScoreAdjustmentRepository
+	userRepo       interfaces.UserRepository
+	teamRepo       interfaces.TeamRepository
+	submissionRepo interfaces.SubmissionRepository
+	adjustmentRepo interfaces.ScoreAdjustmentRepository
 }
 
-func NewAdminUserHandler(userRepo *repositories.UserRepository) *AdminUserHandler {
+func NewAdminUserHandler(userRepo interfaces.UserRepository) *AdminUserHandler {
 	return &AdminUserHandler{userRepo: userRepo}
 }
 
-func NewAdminUserHandlerWithRepos(userRepo *repositories.UserRepository, teamRepo *repositories.TeamRepository, submissionRepo *repositories.SubmissionRepository, adjustmentRepo *repositories.ScoreAdjustmentRepository) *AdminUserHandler {
+func NewAdminUserHandlerWithRepos(userRepo interfaces.UserRepository, teamRepo interfaces.TeamRepository, submissionRepo interfaces.SubmissionRepository, adjustmentRepo interfaces.ScoreAdjustmentRepository) *AdminUserHandler {
 	return &AdminUserHandler{
 		userRepo:       userRepo,
 		teamRepo:       teamRepo,
