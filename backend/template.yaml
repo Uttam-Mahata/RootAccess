@@ -222,9 +222,7 @@ Resources:
             Path: /{proxy+}
             Method: ANY
     Metadata:
-      BuildMethod: go1.x
-      BuildProperties:
-        BuildTarget: cmd/api/main.go
+      BuildMethod: makefile
 
 Outputs:
   ApiUrl:
