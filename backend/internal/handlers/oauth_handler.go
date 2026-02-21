@@ -44,6 +44,11 @@ func (h *OAuthHandler) generateStateToken() (string, error) {
 // @Success 307 {string} string "Redirect to Google"
 // @Router /auth/google [get]
 func (h *OAuthHandler) GoogleLogin(c *gin.Context) {
+	if h.redisClient == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "OAuth session storage is unavailable. Please check backend logs."})
+		return
+	}
+
 	// Generate CSRF state token
 	state, err := h.generateStateToken()
 	if err != nil {
@@ -81,6 +86,11 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 
 	if state == "" || code == "" {
 		h.redirectToFrontendWithError(c, "missing state or code parameter")
+		return
+	}
+
+	if h.redisClient == nil {
+		h.redirectToFrontendWithError(c, "OAuth session storage is unavailable")
 		return
 	}
 
@@ -128,6 +138,11 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 // @Success 307 {string} string "Redirect to GitHub"
 // @Router /auth/github [get]
 func (h *OAuthHandler) GitHubLogin(c *gin.Context) {
+	if h.redisClient == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "OAuth session storage is unavailable"})
+		return
+	}
+
 	state, err := h.generateStateToken()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate state token"})
@@ -159,6 +174,11 @@ func (h *OAuthHandler) GitHubCallback(c *gin.Context) {
 
 	if state == "" || code == "" {
 		h.redirectToFrontendWithError(c, "missing state or code parameter")
+		return
+	}
+
+	if h.redisClient == nil {
+		h.redirectToFrontendWithError(c, "OAuth session storage is unavailable")
 		return
 	}
 
@@ -194,6 +214,11 @@ func (h *OAuthHandler) GitHubCallback(c *gin.Context) {
 // @Success 307 {string} string "Redirect to Discord"
 // @Router /auth/discord [get]
 func (h *OAuthHandler) DiscordLogin(c *gin.Context) {
+	if h.redisClient == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "OAuth session storage is unavailable"})
+		return
+	}
+
 	state, err := h.generateStateToken()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate state token"})
@@ -225,6 +250,11 @@ func (h *OAuthHandler) DiscordCallback(c *gin.Context) {
 
 	if state == "" || code == "" {
 		h.redirectToFrontendWithError(c, "missing state or code parameter")
+		return
+	}
+
+	if h.redisClient == nil {
+		h.redirectToFrontendWithError(c, "OAuth session storage is unavailable")
 		return
 	}
 

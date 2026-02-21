@@ -1,6 +1,6 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://rootaccess.live',
-  wsUrl: 'wss://rootaccess.live',
-  googleAuthUrl: 'https://rootaccess.live/auth/google'
+  apiUrl: 'API_URL_PLACEHOLDER',
+  wsUrl: 'WS_URL_PLACEHOLDER',
+  googleAuthUrl: 'API_URL_PLACEHOLDER/auth/google'
 };

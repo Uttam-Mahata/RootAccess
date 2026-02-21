@@ -1,10 +1,15 @@
 package config
 
 import (
+	"context"
+	"encoding/json"
 	"log"
 	"os"
 	"strconv"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	"github.com/joho/godotenv"
 )
 
@@ -46,6 +51,13 @@ func LoadConfig() *Config {
 		log.Println("Warning: .env file not found, relying on environment variables")
 	}
 
+	// Try to load secrets from AWS Secrets Manager if secret name is provided
+	awsSecretName := os.Getenv("AWS_SECRET_NAME")
+	if awsSecretName != "" {
+		log.Printf("Attempting to load secrets from AWS Secrets Manager: %s", awsSecretName)
+		loadAWSSecrets(awsSecretName)
+	}
+
 	smtpPort, _ := strconv.Atoi(getEnv("SMTP_PORT", "587"))
 	redisDB, _ := strconv.Atoi(getEnv("REDIS_DB", "0"))
 
@@ -85,6 +97,43 @@ func LoadConfig() *Config {
 		RegistrationMode:           getEnv("REGISTRATION_MODE", "open"),
 		RegistrationAllowedDomains: getEnv("REGISTRATION_ALLOWED_DOMAINS", ""),
 	}
+}
+
+func loadAWSSecrets(secretName string) {
+	region := os.Getenv("AWS_REGION")
+	if region == "" {
+		region = "us-east-1"
+	}
+
+	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(region))
+	if err != nil {
+		log.Printf("Error loading AWS config: %v", err)
+		return
+	}
+
+	svc := secretsmanager.NewFromConfig(cfg)
+	input := &secretsmanager.GetSecretValueInput{
+		SecretId:     aws.String(secretName),
+		VersionStage: aws.String("AWSCURRENT"),
+	}
+
+	result, err := svc.GetSecretValue(context.TODO(), input)
+	if err != nil {
+		log.Printf("Error getting secret value: %v", err)
+		return
+	}
+
+	var secrets map[string]string
+	err = json.Unmarshal([]byte(*result.SecretString), &secrets)
+	if err != nil {
+		log.Printf("Error unmarshaling secret: %v", err)
+		return
+	}
+
+	for key, value := range secrets {
+		os.Setenv(key, value)
+	}
+	log.Println("Successfully loaded secrets from AWS Secrets Manager")
 }
 
 func getEnv(key, fallback string) string {

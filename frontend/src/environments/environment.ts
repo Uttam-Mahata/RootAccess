@@ -1,6 +1,6 @@
 export const environment = {
   production: false,
-  apiUrl: 'http://localhost:8080',
-  wsUrl: 'ws://localhost:8080',
-  googleAuthUrl: 'http://localhost:8080/auth/google'
+  apiUrl: 'API_URL_PLACEHOLDER',
+  wsUrl: 'WS_URL_PLACEHOLDER',
+  googleAuthUrl: 'API_URL_PLACEHOLDER/auth/google'
 };

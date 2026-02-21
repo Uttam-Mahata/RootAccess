@@ -1,11 +1,16 @@
 package main
 
 import (
+	"context"
 	"log"
+	"os"
 
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/config"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/database"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/routes"
+	"github.com/aws/aws-lambda-go/events"
+	"github.com/aws/aws-lambda-go/lambda"
+	ginadapter "github.com/awslabs/aws-lambda-go-api-proxy/gin"
 )
 
 // @title RootAccess CTF API
@@ -28,6 +33,8 @@ import (
 // @in header
 // @name Authorization
 
+var ginLambda *ginadapter.GinLambda
+
 func main() {
 	// Local development or containerized deployment
 	cfg := config.LoadConfig()
@@ -38,6 +45,19 @@ func main() {
 
 	r := routes.SetupRouter(cfg)
 
+	// Check if running in AWS Lambda
+	if os.Getenv("AWS_LAMBDA_FUNCTION_NAME") != "" {
+		log.Println("Running in AWS Lambda mode")
+		ginLambda = ginadapter.New(r)
+		lambda.Start(Handler)
+		return
+	}
+
 	log.Printf("Server running on port %s", cfg.Port)
 	r.Run(":" + cfg.Port)
+}
+
+func Handler(ctx context.Context, req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	// If no name is provided in the HTTP request, use default for compatibility
+	return ginLambda.ProxyWithContext(ctx, req)
 }

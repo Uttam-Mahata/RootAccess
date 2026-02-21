@@ -1,0 +1,52 @@
+name: Deploy Frontend to Vercel
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend-deploy.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Inject Environment Variables
+        working-directory: frontend
+        run: |
+          API_URL="${{ secrets.PROD_API_URL }}"
+          # Convert https://... to wss://... for WebSocket
+          WS_URL=$(echo $API_URL | sed 's/^http/ws/')
+          
+          # Replace in both dev and prod environment files
+          sed -i "s|API_URL_PLACEHOLDER|$API_URL|g" src/environments/environment.ts
+          sed -i "s|WS_URL_PLACEHOLDER|$WS_URL|g" src/environments/environment.ts
+          sed -i "s|API_URL_PLACEHOLDER|$API_URL|g" src/environments/environment.prod.ts
+          sed -i "s|WS_URL_PLACEHOLDER|$WS_URL|g" src/environments/environment.prod.ts
+
+      - name: Build for production
+        working-directory: frontend
+        run: npm run build
+
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: '--prod --yes'
+          working-directory: frontend
