@@ -3,6 +3,7 @@ package turso
 import (
 	"database/sql"
 	"encoding/json"
+	"log"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -34,7 +35,10 @@ func strToTime(s string) time.Time {
 	if s == "" {
 		return time.Time{}
 	}
-	t, _ := time.Parse(time.RFC3339Nano, s)
+	t, err := time.Parse(time.RFC3339Nano, s)
+	if err != nil {
+		log.Printf("turso: failed to parse time %q: %v", s, err)
+	}
 	return t
 }
 

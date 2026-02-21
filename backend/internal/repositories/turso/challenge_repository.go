@@ -3,6 +3,7 @@ package turso
 import (
 	"database/sql"
 	"encoding/json"
+	"log"
 	"strings"
 
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
@@ -59,21 +60,27 @@ func scanChallenge(s scanner) (*models.Challenge, error) {
 
 	// Parse JSON arrays
 	if tagsJSON != "" {
-		_ = json.Unmarshal([]byte(tagsJSON), &c.Tags)
+		if err := json.Unmarshal([]byte(tagsJSON), &c.Tags); err != nil {
+			log.Printf("turso: failed to parse tags JSON for challenge %s: %v", c.ID.Hex(), err)
+		}
 	}
 	if c.Tags == nil {
 		c.Tags = []string{}
 	}
 
 	if filesJSON != "" {
-		_ = json.Unmarshal([]byte(filesJSON), &c.Files)
+		if err := json.Unmarshal([]byte(filesJSON), &c.Files); err != nil {
+			log.Printf("turso: failed to parse files JSON for challenge %s: %v", c.ID.Hex(), err)
+		}
 	}
 	if c.Files == nil {
 		c.Files = []string{}
 	}
 
 	if hintsJSON != "" {
-		_ = json.Unmarshal([]byte(hintsJSON), &c.Hints)
+		if err := json.Unmarshal([]byte(hintsJSON), &c.Hints); err != nil {
+			log.Printf("turso: failed to parse hints JSON for challenge %s: %v", c.ID.Hex(), err)
+		}
 	}
 	if c.Hints == nil {
 		c.Hints = []models.Hint{}
