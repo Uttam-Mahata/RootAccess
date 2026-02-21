@@ -7,7 +7,7 @@ import (
 )
 
 func TestNewHub(t *testing.T) {
-	hub := NewHub()
+	hub := NewHub().(*MemoryHub)
 	if hub == nil {
 		t.Fatal("NewHub returned nil")
 	}
@@ -17,7 +17,7 @@ func TestNewHub(t *testing.T) {
 }
 
 func TestHubBroadcastMessage(t *testing.T) {
-	hub := NewHub()
+	hub := NewHub().(*MemoryHub)
 	go hub.Run()
 
 	// Test BroadcastMessage marshaling
@@ -43,7 +43,7 @@ func TestHubBroadcastMessage(t *testing.T) {
 }
 
 func TestHubRunStartsAndAcceptsRegistration(t *testing.T) {
-	hub := NewHub()
+	hub := NewHub().(*MemoryHub)
 	go hub.Run()
 
 	// Give time for goroutine to start

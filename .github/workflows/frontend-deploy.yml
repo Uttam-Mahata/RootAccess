@@ -29,8 +29,11 @@ jobs:
         working-directory: frontend
         run: |
           API_URL="${{ secrets.PROD_API_URL }}"
-          # Convert https://... to wss://... for WebSocket
-          WS_URL=$(echo $API_URL | sed 's/^http/ws/')
+          # Use PROD_WS_URL if provided, otherwise derive from API_URL
+          WS_URL="${{ secrets.PROD_WS_URL }}"
+          if [ -z "$WS_URL" ]; then
+            WS_URL=$(echo $API_URL | sed 's/^http/ws/')
+          fi
           
           # Replace in both dev and prod environment files
           sed -i "s|API_URL_PLACEHOLDER|$API_URL|g" src/environments/environment.ts

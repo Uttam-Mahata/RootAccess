@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 
@@ -11,6 +13,7 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	ginadapter "github.com/awslabs/aws-lambda-go-api-proxy/gin"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 // @title RootAccess CTF API
@@ -49,7 +52,7 @@ func main() {
 	if os.Getenv("AWS_LAMBDA_FUNCTION_NAME") != "" {
 		log.Println("Running in AWS Lambda mode")
 		ginLambda = ginadapter.New(r)
-		lambda.Start(Handler)
+		lambda.Start(UnifiedHandler)
 		return
 	}
 
@@ -57,7 +60,66 @@ func main() {
 	r.Run(":" + cfg.Port)
 }
 
+// UnifiedHandler handles both REST and WebSocket API events
+func UnifiedHandler(ctx context.Context, event json.RawMessage) (interface{}, error) {
+	cfg := config.LoadConfig()
+
+	// 1. Try to unmarshal as standard APIGatewayProxyRequest (REST)
+	var restReq events.APIGatewayProxyRequest
+	if err := json.Unmarshal(event, &restReq); err == nil && restReq.HTTPMethod != "" {
+		return ginLambda.ProxyWithContext(ctx, restReq)
+	}
+
+	// 2. Try to unmarshal as APIGatewayWebsocketProxyRequest (WebSocket)
+	var wsReq events.APIGatewayWebsocketProxyRequest
+	if err := json.Unmarshal(event, &wsReq); err == nil && wsReq.RequestContext.ConnectionID != "" {
+		path := "/ws/default"
+		switch wsReq.RequestContext.RouteKey {
+		case "$connect":
+			path = "/ws/connect"
+		case "$disconnect":
+			path = "/ws/disconnect"
+		}
+
+		headers := map[string]string{
+			"X-Forwarded-For": wsReq.RequestContext.Identity.SourceIP,
+			"X-Connection-Id": wsReq.RequestContext.ConnectionID,
+		}
+
+		// Try to extract user_id from token in query params for $connect
+		if wsReq.RequestContext.RouteKey == "$connect" {
+			if tokenStr, ok := wsReq.QueryStringParameters["token"]; ok {
+				// Parse token to get user info
+				token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
+					return []byte(cfg.JWTSecret), nil
+				})
+				if err == nil && token.Valid {
+					if claims, ok := token.Claims.(jwt.MapClaims); ok {
+						if uid, ok := claims["user_id"].(string); ok {
+							headers["X-User-Id"] = uid
+						}
+					}
+				}
+			}
+		}
+
+		// Convert WebSocket event to a synthetic REST request for Gin
+		syntheticReq := events.APIGatewayProxyRequest{
+			Path:           path,
+			HTTPMethod:     "POST",
+			Headers:        headers,
+			RequestContext: events.APIGatewayProxyRequestContext{
+				// Minimum context needed for gin-adapter
+			},
+			Body: wsReq.Body,
+		}
+
+		return ginLambda.ProxyWithContext(ctx, syntheticReq)
+	}
+
+	return nil, fmt.Errorf("unsupported event type")
+}
+
 func Handler(ctx context.Context, req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	// If no name is provided in the HTTP request, use default for compatibility
 	return ginLambda.ProxyWithContext(ctx, req)
 }

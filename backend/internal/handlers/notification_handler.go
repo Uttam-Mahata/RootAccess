@@ -13,10 +13,10 @@ import (
 
 type NotificationHandler struct {
 	notificationService *services.NotificationService
-	hub                *wsHub.Hub
+	hub                wsHub.Hub
 }
 
-func NewNotificationHandler(notificationService *services.NotificationService, hub *wsHub.Hub) *NotificationHandler {
+func NewNotificationHandler(notificationService *services.NotificationService, hub wsHub.Hub) *NotificationHandler {
 	return &NotificationHandler{
 		notificationService: notificationService,
 		hub:                hub,
