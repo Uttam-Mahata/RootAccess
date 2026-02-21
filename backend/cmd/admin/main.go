@@ -20,7 +20,7 @@ func main() {
 	database.ConnectDB(cfg.MongoURI, cfg.DBName)
 
 	// Initialize repository and service layers
-	userRepo := repositories.NewUserRepository()
+	userRepo := repositories.NewUserRepository(database.DB)
 	adminService = services.NewAdminService(userRepo)
 
 	reader := bufio.NewReader(os.Stdin)

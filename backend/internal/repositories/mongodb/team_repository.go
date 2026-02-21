@@ -262,7 +262,7 @@ func (r *TeamRepository) GetAllTeams() ([]models.Team, error) {
 }
 
 // UpdateTeamFields updates specific fields of a team
-func (r *TeamRepository) UpdateTeamFields(teamID primitive.ObjectID, fields bson.M) error {
+func (r *TeamRepository) UpdateTeamFields(teamID primitive.ObjectID, fields map[string]interface{}) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 

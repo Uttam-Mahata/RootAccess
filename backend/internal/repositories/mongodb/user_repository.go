@@ -147,7 +147,7 @@ func (r *UserRepository) GetAllUsers() ([]models.User, error) {
 	return users, nil
 }
 
-func (r *UserRepository) UpdateFields(userID primitive.ObjectID, fields bson.M) error {
+func (r *UserRepository) UpdateFields(userID primitive.ObjectID, fields map[string]interface{}) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 

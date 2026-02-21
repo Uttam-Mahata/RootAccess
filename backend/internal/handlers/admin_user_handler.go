@@ -7,7 +7,6 @@ import (
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories/interfaces"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/utils"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -189,7 +188,7 @@ func (h *AdminUserHandler) UpdateUserStatus(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid status. Must be 'active', 'banned', or 'suspended'"})
 		return
 	}
-	update := bson.M{"status": req.Status, "ban_reason": req.BanReason}
+	update := map[string]interface{}{"status": req.Status, "ban_reason": req.BanReason}
 	err = h.userRepo.UpdateFields(objID, update)
 	if err != nil {
 		utils.RespondWithError(c, http.StatusInternalServerError, err.Error(), err)
@@ -238,7 +237,7 @@ func (h *AdminUserHandler) UpdateUserRole(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid role. Must be 'admin' or 'user'"})
 		return
 	}
-	err = h.userRepo.UpdateFields(objID, bson.M{"role": req.Role})
+	err = h.userRepo.UpdateFields(objID, map[string]interface{}{"role": req.Role})
 	if err != nil {
 		utils.RespondWithError(c, http.StatusInternalServerError, err.Error(), err)
 		return
@@ -362,7 +361,7 @@ func (h *AdminUserHandler) DeleteUser(c *gin.Context) {
 	// physically removing the record. This preserves data integrity for historical records
 	// like submissions and team memberships. The user will still appear in total counts.
 	// For a full purge, implement data cleanup in related tables (submissions, teams, etc.)
-	err = h.userRepo.UpdateFields(objID, bson.M{"status": "deleted"})
+	err = h.userRepo.UpdateFields(objID, map[string]interface{}{"status": "deleted"})
 	if err != nil {
 		utils.RespondWithError(c, http.StatusInternalServerError, err.Error(), err)
 		return

@@ -10,7 +10,6 @@ import (
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories/interfaces"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/utils"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -296,7 +295,7 @@ func (h *AdminTeamHandler) UpdateTeam(c *gin.Context) {
 		return
 	}
 
-	update := bson.M{}
+	update := map[string]interface{}{}
 	if req.Name != "" {
 		update["name"] = req.Name
 	}
