@@ -1,10 +1,9 @@
-package repositories
+package mongodb
 
 import (
 	"context"
 	"time"
 
-	"github.com/Uttam-Mahata/RootAccess/backend/internal/database"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -12,12 +11,14 @@ import (
 )
 
 type HintRepository struct {
+	db               *mongo.Database
 	revealCollection *mongo.Collection
 }
 
-func NewHintRepository() *HintRepository {
+func NewHintRepository(db *mongo.Database) *HintRepository {
 	return &HintRepository{
-		revealCollection: database.DB.Collection("hint_reveals"),
+		db:               db,
+		revealCollection: db.Collection("hint_reveals"),
 	}
 }
 

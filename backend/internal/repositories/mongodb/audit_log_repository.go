@@ -1,10 +1,9 @@
-package repositories
+package mongodb
 
 import (
 	"context"
 	"time"
 
-	"github.com/Uttam-Mahata/RootAccess/backend/internal/database"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -12,12 +11,14 @@ import (
 )
 
 type AuditLogRepository struct {
+	db         *mongo.Database
 	collection *mongo.Collection
 }
 
-func NewAuditLogRepository() *AuditLogRepository {
+func NewAuditLogRepository(db *mongo.Database) *AuditLogRepository {
 	return &AuditLogRepository{
-		collection: database.DB.Collection("audit_logs"),
+		db:         db,
+		collection: db.Collection("audit_logs"),
 	}
 }
 

@@ -1,10 +1,9 @@
-package repositories
+package mongodb
 
 import (
 	"context"
 	"time"
 
-	"github.com/Uttam-Mahata/RootAccess/backend/internal/database"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -12,12 +11,14 @@ import (
 )
 
 type TeamInvitationRepository struct {
+	db         *mongo.Database
 	collection *mongo.Collection
 }
 
-func NewTeamInvitationRepository() *TeamInvitationRepository {
+func NewTeamInvitationRepository(db *mongo.Database) *TeamInvitationRepository {
 	return &TeamInvitationRepository{
-		collection: database.DB.Collection("team_invitations"),
+		db:         db,
+		collection: db.Collection("team_invitations"),
 	}
 }
 

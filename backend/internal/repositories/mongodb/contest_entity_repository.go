@@ -1,10 +1,9 @@
-package repositories
+package mongodb
 
 import (
 	"context"
 	"time"
 
-	"github.com/Uttam-Mahata/RootAccess/backend/internal/database"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -13,12 +12,14 @@ import (
 )
 
 type ContestEntityRepository struct {
+	db         *mongo.Database
 	collection *mongo.Collection
 }
 
-func NewContestEntityRepository() *ContestEntityRepository {
+func NewContestEntityRepository(db *mongo.Database) *ContestEntityRepository {
 	return &ContestEntityRepository{
-		collection: database.DB.Collection("contests"),
+		db:         db,
+		collection: db.Collection("contests"),
 	}
 }
 

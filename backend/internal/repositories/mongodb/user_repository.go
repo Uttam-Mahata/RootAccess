@@ -1,10 +1,9 @@
-package repositories
+package mongodb
 
 import (
 	"context"
 	"time"
 
-	"github.com/Uttam-Mahata/RootAccess/backend/internal/database"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -13,12 +12,14 @@ import (
 )
 
 type UserRepository struct {
+	db         *mongo.Database
 	collection *mongo.Collection
 }
 
-func NewUserRepository() *UserRepository {
+func NewUserRepository(db *mongo.Database) *UserRepository {
 	return &UserRepository{
-		collection: database.DB.Collection("users"),
+		db:         db,
+		collection: db.Collection("users"),
 	}
 }
 

@@ -1,10 +1,9 @@
-package repositories
+package mongodb
 
 import (
 	"context"
 	"time"
 
-	"github.com/Uttam-Mahata/RootAccess/backend/internal/database"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -13,12 +12,14 @@ import (
 )
 
 type WriteupRepository struct {
+	db         *mongo.Database
 	collection *mongo.Collection
 }
 
-func NewWriteupRepository() *WriteupRepository {
+func NewWriteupRepository(db *mongo.Database) *WriteupRepository {
 	return &WriteupRepository{
-		collection: database.DB.Collection("writeups"),
+		db:         db,
+		collection: db.Collection("writeups"),
 	}
 }
 
@@ -194,7 +195,7 @@ func (r *WriteupRepository) GetWriteupsByTeam(teamID string) ([]models.Writeup, 
 	}
 
 	// Get all users in the team first
-	teamCollection := database.DB.Collection("teams")
+	teamCollection := r.db.Collection("teams")
 	var team models.Team
 	err = teamCollection.FindOne(ctx, bson.M{"_id": tid}).Decode(&team)
 	if err != nil {
