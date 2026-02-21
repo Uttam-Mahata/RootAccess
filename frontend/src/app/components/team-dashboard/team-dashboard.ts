@@ -359,7 +359,10 @@ export class TeamDashboardComponent implements OnInit {
       next: (response) => {
         this.isLoading = false;
         this.success = 'Invite code regenerated!';
-        this.loadTeamData();
+        // Update local team with new code from response so UI updates without full refresh
+        if (response?.invite_code) {
+          this.team = { ...this.team!, invite_code: response.invite_code };
+        }
       },
       error: (err) => {
         this.isLoading = false;
