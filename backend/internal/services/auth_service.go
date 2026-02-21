@@ -7,19 +7,19 @@ import (
 
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/config"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
-	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories/interfaces"
 	"github.com/golang-jwt/jwt/v5"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthService struct {
-	userRepo     *repositories.UserRepository
+	userRepo     interfaces.UserRepository
 	emailService *EmailService
 	config       *config.Config
 }
 
-func NewAuthService(userRepo *repositories.UserRepository, emailService *EmailService, cfg *config.Config) *AuthService {
+func NewAuthService(userRepo interfaces.UserRepository, emailService *EmailService, cfg *config.Config) *AuthService {
 	return &AuthService{
 		userRepo:     userRepo,
 		emailService: emailService,

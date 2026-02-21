@@ -5,20 +5,20 @@ import (
 	"time"
 
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
-	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories/interfaces"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type ContestRegistrationService struct {
-	contestEntityRepo      *repositories.ContestEntityRepository
-	registrationRepo       *repositories.TeamContestRegistrationRepository
-	teamRepo               *repositories.TeamRepository
+	contestEntityRepo      interfaces.ContestEntityRepository
+	registrationRepo       interfaces.TeamContestRegistrationRepository
+	teamRepo               interfaces.TeamRepository
 }
 
 func NewContestRegistrationService(
-	contestEntityRepo *repositories.ContestEntityRepository,
-	registrationRepo *repositories.TeamContestRegistrationRepository,
-	teamRepo *repositories.TeamRepository,
+	contestEntityRepo interfaces.ContestEntityRepository,
+	registrationRepo interfaces.TeamContestRegistrationRepository,
+	teamRepo interfaces.TeamRepository,
 ) *ContestRegistrationService {
 	return &ContestRegistrationService{
 		contestEntityRepo: contestEntityRepo,

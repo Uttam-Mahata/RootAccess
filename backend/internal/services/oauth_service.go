@@ -11,7 +11,7 @@ import (
 
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/config"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
-	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories/interfaces"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -28,7 +28,7 @@ var discordEndpoint = oauth2.Endpoint{
 }
 
 type OAuthService struct {
-	userRepo      *repositories.UserRepository
+	userRepo      interfaces.UserRepository
 	config        *config.Config
 	googleConfig  *oauth2.Config
 	githubConfig  *oauth2.Config
@@ -66,7 +66,7 @@ type DiscordUserInfo struct {
 	Discriminator string `json:"discriminator"`
 }
 
-func NewOAuthService(userRepo *repositories.UserRepository, cfg *config.Config) *OAuthService {
+func NewOAuthService(userRepo interfaces.UserRepository, cfg *config.Config) *OAuthService {
 	googleConfig := &oauth2.Config{
 		ClientID:     cfg.GoogleClientID,
 		ClientSecret: cfg.GoogleClientSecret,

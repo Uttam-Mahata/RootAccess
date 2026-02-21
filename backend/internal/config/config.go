@@ -45,6 +45,17 @@ type Config struct {
 	// Registration access control
 	RegistrationMode           string // "open" | "domain" | "disabled"
 	RegistrationAllowedDomains string // comma-separated, e.g. "college.edu,university.org"
+	// Provider configuration
+	DBType      string // "mongodb" or "turso"
+	StorageType string // "s3", "r2", or "local"
+	CacheType   string // "redis" or "memory"
+	// Turso configuration
+	TursoURL   string
+	TursoToken string
+	// Cloudflare R2 configuration
+	R2Endpoint  string
+	R2AccessKey string
+	R2SecretKey string
 }
 
 func LoadConfig() *Config {
@@ -99,6 +110,14 @@ func LoadConfig() *Config {
 		CORSAllowedOrigins:  getEnv("CORS_ALLOWED_ORIGINS", ""),
 		RegistrationMode:           getEnv("REGISTRATION_MODE", "open"),
 		RegistrationAllowedDomains: getEnv("REGISTRATION_ALLOWED_DOMAINS", ""),
+		DBType:      getEnv("DB_TYPE", "mongodb"),
+		StorageType: getEnv("STORAGE_TYPE", "local"),
+		CacheType:   getEnv("CACHE_TYPE", "redis"),
+		TursoURL:    getEnv("TURSO_URL", ""),
+		TursoToken:  getEnv("TURSO_TOKEN", ""),
+		R2Endpoint:  getEnv("R2_ENDPOINT", ""),
+		R2AccessKey: getEnv("R2_ACCESS_KEY", ""),
+		R2SecretKey: getEnv("R2_SECRET_KEY", ""),
 	}
 }
 

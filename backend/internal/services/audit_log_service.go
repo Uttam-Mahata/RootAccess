@@ -2,15 +2,15 @@ package services
 
 import (
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
-	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories/interfaces"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type AuditLogService struct {
-	auditRepo *repositories.AuditLogRepository
+	auditRepo interfaces.AuditLogRepository
 }
 
-func NewAuditLogService(auditRepo *repositories.AuditLogRepository) *AuditLogService {
+func NewAuditLogService(auditRepo interfaces.AuditLogRepository) *AuditLogService {
 	return &AuditLogService{
 		auditRepo: auditRepo,
 	}

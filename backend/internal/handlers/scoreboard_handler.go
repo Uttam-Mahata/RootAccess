@@ -5,17 +5,17 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories/interfaces"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/services"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/utils"
 )
 
 type ScoreboardHandler struct {
 	scoreboardService *services.ScoreboardService
-	contestEntityRepo *repositories.ContestEntityRepository
+	contestEntityRepo interfaces.ContestEntityRepository
 }
 
-func NewScoreboardHandler(scoreboardService *services.ScoreboardService, contestEntityRepo *repositories.ContestEntityRepository) *ScoreboardHandler {
+func NewScoreboardHandler(scoreboardService *services.ScoreboardService, contestEntityRepo interfaces.ContestEntityRepository) *ScoreboardHandler {
 	return &ScoreboardHandler{
 		scoreboardService: scoreboardService,
 		contestEntityRepo: contestEntityRepo,

@@ -5,16 +5,16 @@ import (
 	"time"
 
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
-	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories/interfaces"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type AdminService struct {
-	userRepo *repositories.UserRepository
+	userRepo interfaces.UserRepository
 }
 
-func NewAdminService(userRepo *repositories.UserRepository) *AdminService {
+func NewAdminService(userRepo interfaces.UserRepository) *AdminService {
 	return &AdminService{
 		userRepo: userRepo,
 	}

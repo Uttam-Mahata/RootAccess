@@ -1,10 +1,9 @@
-package repositories
+package mongodb
 
 import (
 	"context"
 	"time"
 
-	"github.com/Uttam-Mahata/RootAccess/backend/internal/database"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -12,12 +11,14 @@ import (
 )
 
 type RoundChallengeRepository struct {
+	db         *mongo.Database
 	collection *mongo.Collection
 }
 
-func NewRoundChallengeRepository() *RoundChallengeRepository {
+func NewRoundChallengeRepository(db *mongo.Database) *RoundChallengeRepository {
 	return &RoundChallengeRepository{
-		collection: database.DB.Collection("round_challenges"),
+		db:         db,
+		collection: db.Collection("round_challenges"),
 	}
 }
 

@@ -3,36 +3,38 @@ package services
 import (
 	"context"
 
-	"github.com/Uttam-Mahata/RootAccess/backend/internal/database"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/cache"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
-	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories/interfaces"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/utils"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type ChallengeService struct {
-	challengeRepo  *repositories.ChallengeRepository
-	submissionRepo *repositories.SubmissionRepository
-	teamRepo       *repositories.TeamRepository
+	challengeRepo  interfaces.ChallengeRepository
+	submissionRepo interfaces.SubmissionRepository
+	teamRepo       interfaces.TeamRepository
+	cache          cache.CacheProvider
 }
 
 func NewChallengeService(
-	challengeRepo *repositories.ChallengeRepository,
-	submissionRepo *repositories.SubmissionRepository,
-	teamRepo *repositories.TeamRepository,
+	challengeRepo interfaces.ChallengeRepository,
+	submissionRepo interfaces.SubmissionRepository,
+	teamRepo interfaces.TeamRepository,
+	cp cache.CacheProvider,
 ) *ChallengeService {
 	return &ChallengeService{
 		challengeRepo:  challengeRepo,
 		submissionRepo: submissionRepo,
 		teamRepo:       teamRepo,
+		cache:          cp,
 	}
 }
 
 func (s *ChallengeService) invalidateScoreboardCache() {
-	if database.RDB != nil {
+	if s.cache != nil {
 		ctx := context.Background()
-		database.RDB.Del(ctx, "scoreboard")
-		database.RDB.Del(ctx, "team_scoreboard")
+		_ = s.cache.Del(ctx, "scoreboard", "team_scoreboard")
 	}
 }
 

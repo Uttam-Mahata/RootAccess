@@ -4,20 +4,20 @@ import (
 	"time"
 
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
-	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories/interfaces"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type AchievementService struct {
-	achievementRepo *repositories.AchievementRepository
-	submissionRepo  *repositories.SubmissionRepository
-	challengeRepo   *repositories.ChallengeRepository
+	achievementRepo interfaces.AchievementRepository
+	submissionRepo  interfaces.SubmissionRepository
+	challengeRepo   interfaces.ChallengeRepository
 }
 
 func NewAchievementService(
-	achievementRepo *repositories.AchievementRepository,
-	submissionRepo *repositories.SubmissionRepository,
-	challengeRepo *repositories.ChallengeRepository,
+	achievementRepo interfaces.AchievementRepository,
+	submissionRepo interfaces.SubmissionRepository,
+	challengeRepo interfaces.ChallengeRepository,
 ) *AchievementService {
 	return &AchievementService{
 		achievementRepo: achievementRepo,

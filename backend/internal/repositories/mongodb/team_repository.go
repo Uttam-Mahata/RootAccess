@@ -1,10 +1,9 @@
-package repositories
+package mongodb
 
 import (
 	"context"
 	"time"
 
-	"github.com/Uttam-Mahata/RootAccess/backend/internal/database"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -13,12 +12,14 @@ import (
 )
 
 type TeamRepository struct {
+	db         *mongo.Database
 	collection *mongo.Collection
 }
 
-func NewTeamRepository() *TeamRepository {
+func NewTeamRepository(db *mongo.Database) *TeamRepository {
 	return &TeamRepository{
-		collection: database.DB.Collection("teams"),
+		db:         db,
+		collection: db.Collection("teams"),
 	}
 }
 
@@ -261,7 +262,7 @@ func (r *TeamRepository) GetAllTeams() ([]models.Team, error) {
 }
 
 // UpdateTeamFields updates specific fields of a team
-func (r *TeamRepository) UpdateTeamFields(teamID primitive.ObjectID, fields bson.M) error {
+func (r *TeamRepository) UpdateTeamFields(teamID primitive.ObjectID, fields map[string]interface{}) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
