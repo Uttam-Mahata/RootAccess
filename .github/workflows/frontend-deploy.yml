@@ -38,16 +38,19 @@ jobs:
           sed -i "s|API_URL_PLACEHOLDER|$API_URL|g" src/environments/environment.prod.ts
           sed -i "s|WS_URL_PLACEHOLDER|$WS_URL|g" src/environments/environment.prod.ts
 
-      - name: Build for production
-        working-directory: frontend
-        run: npm run build
-
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
 
       - name: Pull Vercel Environment Information
         working-directory: frontend
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Build for production
+        working-directory: frontend
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}

@@ -33,8 +33,6 @@ jobs:
       - name: Build and Package
         working-directory: backend
         run: |
-          mkdir -p build
-          GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -tags production -o build/bootstrap cmd/api/main.go
           sam build
 
       - name: Deploy to AWS

@@ -189,7 +189,7 @@ Resources:
   RootAccessApiFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: build/
+      CodeUri: .
       Handler: bootstrap
       Runtime: provided.al2023
       Architectures:
@@ -221,6 +221,10 @@ Resources:
           Properties:
             Path: /{proxy+}
             Method: ANY
+    Metadata:
+      BuildMethod: go1.x
+      BuildProperties:
+        BuildTarget: cmd/api/main.go
 
 Outputs:
   ApiUrl:
