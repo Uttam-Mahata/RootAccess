@@ -80,4 +80,3 @@ func (r *ScoreAdjustmentRepository) getAdjustmentsByTargets(targetType string, i
 
 	return result, cursor.Err()
 }
-
