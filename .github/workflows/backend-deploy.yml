@@ -38,9 +38,9 @@ jobs:
       - name: Deploy to AWS
         working-directory: backend
         run: |
-          sam deploy --no-confirm-changeset --no-fail-on-empty-changeset 
-            --stack-name rootaccess-backend 
-            --region us-east-1 
-            --capabilities CAPABILITY_IAM 
-            --parameter-overrides "Environment=production SecretName=RootAccess/Backend/Secrets RedisAuthToken=${{ secrets.REDIS_AUTH_TOKEN }}" 
+          sam deploy --no-confirm-changeset --no-fail-on-empty-changeset \
+            --stack-name rootaccess-backend \
+            --region us-east-1 \
+            --capabilities CAPABILITY_IAM \
+            --parameter-overrides "Environment=production SecretName=RootAccess/Backend/Secrets RedisAuthToken=${{ secrets.REDIS_AUTH_TOKEN }}" \
             --resolve-s3
