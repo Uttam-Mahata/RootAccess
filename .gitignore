@@ -49,6 +49,7 @@ verification/
 *.log
 
 # Go backend compiled binaries
+backend/build/
 backend/admin-tool
 backend/admin-tool.exe
 backend/main
