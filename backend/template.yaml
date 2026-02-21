@@ -15,7 +15,6 @@ Parameters:
     Type: String
     Description: Auth token for Redis (must be 16-128 characters)
     NoEcho: true
-    Default: "Daemon4rtacsRootAccess" 
 
 Resources:
   # ============================================================================

@@ -63,4 +63,3 @@ docker-compose.prod.yml
 
 docker-compose.prod.yml
 backend/deploy_aws.sh
-backend/template.yaml
