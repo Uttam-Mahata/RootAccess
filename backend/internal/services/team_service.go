@@ -7,7 +7,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/Uttam-Mahata/RootAccess/backend/internal/database"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/cache"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories/interfaces"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -20,6 +20,7 @@ type TeamService struct {
 	emailService   *EmailService
 	submissionRepo interfaces.SubmissionRepository
 	challengeRepo  interfaces.ChallengeRepository
+	cache          cache.CacheProvider
 }
 
 func NewTeamService(
@@ -29,6 +30,7 @@ func NewTeamService(
 	emailService *EmailService,
 	submissionRepo interfaces.SubmissionRepository,
 	challengeRepo interfaces.ChallengeRepository,
+	cp cache.CacheProvider,
 ) *TeamService {
 	return &TeamService{
 		teamRepo:       teamRepo,
@@ -37,14 +39,14 @@ func NewTeamService(
 		emailService:   emailService,
 		submissionRepo: submissionRepo,
 		challengeRepo:  challengeRepo,
+		cache:          cp,
 	}
 }
 
 func (s *TeamService) invalidateScoreboardCache() {
-	if database.RDB != nil {
+	if s.cache != nil {
 		ctx := context.Background()
-		database.RDB.Del(ctx, "scoreboard")
-		database.RDB.Del(ctx, "team_scoreboard")
+		_ = s.cache.Del(ctx, "scoreboard", "team_scoreboard")
 	}
 }
 

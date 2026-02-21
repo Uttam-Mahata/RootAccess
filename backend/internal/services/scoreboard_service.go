@@ -7,7 +7,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/Uttam-Mahata/RootAccess/backend/internal/database"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/cache"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories/interfaces"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -24,6 +24,7 @@ type ScoreboardService struct {
 	contestRoundRepo   interfaces.ContestRoundRepository
 	roundChallengeRepo interfaces.RoundChallengeRepository
 	registrationRepo   interfaces.TeamContestRegistrationRepository
+	cache              cache.CacheProvider
 }
 
 type UserScore struct {
@@ -54,6 +55,7 @@ func NewScoreboardService(
 	contestRoundRepo interfaces.ContestRoundRepository,
 	roundChallengeRepo interfaces.RoundChallengeRepository,
 	registrationRepo interfaces.TeamContestRegistrationRepository,
+	cp cache.CacheProvider,
 ) *ScoreboardService {
 	return &ScoreboardService{
 		userRepo:           userRepo,
@@ -66,6 +68,7 @@ func NewScoreboardService(
 		contestRoundRepo:   contestRoundRepo,
 		roundChallengeRepo: roundChallengeRepo,
 		registrationRepo:   registrationRepo,
+		cache:              cp,
 	}
 }
 
@@ -153,9 +156,9 @@ func (s *ScoreboardService) GetScoreboard(contestID string) ([]UserScore, error)
 		cacheKey = fmt.Sprintf("scoreboard:%s:frozen", contestID)
 	}
 
-	// Try Redis cache
-	if database.RDB != nil {
-		val, err := database.RDB.Get(ctx, cacheKey).Result()
+	// Try cache
+	if s.cache != nil {
+		val, err := s.cache.Get(ctx, cacheKey)
 		if err == nil {
 			var scores []UserScore
 			if err := json.Unmarshal([]byte(val), &scores); err == nil {
@@ -279,11 +282,11 @@ func (s *ScoreboardService) GetScoreboard(contestID string) ([]UserScore, error)
 		return scores[i].Score > scores[j].Score
 	})
 
-	// Cache in Redis
-	if database.RDB != nil {
+	// Cache result
+	if s.cache != nil {
 		data, err := json.Marshal(scores)
 		if err == nil {
-			_ = database.RDB.Set(ctx, cacheKey, data, 1*time.Minute).Err()
+			_ = s.cache.Set(ctx, cacheKey, string(data), 2*time.Minute)
 		}
 	}
 
@@ -304,9 +307,9 @@ func (s *ScoreboardService) GetTeamScoreboard(contestID string) ([]TeamScore, er
 		cacheKey = fmt.Sprintf("team_scoreboard:%s:frozen", contestID)
 	}
 
-	// Try Redis cache
-	if database.RDB != nil {
-		val, err := database.RDB.Get(ctx, cacheKey).Result()
+	// Try cache
+	if s.cache != nil {
+		val, err := s.cache.Get(ctx, cacheKey)
 		if err == nil {
 			var scores []TeamScore
 			if err := json.Unmarshal([]byte(val), &scores); err == nil {
@@ -428,11 +431,11 @@ func (s *ScoreboardService) GetTeamScoreboard(contestID string) ([]TeamScore, er
 		return scores[i].Score > scores[j].Score
 	})
 
-	// Cache in Redis
-	if database.RDB != nil {
+	// Cache result
+	if s.cache != nil {
 		data, err := json.Marshal(scores)
 		if err == nil {
-			_ = database.RDB.Set(ctx, cacheKey, data, 1*time.Minute).Err()
+			_ = s.cache.Set(ctx, cacheKey, string(data), 2*time.Minute)
 		}
 	}
 
@@ -468,8 +471,8 @@ func (s *ScoreboardService) GetTeamScoreProgression(days int, contestID string) 
 
 	ctx := context.Background()
 	cacheKey := fmt.Sprintf("team_score_progression:%s:%d", contestID, days)
-	if database.RDB != nil {
-		if val, err := database.RDB.Get(ctx, cacheKey).Result(); err == nil {
+	if s.cache != nil {
+		if val, err := s.cache.Get(ctx, cacheKey); err == nil {
 			var cached []TeamScoreProgression
 			if err := json.Unmarshal([]byte(val), &cached); err == nil {
 				return cached, nil
@@ -619,9 +622,9 @@ func (s *ScoreboardService) GetTeamScoreProgression(days int, contestID string) 
 		return iScore > jScore
 	})
 
-	if database.RDB != nil {
+	if s.cache != nil {
 		if data, err := json.Marshal(progressions); err == nil {
-			_ = database.RDB.Set(ctx, cacheKey, data, 1*time.Minute).Err()
+			_ = s.cache.Set(ctx, cacheKey, string(data), 2*time.Minute)
 		}
 	}
 

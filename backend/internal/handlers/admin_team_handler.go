@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/Uttam-Mahata/RootAccess/backend/internal/database"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/cache"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories/interfaces"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/utils"
@@ -19,6 +19,7 @@ type AdminTeamHandler struct {
 	submissionRepo interfaces.SubmissionRepository
 	invitationRepo interfaces.TeamInvitationRepository
 	adjustmentRepo interfaces.ScoreAdjustmentRepository
+	cache          cache.CacheProvider
 }
 
 func NewAdminTeamHandler(
@@ -27,6 +28,7 @@ func NewAdminTeamHandler(
 	submissionRepo interfaces.SubmissionRepository,
 	invitationRepo interfaces.TeamInvitationRepository,
 	adjustmentRepo interfaces.ScoreAdjustmentRepository,
+	cp cache.CacheProvider,
 ) *AdminTeamHandler {
 	return &AdminTeamHandler{
 		teamRepo:       teamRepo,
@@ -34,6 +36,7 @@ func NewAdminTeamHandler(
 		submissionRepo: submissionRepo,
 		invitationRepo: invitationRepo,
 		adjustmentRepo: adjustmentRepo,
+		cache:          cp,
 	}
 }
 
@@ -120,13 +123,13 @@ func (h *AdminTeamHandler) AdjustTeamScore(c *gin.Context) {
 	}
 
 	// Clear relevant scoreboard caches to reflect changes quickly
-	if database.RDB != nil {
+	if h.cache != nil {
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
-		_ = database.RDB.Del(ctx,
+		_ = h.cache.Del(ctx,
 			"team_scoreboard",
 			"team_scoreboard_frozen",
-		).Err()
+		)
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Team score adjusted successfully"})

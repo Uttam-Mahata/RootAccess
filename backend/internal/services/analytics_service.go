@@ -6,7 +6,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/Uttam-Mahata/RootAccess/backend/internal/database"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/cache"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories/interfaces"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -18,6 +18,7 @@ type AnalyticsService struct {
 	challengeRepo   interfaces.ChallengeRepository
 	teamRepo        interfaces.TeamRepository
 	adjustmentRepo  interfaces.ScoreAdjustmentRepository
+	cache           cache.CacheProvider
 }
 
 func NewAnalyticsService(
@@ -26,6 +27,7 @@ func NewAnalyticsService(
 	challengeRepo interfaces.ChallengeRepository,
 	teamRepo interfaces.TeamRepository,
 	adjustmentRepo interfaces.ScoreAdjustmentRepository,
+	cp cache.CacheProvider,
 ) *AnalyticsService {
 	return &AnalyticsService{
 		userRepo:       userRepo,
@@ -33,16 +35,17 @@ func NewAnalyticsService(
 		challengeRepo:  challengeRepo,
 		teamRepo:       teamRepo,
 		adjustmentRepo: adjustmentRepo,
+		cache:          cp,
 	}
 }
 
 func (s *AnalyticsService) GetPlatformAnalytics() (*models.AdminAnalytics, error) {
 	// Admin analytics aggregates a lot of data; cache the final result
-	// briefly in Redis so repeated admin tab visits are fast.
+	// briefly so repeated admin tab visits are fast.
 	ctx := context.Background()
 	const cacheKey = "platform_analytics"
-	if database.RDB != nil {
-		if val, err := database.RDB.Get(ctx, cacheKey).Result(); err == nil {
+	if s.cache != nil {
+		if val, err := s.cache.Get(ctx, cacheKey); err == nil {
 			var cached models.AdminAnalytics
 			if err := json.Unmarshal([]byte(val), &cached); err == nil {
 				return &cached, nil
@@ -416,9 +419,9 @@ func (s *AnalyticsService) GetPlatformAnalytics() (*models.AdminAnalytics, error
 	}
 
 	// Cache the assembled analytics object with a short TTL.
-	if database.RDB != nil {
+	if s.cache != nil {
 		if data, err := json.Marshal(result); err == nil {
-			_ = database.RDB.Set(ctx, cacheKey, data, 1*time.Minute).Err()
+			_ = s.cache.Set(ctx, cacheKey, string(data), 2*time.Minute)
 		}
 	}
 

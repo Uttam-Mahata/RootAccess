@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/cache"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/config"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/database"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/handlers"
@@ -95,13 +96,21 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 		log.Printf("warning: could not create team_contest_registrations indexes: %v", err)
 	}
 
+	// Cache provider — Redis when available, in-memory fallback otherwise
+	var cp cache.CacheProvider
+	if database.RDB != nil {
+		cp = cache.NewRedisCache(database.RDB)
+	} else {
+		cp = cache.NewMemoryCache()
+	}
+
 	// Services
 	emailService := services.NewEmailService(cfg)
 	authService := services.NewAuthService(userRepo, emailService, cfg)
 	oauthService := services.NewOAuthService(userRepo, cfg)
-	challengeService := services.NewChallengeService(challengeRepo, submissionRepo, teamRepo)
-	scoreboardService := services.NewScoreboardService(userRepo, submissionRepo, challengeRepo, teamRepo, contestRepo, scoreAdjustmentRepo, contestEntityRepo, contestRoundRepo, roundChallengeRepo, teamContestRegistrationRepo)
-	teamService := services.NewTeamService(teamRepo, teamInvitationRepo, userRepo, emailService, submissionRepo, challengeRepo)
+	challengeService := services.NewChallengeService(challengeRepo, submissionRepo, teamRepo, cp)
+	scoreboardService := services.NewScoreboardService(userRepo, submissionRepo, challengeRepo, teamRepo, contestRepo, scoreAdjustmentRepo, contestEntityRepo, contestRoundRepo, roundChallengeRepo, teamContestRegistrationRepo, cp)
+	teamService := services.NewTeamService(teamRepo, teamInvitationRepo, userRepo, emailService, submissionRepo, challengeRepo, cp)
 	notificationService := services.NewNotificationService(notificationRepo)
 	hintService := services.NewHintService(hintRepo, challengeRepo, teamRepo)
 	contestService := services.NewContestService(contestRepo)
@@ -110,7 +119,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	writeupService := services.NewWriteupService(writeupRepo, submissionRepo, teamRepo)
 	auditLogService := services.NewAuditLogService(auditLogRepo)
 	achievementService := services.NewAchievementService(achievementRepo, submissionRepo, challengeRepo)
-	analyticsService := services.NewAnalyticsService(userRepo, submissionRepo, challengeRepo, teamRepo, scoreAdjustmentRepo)
+	analyticsService := services.NewAnalyticsService(userRepo, submissionRepo, challengeRepo, teamRepo, scoreAdjustmentRepo, cp)
 	activityService := services.NewActivityService(userRepo, submissionRepo, challengeRepo, achievementRepo, teamRepo)
 
 	// WebSocket hub selection
@@ -152,7 +161,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	bulkChallengeHandler := handlers.NewBulkChallengeHandler(challengeService)
 	leaderboardHandler := handlers.NewLeaderboardHandler(scoreboardService)
 	adminUserHandler := handlers.NewAdminUserHandlerWithRepos(userRepo, teamRepo, submissionRepo, scoreAdjustmentRepo)
-	adminTeamHandler := handlers.NewAdminTeamHandler(teamRepo, userRepo, submissionRepo, teamInvitationRepo, scoreAdjustmentRepo)
+	adminTeamHandler := handlers.NewAdminTeamHandler(teamRepo, userRepo, submissionRepo, teamInvitationRepo, scoreAdjustmentRepo, cp)
 
 	// Public Routes
 	r.POST("/auth/register", middleware.IPRateLimitMiddleware(10, time.Minute), authHandler.Register)
