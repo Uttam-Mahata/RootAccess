@@ -15,6 +15,10 @@ Parameters:
     Type: String
     Description: "Auth token for Redis (16-128 characters)"
     NoEcho: true
+  LambdaMemorySize:
+    Type: Number
+    Description: "Memory size for the Lambda function"
+    Default: 512
 
 Resources:
   # ============================================================================
@@ -193,7 +197,7 @@ Resources:
       Runtime: provided.al2023
       Architectures:
         - x86_64
-      MemorySize: 3008
+      MemorySize: !Ref LambdaMemorySize
       Timeout: 30
       Environment:
         Variables:

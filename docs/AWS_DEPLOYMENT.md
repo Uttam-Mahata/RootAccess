@@ -7,7 +7,7 @@ This document details the production deployment architecture for the RootAccess 
 The backend is deployed as a serverless application using the **AWS Serverless Application Model (SAM)**.
 
 ### Components:
-- **AWS Lambda**: Runs the Go backend. Configured with 3GB RAM (~1.7 vCPUs) for optimal performance.
+- **AWS Lambda**: Runs the Go backend. Configured with 512MB RAM for optimal balance of performance and free tier sustainability.
 - **Amazon API Gateway (REST)**: Exposes the standard API endpoints.
 - **Amazon API Gateway (WebSocket)**: Handles persistent WebSocket connections.
 - **Amazon ElastiCache (Redis)**: Used for session management, scoreboard caching, and tracking WebSocket Connection IDs.
