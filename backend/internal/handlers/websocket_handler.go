@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"log"
 	"net/http"
 
@@ -12,11 +13,11 @@ import (
 )
 
 type WebSocketHandler struct {
-	hub      *websocketPkg.Hub
+	hub      websocketPkg.Hub
 	upgrader ws.Upgrader
 }
 
-func NewWebSocketHandler(hub *websocketPkg.Hub, cfg *config.Config) *WebSocketHandler {
+func NewWebSocketHandler(hub websocketPkg.Hub, cfg *config.Config) *WebSocketHandler {
 	allowedOrigin := cfg.FrontendURL
 	return &WebSocketHandler{
 		hub: hub,
@@ -31,12 +32,7 @@ func NewWebSocketHandler(hub *websocketPkg.Hub, cfg *config.Config) *WebSocketHa
 	}
 }
 
-// HandleWebSocket upgrades HTTP connection to WebSocket
-// @Summary WebSocket connection
-// @Description Establish a WebSocket connection for real-time updates (solves, scoreboard updates).
-// @Tags WebSocket
-// @Success 101 {string} string "Switching Protocols"
-// @Router /ws [get]
+// HandleWebSocket upgrades HTTP connection to WebSocket (for standard servers)
 func (h *WebSocketHandler) HandleWebSocket(c *gin.Context) {
 	conn, err := h.upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
@@ -58,4 +54,39 @@ func (h *WebSocketHandler) HandleWebSocket(c *gin.Context) {
 
 	go client.WritePump()
 	go client.ReadPump()
+}
+
+// HandleLambdaConnect handles API Gateway WebSocket $connect events
+func (h *WebSocketHandler) HandleLambdaConnect(c *gin.Context) {
+	connID := c.GetHeader("X-Connection-Id")
+	userID := c.GetHeader("X-User-Id")
+
+	if connID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "missing connection id"})
+		return
+	}
+
+	if err := h.hub.RegisterConnection(context.Background(), connID, userID); err != nil {
+		log.Printf("Failed to register lambda connection %s: %v", connID, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to register connection"})
+		return
+	}
+
+	c.Status(http.StatusOK)
+}
+
+// HandleLambdaDisconnect handles API Gateway WebSocket $disconnect events
+func (h *WebSocketHandler) HandleLambdaDisconnect(c *gin.Context) {
+	connID := c.GetHeader("X-Connection-Id")
+
+	if connID != "" {
+		h.hub.UnregisterConnection(context.Background(), connID)
+	}
+
+	c.Status(http.StatusOK)
+}
+
+// HandleLambdaDefault handles API Gateway WebSocket $default events
+func (h *WebSocketHandler) HandleLambdaDefault(c *gin.Context) {
+	c.Status(http.StatusOK)
 }

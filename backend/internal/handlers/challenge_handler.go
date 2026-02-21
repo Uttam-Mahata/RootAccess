@@ -9,6 +9,7 @@ import (
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/services"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/utils"
+	websocketPkg "github.com/Uttam-Mahata/RootAccess/backend/internal/websocket"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -20,10 +21,10 @@ type ChallengeHandler struct {
 	submissionRepo      *repositories.SubmissionRepository
 	userRepo            *repositories.UserRepository
 	teamRepo            *repositories.TeamRepository
-	wsHub               interface{ BroadcastMessage(string, interface{}) }
+	wsHub               websocketPkg.Hub
 }
 
-func NewChallengeHandler(challengeService *services.ChallengeService, achievementService *services.AchievementService, contestService *services.ContestService, wsHub interface{ BroadcastMessage(string, interface{}) }) *ChallengeHandler {
+func NewChallengeHandler(challengeService *services.ChallengeService, achievementService *services.AchievementService, contestService *services.ContestService, wsHub websocketPkg.Hub) *ChallengeHandler {
 	return &ChallengeHandler{
 		challengeService:   challengeService,
 		achievementService: achievementService,
@@ -32,7 +33,7 @@ func NewChallengeHandler(challengeService *services.ChallengeService, achievemen
 	}
 }
 
-func NewChallengeHandlerWithRepos(challengeService *services.ChallengeService, achievementService *services.AchievementService, contestService *services.ContestService, contestAdminService *services.ContestAdminService, wsHub interface{ BroadcastMessage(string, interface{}) }, submissionRepo *repositories.SubmissionRepository, userRepo *repositories.UserRepository, teamRepo *repositories.TeamRepository) *ChallengeHandler {
+func NewChallengeHandlerWithRepos(challengeService *services.ChallengeService, achievementService *services.AchievementService, contestService *services.ContestService, contestAdminService *services.ContestAdminService, wsHub websocketPkg.Hub, submissionRepo *repositories.SubmissionRepository, userRepo *repositories.UserRepository, teamRepo *repositories.TeamRepository) *ChallengeHandler {
 	return &ChallengeHandler{
 		challengeService:    challengeService,
 		achievementService:  achievementService,

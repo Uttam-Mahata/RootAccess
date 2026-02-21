@@ -44,3 +44,45 @@ jobs:
             --capabilities CAPABILITY_IAM \
             --parameter-overrides "Environment=production SecretName=RootAccess/Backend/Secrets RedisAuthToken=${{ secrets.REDIS_AUTH_TOKEN }}" \
             --resolve-s3
+
+      - name: Post-Deployment Sync (Update Secrets)
+        run: |
+          python3 -c "
+          import boto3
+          import json
+          import sys
+
+          region = 'us-east-1'
+          stack_name = 'rootaccess-backend'
+          secret_name = 'RootAccess/Backend/Secrets'
+
+          cf_client = boto3.client('cloudformation', region_name=region)
+          sm_client = boto3.client('secretsmanager', region_name=region)
+
+          try:
+              response = cf_client.describe_stacks(StackName=stack_name)
+              outputs = response['Stacks'][0]['Outputs']
+              
+              redis_endpoint = next((o['OutputValue'] for o in outputs if o['OutputKey'] == 'RedisEndpoint'), None)
+              redis_port = next((o['OutputValue'] for o in outputs if o['OutputKey'] == 'RedisPort'), None)
+              ws_callback_url = next((o['OutputValue'] for o in outputs if o['OutputKey'] == 'WebSocketCallbackUrl'), None)
+              
+              secret_value = sm_client.get_secret_value(SecretId=secret_name)
+              secrets = json.loads(secret_value['SecretString'])
+              updated = False
+
+              if redis_endpoint and redis_port:
+                  secrets['REDIS_ADDR'] = f'{redis_endpoint}:{redis_port}'
+                  updated = True
+              
+              if ws_callback_url:
+                  secrets['WS_CALLBACK_URL'] = ws_callback_url
+                  updated = True
+                  
+              if updated:
+                  sm_client.put_secret_value(SecretId=secret_name, SecretString=json.dumps(secrets))
+                  print('Successfully synced Secrets Manager with stack outputs.')
+          except Exception as e:
+              print(f'Error syncing secrets: {e}')
+              sys.exit(1)
+          "

@@ -1,7 +1,9 @@
 package routes
 
 import (
+	"context"
 	"log"
+	"os"
 	"strings"
 	"time"
 
@@ -13,6 +15,7 @@ import (
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/services"
 	websocketPkg "github.com/Uttam-Mahata/RootAccess/backend/internal/websocket"
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -20,9 +23,6 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	r := gin.Default()
 
 	// Configure trusted proxies for accurate client IP detection
-	// When behind a reverse proxy (nginx, load balancer), this ensures
-	// c.ClientIP() returns the real client IP from X-Forwarded-For / X-Real-IP
-	// instead of the proxy's IP (e.g. 127.0.0.1)
 	if cfg.TrustedProxies != "" {
 		proxies := strings.Split(cfg.TrustedProxies, ",")
 		for i := range proxies {
@@ -30,7 +30,6 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 		}
 		r.SetTrustedProxies(proxies)
 	} else {
-		// Default: only trust loopback addresses in development
 		r.SetTrustedProxies([]string{"127.0.0.1", "::1"})
 	}
 	r.ForwardedByClientIP = true
@@ -46,7 +45,6 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 		"https://ctfapis.rootaccess.live": true,
 	}
 
-	// Add additional origins from config
 	if cfg.CORSAllowedOrigins != "" {
 		additionalOrigins := strings.Split(cfg.CORSAllowedOrigins, ",")
 		for _, origin := range additionalOrigins {
@@ -60,7 +58,6 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 			if allowedOrigins[origin] {
 				c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
 			} else if cfg.Environment == "development" {
-				// In development, be more permissive to allow various local dev setups
 				c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
 			}
 		}
@@ -115,8 +112,22 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	analyticsService := services.NewAnalyticsService(userRepo, submissionRepo, challengeRepo, teamRepo, scoreAdjustmentRepo)
 	activityService := services.NewActivityService(userRepo, submissionRepo, challengeRepo, achievementRepo, teamRepo)
 
-	// WebSocket hub
-	wsHub := websocketPkg.NewHub()
+	// WebSocket hub selection
+	var wsHub websocketPkg.Hub
+	if os.Getenv("AWS_LAMBDA_FUNCTION_NAME") != "" {
+		// Initialize AWS config for Lambda Hub
+		awsCfg, err := awsconfig.LoadDefaultConfig(context.Background())
+		if err != nil {
+			log.Printf("Warning: Failed to load AWS config for WebSocket: %v", err)
+			wsHub = websocketPkg.NewHub() // Fallback
+		} else {
+			wsHub = websocketPkg.NewAwsLambdaHub(database.RDB, awsCfg, cfg.WsCallbackURL)
+		}
+	} else if database.RDB != nil {
+		wsHub = websocketPkg.NewRedisHub(database.RDB)
+	} else {
+		wsHub = websocketPkg.NewHub()
+	}
 	go wsHub.Run()
 
 	// Handlers
@@ -142,7 +153,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	adminUserHandler := handlers.NewAdminUserHandlerWithRepos(userRepo, teamRepo, submissionRepo, scoreAdjustmentRepo)
 	adminTeamHandler := handlers.NewAdminTeamHandler(teamRepo, userRepo, submissionRepo, teamInvitationRepo, scoreAdjustmentRepo)
 
-	// Public Routes - Authentication (with IP rate limiting)
+	// Public Routes
 	r.POST("/auth/register", middleware.IPRateLimitMiddleware(10, time.Minute), authHandler.Register)
 	r.POST("/auth/login", middleware.IPRateLimitMiddleware(10, time.Minute), authHandler.Login)
 	r.POST("/auth/logout", authHandler.Logout)
@@ -152,37 +163,22 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	r.POST("/auth/forgot-password", middleware.IPRateLimitMiddleware(5, time.Minute), authHandler.ForgotPassword)
 	r.POST("/auth/reset-password", middleware.IPRateLimitMiddleware(5, time.Minute), authHandler.ResetPassword)
 
-	// OAuth Routes
 	r.GET("/auth/google", oauthHandler.GoogleLogin)
 	r.GET("/auth/google/callback", oauthHandler.GoogleCallback)
-
-	// GitHub OAuth Routes
 	r.GET("/auth/github", oauthHandler.GitHubLogin)
 	r.GET("/auth/github/callback", oauthHandler.GitHubCallback)
-
-	// Discord OAuth Routes
 	r.GET("/auth/discord", oauthHandler.DiscordLogin)
 	r.GET("/auth/discord/callback", oauthHandler.DiscordCallback)
 
-	// Public Routes - Scoreboard (contest-scoped)
 	r.GET("/scoreboard", scoreboardHandler.GetScoreboard)
 	r.GET("/scoreboard/teams", scoreboardHandler.GetTeamScoreboard)
 	r.GET("/scoreboard/teams/statistics", scoreboardHandler.GetTeamStatistics)
-
-	// Public Routes - Active contests for scoreboard
 	r.GET("/contests/active", scoreboardHandler.GetScoreboardContests)
-
-	// Public Routes - Notifications (active notifications only)
 	r.GET("/notifications", notificationHandler.GetActiveNotifications)
-
-	// Public Routes - Contest Status
 	r.GET("/contest/status", contestHandler.GetContestStatus)
-
-	// Public Routes - Contest Registration (upcoming contests)
 	r.GET("/contests/upcoming", contestRegistrationHandler.GetUpcomingContests)
 	r.GET("/contests/:contest_id/registered-count", contestRegistrationHandler.GetRegisteredTeamsCount)
 
-	// Authenticated Routes - Contest Registration
 	auth := r.Group("/")
 	auth.Use(middleware.AuthMiddleware(cfg))
 	{
@@ -191,35 +187,25 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 		auth.GET("/contests/:contest_id/registration-status", contestRegistrationHandler.GetTeamRegistrationStatus)
 	}
 
-	// Public Routes - User Profiles
 	r.GET("/users/:username/profile", profileHandler.GetUserProfile)
 
-	// Health check endpoint
 	r.GET("/health", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"status": "healthy",
-			"time":   time.Now().Format(time.RFC3339),
-		})
+		c.JSON(200, gin.H{"status": "healthy", "time": time.Now().Format(time.RFC3339)})
 	})
 
-	// Get current user info (checks cookie)
 	r.GET("/auth/me", func(c *gin.Context) {
 		tokenString, err := c.Cookie("auth_token")
 		if err != nil || tokenString == "" {
 			c.JSON(401, gin.H{"authenticated": false})
 			return
 		}
-
-		// Parse token to get user info
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 			return []byte(cfg.JWTSecret), nil
 		})
-
 		if err != nil || !token.Valid {
 			c.JSON(401, gin.H{"authenticated": false})
 			return
 		}
-
 		claims, _ := token.Claims.(jwt.MapClaims)
 		c.JSON(200, gin.H{
 			"authenticated": true,
@@ -232,106 +218,77 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 		})
 	})
 
-	// WebSocket endpoint - Moved to protected routes
-	// r.GET("/ws", wsHandler.HandleWebSocket)
-
-	// Swagger documentation (controlled via build tags)
 	registerSwagger(r)
 
-	// Enhanced leaderboard
 	r.GET("/leaderboard/category", leaderboardHandler.GetCategoryLeaderboard)
 	r.GET("/leaderboard/time", leaderboardHandler.GetTimeBasedLeaderboard)
 
-	// Protected Routes
+	// Internal routes for AWS Lambda WebSocket proxy
+	// These are mapped from WebSocket events in cmd/api/main.go
+	wsInternal := r.Group("/ws")
+	{
+		wsInternal.POST("/connect", wsHandler.HandleLambdaConnect)
+		wsInternal.POST("/disconnect", wsHandler.HandleLambdaDisconnect)
+		wsInternal.POST("/default", wsHandler.HandleLambdaDefault)
+	}
+
 	protected := r.Group("/")
 	protected.Use(middleware.AuthMiddleware(cfg))
 	{
-		// WebSocket endpoint
 		protected.GET("/ws", wsHandler.HandleWebSocket)
-
-		// User Routes
 		protected.POST("/auth/change-password", authHandler.ChangePassword)
 		protected.POST("/auth/update-username", authHandler.UpdateUsername)
 		protected.GET("/challenges", challengeHandler.GetAllChallenges)
 		protected.GET("/challenges/:id", challengeHandler.GetChallengeByID)
 		protected.GET("/challenges/:id/solves", challengeHandler.GetChallengeSolves)
-		// Flag submission with rate limiting (5 attempts per minute per challenge)
 		protected.POST("/challenges/:id/submit", middleware.RateLimitMiddleware(5, time.Minute), challengeHandler.SubmitFlag)
-
-		// Hint routes
 		protected.GET("/challenges/:id/hints", hintHandler.GetHints)
 		protected.POST("/challenges/:id/hints/:hintId/reveal", hintHandler.RevealHint)
-
-		// Writeup routes
 		protected.POST("/challenges/:id/writeups", writeupHandler.CreateWriteup)
 		protected.GET("/challenges/:id/writeups", writeupHandler.GetWriteups)
 		protected.GET("/writeups/my", writeupHandler.GetMyWriteups)
-
-		// Activity & achievements
 		protected.GET("/activity/me", activityHandler.GetMyActivity)
 		protected.GET("/achievements/me", achievementHandler.GetMyAchievements)
-
-		// Writeup enhancements
 		protected.PUT("/writeups/:id", writeupHandler.UpdateWriteup)
 		protected.POST("/writeups/:id/upvote", writeupHandler.ToggleUpvote)
 
-		// Team Routes
 		teams := protected.Group("/teams")
 		{
-			// Team creation and viewing
 			teams.POST("", teamHandler.CreateTeam)
 			teams.GET("/my-team", teamHandler.GetMyTeam)
 			teams.GET("/:id", teamHandler.GetTeamDetails)
 			teams.PUT("/:id", teamHandler.UpdateTeam)
 			teams.DELETE("/:id", teamHandler.DeleteTeam)
-
-			// Invite code join
 			teams.POST("/join/:code", teamHandler.JoinByCode)
-
-			// Invitations (for invitee)
 			teams.GET("/invitations", teamHandler.GetPendingInvitations)
 			teams.POST("/invitations/:id/accept", teamHandler.AcceptInvitation)
 			teams.POST("/invitations/:id/reject", teamHandler.RejectInvitation)
-
-			// Team invitations (for leader)
 			teams.POST("/:id/invite/username", teamHandler.InviteByUsername)
 			teams.POST("/:id/invite/email", teamHandler.InviteByEmail)
 			teams.GET("/:id/invitations", teamHandler.GetTeamPendingInvitations)
 			teams.DELETE("/:id/invitations/:invitationId", teamHandler.CancelInvitation)
-
-			// Member management
 			teams.DELETE("/:id/members/:userId", teamHandler.RemoveMember)
 			teams.POST("/:id/leave", teamHandler.LeaveTeam)
-
-			// Invite code regeneration
 			teams.POST("/:id/regenerate-code", teamHandler.RegenerateInviteCode)
 		}
 
-		// Admin Routes
 		admin := protected.Group("/admin")
 		admin.Use(middleware.AdminMiddleware())
 		admin.Use(middleware.AuditMiddleware(auditLogService))
 		{
-			// Challenge management
 			admin.GET("/challenges", challengeHandler.GetAllChallengesWithFlags)
 			admin.POST("/challenges", challengeHandler.CreateChallenge)
 			admin.PUT("/challenges/:id", challengeHandler.UpdateChallenge)
 			admin.DELETE("/challenges/:id", challengeHandler.DeleteChallenge)
 			admin.PUT("/challenges/:id/official-writeup", challengeHandler.UpdateOfficialWriteup)
 			admin.POST("/challenges/:id/official-writeup/publish", challengeHandler.PublishOfficialWriteup)
-
-			// Notification management
 			admin.GET("/notifications", notificationHandler.GetAllNotifications)
 			admin.POST("/notifications", notificationHandler.CreateNotification)
 			admin.PUT("/notifications/:id", notificationHandler.UpdateNotification)
 			admin.DELETE("/notifications/:id", notificationHandler.DeleteNotification)
 			admin.POST("/notifications/:id/toggle", notificationHandler.ToggleNotificationActive)
-
-			// Contest management
 			admin.GET("/contest", contestHandler.GetContestConfig)
 			admin.PUT("/contest", contestHandler.UpdateContestConfig)
-
-			// Contest entities and rounds (multi-contest support)
 			admin.GET("/contest-entities", contestAdminHandler.ListContests)
 			admin.POST("/contest-entities", contestAdminHandler.CreateContest)
 			admin.POST("/contest-entities/set-active", contestAdminHandler.SetActiveContest)
@@ -345,32 +302,20 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 			admin.GET("/contest-entities/:id/rounds/:roundId/challenges", contestAdminHandler.GetRoundChallenges)
 			admin.POST("/contest-entities/:id/rounds/:roundId/challenges", contestAdminHandler.AttachChallenges)
 			admin.DELETE("/contest-entities/:id/rounds/:roundId/challenges", contestAdminHandler.DetachChallenges)
-
-			// Writeup management
 			admin.GET("/writeups", writeupHandler.GetAllWriteups)
 			admin.PUT("/writeups/:id/status", writeupHandler.UpdateWriteupStatus)
 			admin.DELETE("/writeups/:id", writeupHandler.DeleteWriteup)
-
-			// Audit logs
 			admin.GET("/audit-logs", auditLogHandler.GetAuditLogs)
-
-			// Analytics
 			admin.GET("/analytics", analyticsHandler.GetPlatformAnalytics)
-
-			// Bulk challenge management
 			admin.POST("/challenges/import", bulkChallengeHandler.ImportChallenges)
 			admin.GET("/challenges/export", bulkChallengeHandler.ExportChallenges)
 			admin.POST("/challenges/:id/duplicate", bulkChallengeHandler.DuplicateChallenge)
-
-			// User management
 			admin.GET("/users", adminUserHandler.ListUsers)
 			admin.GET("/users/:id", adminUserHandler.GetUser)
 			admin.PUT("/users/:id/status", adminUserHandler.UpdateUserStatus)
 			admin.PUT("/users/:id/role", adminUserHandler.UpdateUserRole)
 			admin.POST("/users/:id/score-adjust", adminUserHandler.AdjustUserScore)
 			admin.DELETE("/users/:id", adminUserHandler.DeleteUser)
-
-			// Team management (admin)
 			admin.GET("/teams", adminTeamHandler.ListTeams)
 			admin.GET("/teams/:id", adminTeamHandler.GetTeam)
 			admin.PUT("/teams/:id", adminTeamHandler.UpdateTeam)

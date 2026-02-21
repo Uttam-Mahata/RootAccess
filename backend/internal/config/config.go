@@ -38,6 +38,8 @@ type Config struct {
 	DiscordClientID     string
 	DiscordClientSecret string
 	DiscordRedirectURL  string
+	// WebSocket Callback URL for AWS Lambda
+	WsCallbackURL string
 	// CORS configuration
 	CORSAllowedOrigins string // comma-separated list of allowed origins
 	// Registration access control
@@ -93,6 +95,7 @@ func LoadConfig() *Config {
 		DiscordClientID:     getEnv("DISCORD_CLIENT_ID", ""),
 		DiscordClientSecret: getEnv("DISCORD_CLIENT_SECRET", ""),
 		DiscordRedirectURL:  getEnv("DISCORD_REDIRECT_URL", "https://rootaccess.live/auth/discord/callback"),
+		WsCallbackURL:       getEnv("WS_CALLBACK_URL", ""),
 		CORSAllowedOrigins:  getEnv("CORS_ALLOWED_ORIGINS", ""),
 		RegistrationMode:           getEnv("REGISTRATION_MODE", "open"),
 		RegistrationAllowedDomains: getEnv("REGISTRATION_ALLOWED_DOMAINS", ""),

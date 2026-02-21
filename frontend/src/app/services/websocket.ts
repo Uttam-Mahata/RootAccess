@@ -34,7 +34,21 @@ export class WebSocketService implements OnDestroy {
       return;
     }
 
-    const wsUrl = environment.apiUrl.replace(/^http/, 'ws') + '/ws';
+    // Get token from cookie
+    const getCookie = (name: string) => {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop()?.split(';').shift();
+      return null;
+    };
+    const token = getCookie('auth_token');
+
+    let wsUrl = environment.apiUrl.replace(/^http/, 'ws') + '/ws';
+    // If we have a token, append it to the URL for AWS Lambda WebSocket auth
+    if (token) {
+      wsUrl += `?token=${token}`;
+    }
+
     try {
       this.socket = new WebSocket(wsUrl);
 
