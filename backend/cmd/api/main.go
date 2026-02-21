@@ -9,6 +9,7 @@ import (
 
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/config"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/database"
+	tursoRepo "github.com/Uttam-Mahata/RootAccess/backend/internal/repositories/turso"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/routes"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -42,8 +43,16 @@ func main() {
 	// Local development or containerized deployment
 	cfg := config.LoadConfig()
 
-	// Connect to Database
-	database.ConnectDB(cfg.MongoURI, cfg.DBName)
+	// Connect to the primary database based on DB_TYPE
+	if cfg.DBType == "turso" {
+		database.ConnectTurso(cfg.TursoURL, cfg.TursoToken)
+		// Run SQL migrations to ensure tables exist
+		if err := tursoRepo.RunMigrations(database.TursoDB); err != nil {
+			log.Fatalf("Failed to run Turso migrations: %v", err)
+		}
+	} else {
+		database.ConnectDB(cfg.MongoURI, cfg.DBName)
+	}
 	database.ConnectRedis(cfg.RedisAddr, cfg.RedisPassword, cfg.RedisDB)
 
 	r := routes.SetupRouter(cfg)
