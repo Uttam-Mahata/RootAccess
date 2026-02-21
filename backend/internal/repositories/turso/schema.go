@@ -81,6 +81,7 @@ var migrationStatements = []string{
 		flag_hash                  TEXT,
 		tags                       TEXT,
 		files                      TEXT,
+		hints                      TEXT,
 		scheduled_at               TEXT,
 		is_published               INTEGER DEFAULT 0,
 		contest_id                 TEXT,
