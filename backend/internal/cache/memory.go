@@ -32,7 +32,10 @@ func (c *MemoryCache) Get(_ context.Context, key string) (string, error) {
 	if !ok {
 		return "", ErrCacheMiss
 	}
-	entry := val.(memEntry)
+	entry, ok := val.(memEntry)
+	if !ok {
+		return "", ErrCacheMiss
+	}
 	if !entry.expiresAt.IsZero() && time.Now().After(entry.expiresAt) {
 		c.data.Delete(key)
 		return "", ErrCacheMiss
