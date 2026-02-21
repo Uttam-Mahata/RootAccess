@@ -63,7 +63,7 @@ export class HomeComponent implements OnInit {
 
   loadUpcomingContests(): void {
     this.isLoadingContests = true;
-    this.contestService.getUpcomingContests().subscribe({
+    this.contestService.getUpcomingContests().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (contests) => {
         // Ensure contests is an array
         this.upcomingContests = contests || [];
@@ -114,6 +114,7 @@ export class HomeComponent implements OnInit {
     // Always check registration status - backend returns {"registered": false} if no team
     // Add timeout to prevent infinite loading if request hangs
     this.contestService.getRegistrationStatus(contestId).pipe(
+      takeUntilDestroyed(this.destroyRef),
       timeout(10000), // 10 second timeout
       catchError((err) => {
         // On error (401, 500, network error, timeout, etc.), return default value to prevent infinite loading
@@ -151,7 +152,7 @@ export class HomeComponent implements OnInit {
         }
       }
     });
-    this.contestService.getRegisteredTeamsCount(contestId).subscribe({
+    this.contestService.getRegisteredTeamsCount(contestId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (resp) => this.registeredTeamsCounts.set(contestId, resp.count),
       error: () => {}
     });
@@ -165,7 +166,7 @@ export class HomeComponent implements OnInit {
     if (this.registeringContests.has(contestId)) return;
 
     this.registeringContests.add(contestId);
-    this.contestService.registerTeamForContest(contestId).subscribe({
+    this.contestService.registerTeamForContest(contestId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
         this.registrationStatuses.set(contestId, true);
         this.checkedRegistrationStatuses.add(contestId);
@@ -182,7 +183,7 @@ export class HomeComponent implements OnInit {
     if (this.registeringContests.has(contestId)) return;
 
     this.registeringContests.add(contestId);
-    this.contestService.unregisterTeamFromContest(contestId).subscribe({
+    this.contestService.unregisterTeamFromContest(contestId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
         this.registrationStatuses.set(contestId, false);
         this.checkedRegistrationStatuses.add(contestId);

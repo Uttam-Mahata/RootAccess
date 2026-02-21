@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule, Router } from '@angular/router';
@@ -6,6 +6,7 @@ import { TeamService, Team, TeamMember, TeamInvitation } from '../../services/te
 import { AuthService } from '../../services/auth';
 import { ConfirmationModalService } from '../../services/confirmation-modal.service';
 import { take } from 'rxjs/operators';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-team-dashboard',
@@ -18,6 +19,7 @@ export class TeamDashboardComponent implements OnInit {
   teamService = inject(TeamService);
   authService = inject(AuthService);
   confirmationModalService = inject(ConfirmationModalService);
+  private destroyRef = inject(DestroyRef);
   
   team: Team | null = null;
   members: TeamMember[] = [];
@@ -62,7 +64,8 @@ export class TeamDashboardComponent implements OnInit {
 
   loadTeamData(): void {
     this.isLoading = true;
-    this.teamService.getMyTeam().subscribe({
+    this.error = '';
+    this.teamService.getMyTeam().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (response) => {
         this.team = response.team || null;
         this.members = response.members || [];
@@ -71,16 +74,17 @@ export class TeamDashboardComponent implements OnInit {
         }
         this.isLoading = false;
       },
-      error: () => {
+      error: (err) => {
         this.team = null;
         this.members = [];
         this.isLoading = false;
+        this.error = err.error?.error || 'Failed to load team data.';
       }
     });
   }
 
   loadPendingInvitations(): void {
-    this.teamService.getPendingInvitations().subscribe({
+    this.teamService.getPendingInvitations().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (response) => {
         this.pendingInvitations = response.invitations || [];
       },
@@ -92,7 +96,7 @@ export class TeamDashboardComponent implements OnInit {
 
   loadTeamPendingInvitations(): void {
     if (!this.team) return;
-    this.teamService.getTeamPendingInvitations(this.team.id).subscribe({
+    this.teamService.getTeamPendingInvitations(this.team.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (response) => {
         this.teamPendingInvitations = response.invitations || [];
       },
@@ -116,7 +120,7 @@ export class TeamDashboardComponent implements OnInit {
       this.success = '';
 
       const { name, description } = this.createTeamForm.value;
-      this.teamService.createTeam(name, description).subscribe({
+      this.teamService.createTeam(name, description).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
         next: (response) => {
           this.success = response.message || 'Team created successfully!';
           this.team = response.team || null;
@@ -149,47 +153,29 @@ export class TeamDashboardComponent implements OnInit {
 
     if (!this.team) return;
 
-    if (this.inviteMethod === 'username') {
-      const username = this.inviteForm.get('username')?.value;
-      if (!username) {
-        this.error = 'Username is required';
-        this.isLoading = false;
-        return;
-      }
-      this.teamService.inviteByUsername(this.team.id, username).subscribe({
-        next: (response) => {
-          this.isLoading = false;
-          this.success = response.message || 'Invitation sent!';
-          this.inviteForm.reset();
-          this.showInviteForm = false;
-          this.loadTeamPendingInvitations();
-        },
-        error: (err) => {
-          this.isLoading = false;
-          this.error = err.error?.error || 'Failed to send invitation';
-        }
-      });
-    } else if (this.inviteMethod === 'email') {
-      const email = this.inviteForm.get('email')?.value;
-      if (!email) {
-        this.error = 'Email is required';
-        this.isLoading = false;
-        return;
-      }
-      this.teamService.inviteByEmail(this.team.id, email).subscribe({
-        next: (response) => {
-          this.isLoading = false;
-          this.success = response.message || 'Invitation sent!';
-          this.inviteForm.reset();
-          this.showInviteForm = false;
-          this.loadTeamPendingInvitations();
-        },
-        error: (err) => {
-          this.isLoading = false;
-          this.error = err.error?.error || 'Failed to send invitation';
-        }
-      });
+    const request = this.inviteMethod === 'username' 
+      ? this.teamService.inviteByUsername(this.team.id, this.inviteForm.get('username')?.value)
+      : this.teamService.inviteByEmail(this.team.id, this.inviteForm.get('email')?.value);
+
+    if (!this.inviteForm.get(this.inviteMethod)?.value) {
+      this.error = `${this.inviteMethod === 'username' ? 'Username' : 'Email'} is required`;
+      this.isLoading = false;
+      return;
     }
+
+    request.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (response) => {
+        this.isLoading = false;
+        this.success = response.message || 'Invitation sent!';
+        this.inviteForm.reset();
+        this.showInviteForm = false;
+        this.loadTeamPendingInvitations();
+      },
+      error: (err) => {
+        this.isLoading = false;
+        this.error = err.error?.error || 'Failed to send invitation';
+      }
+    });
   }
 
   // Join team by code
@@ -200,7 +186,7 @@ export class TeamDashboardComponent implements OnInit {
       this.success = '';
 
       const code = this.joinForm.get('inviteCode')?.value;
-      this.teamService.joinByCode(code).subscribe({
+      this.teamService.joinByCode(code).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
         next: (response) => {
           this.success = response.message || 'Joined team successfully!';
           this.team = response.team || null;
@@ -226,7 +212,7 @@ export class TeamDashboardComponent implements OnInit {
     this.isLoading = true;
     this.error = '';
     this.success = '';
-    this.teamService.acceptInvitation(invitationId).subscribe({
+    this.teamService.acceptInvitation(invitationId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (response) => {
         this.success = response.message || 'Joined team!';
         this.team = response.team || null;
@@ -250,7 +236,7 @@ export class TeamDashboardComponent implements OnInit {
   onRejectInvitation(invitationId: string): void {
     this.isLoading = true;
     this.error = '';
-    this.teamService.rejectInvitation(invitationId).subscribe({
+    this.teamService.rejectInvitation(invitationId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
         this.isLoading = false;
         this.success = 'Invitation rejected';
@@ -268,7 +254,7 @@ export class TeamDashboardComponent implements OnInit {
     if (!this.team) return;
     this.isLoading = true;
     this.error = '';
-    this.teamService.cancelInvitation(this.team.id, invitationId).subscribe({
+    this.teamService.cancelInvitation(this.team.id, invitationId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
         this.isLoading = false;
         this.success = 'Invitation cancelled';
@@ -293,7 +279,7 @@ export class TeamDashboardComponent implements OnInit {
       if (confirmed) {
         this.isLoading = true;
         this.error = '';
-        this.teamService.removeMember(this.team!.id, memberId).subscribe({
+        this.teamService.removeMember(this.team!.id, memberId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
           next: () => {
             this.isLoading = false;
             this.success = 'Member removed';
@@ -320,7 +306,7 @@ export class TeamDashboardComponent implements OnInit {
       if (confirmed) {
         this.isLoading = true;
         this.error = '';
-        this.teamService.leaveTeam(this.team!.id).subscribe({
+        this.teamService.leaveTeam(this.team!.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
           next: () => {
             this.isLoading = false;
             this.success = 'Left team successfully';
@@ -348,7 +334,7 @@ export class TeamDashboardComponent implements OnInit {
       if (confirmed) {
         this.isLoading = true;
         this.error = '';
-        this.teamService.deleteTeam(this.team!.id).subscribe({
+        this.teamService.deleteTeam(this.team!.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
           next: () => {
             this.isLoading = false;
             this.success = 'Team deleted successfully';
@@ -369,7 +355,7 @@ export class TeamDashboardComponent implements OnInit {
     if (!this.team) return;
     this.isLoading = true;
     this.error = '';
-    this.teamService.regenerateInviteCode(this.team.id).subscribe({
+    this.teamService.regenerateInviteCode(this.team.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (response) => {
         this.isLoading = false;
         this.success = 'Invite code regenerated!';

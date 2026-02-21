@@ -1,7 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { ProfileService, UserProfile, CategoryStats } from '../../services/profile';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-user-profile',
@@ -11,6 +12,7 @@ import { ProfileService, UserProfile, CategoryStats } from '../../services/profi
   styleUrls: ['./user-profile.scss']
 })
 export class UserProfileComponent implements OnInit {
+  private destroyRef = inject(DestroyRef);
   profile: UserProfile | null = null;
   isLoading = true;
   error = '';
@@ -32,7 +34,7 @@ export class UserProfileComponent implements OnInit {
 
   loadProfile(username: string): void {
     this.isLoading = true;
-    this.profileService.getUserProfile(username).subscribe({
+    this.profileService.getUserProfile(username).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (profile) => {
         this.profile = profile;
         this.isLoading = false;

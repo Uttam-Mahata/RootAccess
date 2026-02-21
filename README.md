@@ -17,9 +17,9 @@ A high-performance, full-stack Capture The Flag (CTF) platform built with Go (Gi
   - **Redis Caching**: Frequently accessed data like the scoreboard is cached in-memory.
   - **Connection Pooling**: Optimized MongoDB connection management for high concurrency.
 
-## 🏗️ Architecture
+## 🏗️ Architecture Diagram
+ [![Architecture Diagram](https://raw.githubusercontent.com/Uttam-Mahata/RootAccess/main/rootaccess-aws.png)](https://raw.githubusercontent.com/Uttam-Mahata/RootAccess/main/rootaccess-aws.png)
 
-For details on scaling this platform across multiple nodes, see the [Distributed Cluster Setup guide](./DISTRIBUTED_SETUP.md).
 
 ### Backend
 - **Language**: Go 1.24
@@ -58,10 +58,7 @@ For details on scaling this platform across multiple nodes, see the [Distributed
    # Edit docker-compose.prod.yml with your SMTP, DB, and JWT secrets
    ```
 
-3. **Deploy:**
-   ```bash
-   docker compose -f docker-compose.prod.yml up -d --build
-   ```
+
 
 ### Local Development
 
@@ -80,16 +77,6 @@ For details on scaling this platform across multiple nodes, see the [Distributed
 
 Registered users are regular users by default. To create an initial admin:
 
-1. **Via CLI Tool (Container):**
-   ```bash
-   docker exec -it go_ctf_backend ./admin-tool
-   # Select option 1 to create a new admin
-   ```
-
-2. **Via MongoDB:**
-   ```javascript
-   db.users.updateOne({ username: "your_user" }, { $set: { role: "admin" } })
-   ```
 
 ## 🌐 API Endpoints
 

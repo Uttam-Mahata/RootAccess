@@ -1,7 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { ActivityService, UserActivity } from '../../services/activity';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-activity-dashboard',
@@ -11,6 +12,7 @@ import { ActivityService, UserActivity } from '../../services/activity';
   styleUrls: ['./activity-dashboard.scss']
 })
 export class ActivityDashboardComponent implements OnInit {
+  private destroyRef = inject(DestroyRef);
   activity: UserActivity | null = null;
   loading = true;
   error = '';
@@ -24,7 +26,7 @@ export class ActivityDashboardComponent implements OnInit {
 
   loadActivity() {
     this.loading = true;
-    this.activityService.getMyActivity().subscribe({
+    this.activityService.getMyActivity().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => {
         this.activity = data;
         this.categoryKeys = data.category_progress ? Object.keys(data.category_progress) : [];

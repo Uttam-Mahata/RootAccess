@@ -62,7 +62,7 @@ export class ChallengeListComponent implements OnInit {
     });
 
     this.isLoading = true;
-    this.challengeService.getChallenges().subscribe({
+    this.challengeService.getChallenges().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => {
         this.challenges = data || [];
         // Extract unique categories

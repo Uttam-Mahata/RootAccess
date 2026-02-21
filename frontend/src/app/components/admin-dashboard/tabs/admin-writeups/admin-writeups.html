@@ -1,0 +1,137 @@
+<div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-red-600/20 p-8 shadow-md">
+  <div class="flex items-center justify-between mb-6">
+    <h2 class="text-2xl font-bold text-slate-900 dark:text-white">Writeup Management</h2>
+    <select
+      [(ngModel)]="selectedTeamFilter"
+      (ngModelChange)="onTeamFilterChange()"
+      class="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-red-500 transition-colors duration-200">
+      <option value="">All Teams</option>
+      <option *ngFor="let team of teams" [value]="team.id">{{ team.name }}</option>
+    </select>
+  </div>
+
+  <div *ngIf="isLoadingWriteups" class="text-center py-8">
+    <p class="text-slate-500 dark:text-slate-400">Loading writeups...</p>
+  </div>
+
+  <div *ngIf="!isLoadingWriteups && writeups.length === 0" class="text-center py-8">
+    <p class="text-slate-500 dark:text-slate-400">No writeups submitted yet.</p>
+  </div>
+
+  <div *ngIf="!isLoadingWriteups" class="space-y-4">
+    <div *ngFor="let writeup of writeups" class="bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4 text-slate-900 dark:text-slate-200">
+      <div class="flex items-center justify-between mb-2">
+        <div>
+          <span class="font-medium text-slate-900 dark:text-white">{{ writeup.username }}</span>
+          <span class="ml-2 px-2 py-0.5 text-xs rounded-full"
+                [ngClass]="{
+                  'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400': writeup.status === 'pending',
+                  'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400': writeup.status === 'approved',
+                  'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400': writeup.status === 'rejected'
+                }">
+            {{ writeup.status }}
+          </span>
+        </div>
+        <span class="text-xs text-slate-500 dark:text-slate-400">{{ writeup.created_at | date:'short' }}</span>
+      </div>
+      <div class="prose prose-sm prose-slate dark:prose-invert max-w-none mb-3 line-clamp-3
+                  prose-headings:text-slate-900 dark:prose-headings:text-white
+                  prose-p:text-slate-700 dark:prose-p:text-slate-200
+                  prose-strong:text-slate-900 dark:prose-strong:text-white
+                  prose-ul:text-slate-700 dark:prose-ul:text-slate-200
+                  prose-ol:text-slate-700 dark:prose-ol:text-slate-200
+                  prose-li:text-slate-700 dark:prose-li:text-slate-200
+                  prose-code:text-blue-600 dark:prose-code:text-blue-400 prose-code:bg-slate-100 dark:prose-code:bg-slate-900 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none
+                  prose-a:text-blue-600 dark:prose-a:text-blue-400
+                  prose-blockquote:text-slate-700 dark:prose-blockquote:text-slate-200"
+           [innerHTML]="renderWriteupContent(writeup)"></div>
+      <div class="flex gap-2">
+        <button (click)="viewWriteup(writeup)"
+                class="px-3 py-1 text-xs font-medium text-blue-700 dark:text-blue-400 bg-blue-100 dark:bg-blue-500/20 hover:bg-blue-200 dark:hover:bg-blue-500/30 rounded-lg transition-colors duration-200">
+          View Full
+        </button>
+        <button *ngIf="writeup.status !== 'approved'" (click)="approveWriteup(writeup.id)"
+                class="px-3 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-500/20 hover:bg-emerald-200 dark:hover:bg-emerald-500/30 rounded-lg transition-colors duration-200">
+          Approve
+        </button>
+        <button *ngIf="writeup.status !== 'rejected'" (click)="rejectWriteup(writeup.id)"
+                class="px-3 py-1 text-xs font-medium text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-500/20 hover:bg-amber-200 dark:hover:bg-amber-500/30 rounded-lg transition-colors duration-200">
+          Reject
+        </button>
+        <button (click)="deleteWriteup(writeup.id)"
+                class="px-3 py-1 text-xs font-medium text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-500/20 hover:bg-red-200 dark:hover:bg-red-500/30 rounded-lg transition-colors duration-200">
+          Delete
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Writeup View Modal -->
+<div *ngIf="selectedWriteup" class="fixed inset-0 z-50 overflow-y-auto">
+  <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+    <div class="fixed inset-0 bg-black/50 dark:bg-black/50 transition-opacity" (click)="selectedWriteup = null"></div>
+    <div class="relative inline-block align-bottom bg-white dark:bg-slate-900 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full z-10" (click)="$event.stopPropagation()">
+      <div class="bg-white dark:bg-slate-900 px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-2xl font-bold text-slate-900 dark:text-white">Writeup by {{ selectedWriteup.username }}</h3>
+            <div class="flex items-center gap-3 mt-2">
+              <span class="px-2 py-0.5 text-xs rounded-full"
+                    [ngClass]="{
+                      'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400': selectedWriteup.status === 'pending',
+                      'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400': selectedWriteup.status === 'approved',
+                      'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400': selectedWriteup.status === 'rejected'
+                    }">
+                {{ selectedWriteup.status }}
+              </span>
+              <span class="text-sm text-slate-500 dark:text-slate-400">{{ selectedWriteup.created_at | date:'medium' }}</span>
+            </div>
+          </div>
+          <button (click)="selectedWriteup = null"
+                  class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="bg-white dark:bg-slate-900 px-6 py-6 max-h-[60vh] overflow-y-auto text-slate-900 dark:text-slate-200">
+        <div class="prose prose-slate dark:prose-invert max-w-none
+                    prose-headings:text-slate-900 dark:prose-headings:text-white prose-headings:break-words
+                    prose-p:text-slate-700 dark:prose-p:text-slate-200 prose-p:break-words
+                    prose-a:text-blue-600 dark:prose-a:text-blue-400 prose-a:break-words
+                    prose-code:text-blue-600 dark:prose-code:text-blue-400 prose-code:bg-slate-100 dark:prose-code:bg-slate-800 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none
+                    prose-pre:bg-slate-900 dark:prose-pre:bg-slate-950 prose-pre:border prose-pre:border-slate-700 prose-pre:overflow-x-auto prose-pre:max-w-full
+                    prose-strong:text-slate-900 dark:prose-strong:text-white prose-strong:break-words
+                    prose-ul:text-slate-700 dark:prose-ul:text-slate-200
+                    prose-ol:text-slate-700 dark:prose-ol:text-slate-200
+                    prose-li:text-slate-700 dark:prose-li:text-slate-200 prose-li:break-words
+                    prose-blockquote:text-slate-700 dark:prose-blockquote:text-slate-200 prose-blockquote:border-blue-500 dark:prose-blockquote:border-blue-500
+                    prose-hr:border-slate-300 dark:prose-hr:border-slate-700
+                    prose-table:block prose-table:overflow-x-auto prose-table:max-w-full"
+             [innerHTML]="renderWriteupContent(selectedWriteup)"></div>
+      </div>
+      <div class="bg-slate-50 dark:bg-slate-800 px-6 py-4 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center">
+        <div class="flex gap-2">
+          <button *ngIf="selectedWriteup.status !== 'approved'" (click)="approveWriteup(selectedWriteup.id); selectedWriteup.status = 'approved'"
+                  class="px-4 py-2 text-sm font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-500/20 hover:bg-emerald-200 dark:hover:bg-emerald-500/30 rounded-lg transition-colors duration-200">
+            Approve
+          </button>
+          <button *ngIf="selectedWriteup.status !== 'rejected'" (click)="rejectWriteup(selectedWriteup.id); selectedWriteup.status = 'rejected'"
+                  class="px-4 py-2 text-sm font-medium text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-500/20 hover:bg-amber-200 dark:hover:bg-amber-500/30 rounded-lg transition-colors duration-200">
+            Reject
+          </button>
+          <button (click)="deleteWriteup(selectedWriteup.id)"
+                  class="px-4 py-2 text-sm font-medium text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-500/20 hover:bg-red-200 dark:hover:bg-red-500/30 rounded-lg transition-colors duration-200">
+            Delete
+          </button>
+        </div>
+        <button (click)="selectedWriteup = null"
+                class="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

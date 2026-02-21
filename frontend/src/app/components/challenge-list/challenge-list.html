@@ -164,7 +164,7 @@
     </div>
 
     <!-- Empty State -->
-    <div *ngIf="filteredChallenges.length === 0" class="col-span-full py-16">
+    <div *ngIf="!isLoading && filteredChallenges.length === 0" class="col-span-full py-16">
       <div class="flex flex-col items-center justify-center text-center">
         <!-- Filters applied but no match -->
         <ng-container *ngIf="challenges.length > 0">

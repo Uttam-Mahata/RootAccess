@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: RootAccess CTF Backend - AWS Lambda Deployment with VPC and Redis
+Description: RootAccess CTF Backend - RESTORED (VPC, NAT, Redis Replicas)
 
 Parameters:
   Environment:
@@ -13,13 +13,12 @@ Parameters:
     Default: RootAccess/Backend/Secrets
   RedisAuthToken:
     Type: String
-    Description: Auth token for Redis (must be 16-128 characters)
+    Description: "Auth token for Redis (16-128 characters)"
     NoEcho: true
 
 Resources:
   # ============================================================================
-  # Networking (VPC, Subnets, NAT, IGW)
-  # Required because Lambda needs VPC access for Redis, and NAT for MongoDB/Internet
+  # Networking
   # ============================================================================
   VPC:
     Type: AWS::EC2::VPC
@@ -65,12 +64,13 @@ Resources:
           Value: RootAccess-Private-Subnet-1
 
   # Private Subnet 2 (for Redis Multi-AZ requirement)
+  # Using 10.0.4.0/24 to avoid any lingering conflicts with 10.0.3.0
   PrivateSubnet2:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
       AvailabilityZone: !Select [ 1, !GetAZs '' ]
-      CidrBlock: 10.0.3.0/24
+      CidrBlock: 10.0.4.0/24
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
@@ -156,7 +156,7 @@ Resources:
           SourceSecurityGroupId: !Ref LambdaSecurityGroup
 
   # ============================================================================
-  # Redis ElastiCache
+  # Redis ElastiCache (Replication Group)
   # ============================================================================
   RedisSubnetGroup:
     Type: AWS::ElastiCache::SubnetGroup

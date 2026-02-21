@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, AfterViewChecked, effect } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewChecked, effect, inject, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
@@ -18,6 +18,7 @@ import 'prismjs/components/prism-markup';
 import 'prismjs/components/prism-css';
 import { ChallengeService, HintResponse } from '../../services/challenge';
 import { ThemeService } from '../../services/theme';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 export interface SolveEntry {
   user_id: string;
@@ -43,6 +44,7 @@ export interface SolveEntry {
   styleUrls: ['./challenge-detail.scss']
 })
 export class ChallengeDetailComponent implements OnInit, OnDestroy, AfterViewChecked {
+  private destroyRef = inject(DestroyRef);
   challenge: any;
   renderedDescription = '';
   flagForm: FormGroup;
@@ -286,7 +288,7 @@ export class ChallengeDetailComponent implements OnInit, OnDestroy, AfterViewChe
     if (!this.challenge) return;
     this.isLoadingSolves = true;
     this.showSolves = true;
-    this.challengeService.getChallengeSolves(this.challenge.id).subscribe({
+    this.challengeService.getChallengeSolves(this.challenge.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => {
         this.solves = data || [];
         this.isLoadingSolves = false;
@@ -301,7 +303,7 @@ export class ChallengeDetailComponent implements OnInit, OnDestroy, AfterViewChe
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
-      this.challengeService.getChallenge(id).subscribe({
+      this.challengeService.getChallenge(id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
         next: (data) => {
           this.challenge = data;
 

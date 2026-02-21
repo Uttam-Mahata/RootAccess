@@ -1,0 +1,266 @@
+<div class="space-y-6">
+  <!-- Contests list -->
+  <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-red-600/20 p-8 shadow-md">
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="text-2xl font-bold text-slate-900 dark:text-white">Contests</h2>
+      <button type="button" (click)="startCreateContest()"
+              class="px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 rounded-lg transition-all duration-200">
+        New Contest
+      </button>
+    </div>
+
+    <!-- Create/Edit contest form -->
+    <form *ngIf="isCreatingContest || isEditingContest" [formGroup]="contestEntityForm" (ngSubmit)="onSubmitContestEntity()" class="mb-6 p-4 bg-slate-50 dark:bg-slate-800 rounded-lg space-y-4">
+      <h3 class="font-semibold text-slate-900 dark:text-white">{{ isEditingContest ? 'Edit Contest' : 'New Contest' }}</h3>
+      <div>
+        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Name *</label>
+        <input type="text" formControlName="name" class="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white"/>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Description</label>
+        <textarea formControlName="description" rows="2" class="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white"></textarea>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Start Time *</label>
+          <app-datetime-picker formControlName="start_time" placeholder="Select start time"></app-datetime-picker>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">End Time *</label>
+          <app-datetime-picker formControlName="end_time" placeholder="Select end time"></app-datetime-picker>
+        </div>
+      </div>
+      <div class="flex gap-2">
+        <button type="submit" [disabled]="!contestEntityForm.valid" class="px-4 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg disabled:opacity-50">Save</button>
+        <button type="button" (click)="cancelContestForm()" class="px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-200 dark:bg-slate-700 rounded-lg">Cancel</button>
+      </div>
+    </form>
+
+    <div *ngIf="(isLoadingContest || isLoadingContests) && !isCreatingContest && !isEditingContest" class="text-center py-8">
+      <div class="inline-flex items-center gap-2">
+        <svg class="animate-spin h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+        <p class="text-slate-500 dark:text-slate-400">Loading contests...</p>
+      </div>
+    </div>
+
+    <div *ngIf="!isLoadingContest && !isLoadingContests && !isCreatingContest && !isEditingContest && contests.length === 0" class="text-center py-8">
+      <p class="text-slate-500 dark:text-slate-400">No contests yet. Create one to get started.</p>
+    </div>
+
+    <div *ngIf="!isLoadingContest && !isLoadingContests && contests.length > 0" class="space-y-2">
+      <div *ngFor="let contest of contests" class="flex items-center justify-between p-4 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors duration-150"
+           [class.bg-red-50]="selectedContest?.id === contest.id"
+           [class.dark:bg-red-500/10]="selectedContest?.id === contest.id"
+           [class.border-red-300]="selectedContest?.id === contest.id"
+           [class.dark:border-red-600/40]="selectedContest?.id === contest.id"
+           (click)="selectContest(contest)">
+        <div class="flex-1">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="font-medium text-slate-900 dark:text-white">{{ contest.name }}</span>
+            <span *ngIf="activeContestId === contest.id" class="px-2 py-0.5 text-xs rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-medium">Active</span>
+            <span class="px-2 py-0.5 text-xs rounded-full font-medium"
+                  [ngClass]="{
+                    'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400': getContestStatus(contest) === 'not_started',
+                    'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400': getContestStatus(contest) === 'running',
+                    'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400': getContestStatus(contest) === 'ended'
+                  }">
+              {{ getContestStatus(contest) === 'not_started' ? 'Upcoming' : getContestStatus(contest) === 'running' ? 'Running' : 'Ended' }}
+            </span>
+          </div>
+          <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">{{ formatDateForDisplay(contest.start_time) }} &ndash; {{ formatDateForDisplay(contest.end_time) }}</p>
+        </div>
+        <div class="flex gap-2 flex-shrink-0">
+          <button type="button" (click)="startEditContest(contest); $event.stopPropagation()" class="px-3 py-1.5 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors">Edit</button>
+          <button *ngIf="activeContestId !== contest.id" type="button" (click)="setActiveContest(contest.id); $event.stopPropagation()" class="px-3 py-1.5 text-sm text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 rounded transition-colors">Set Active</button>
+          <button type="button" (click)="deleteContest(contest); $event.stopPropagation()" class="px-3 py-1.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 rounded transition-colors">Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rounds (when contest selected) -->
+  <div *ngIf="selectedContest" class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-red-600/20 p-8 shadow-md">
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h2 class="text-2xl font-bold text-slate-900 dark:text-white">Rounds</h2>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">{{ selectedContest.name }}</p>
+      </div>
+      <button type="button" (click)="startCreateRound()"
+              class="px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 rounded-lg transition-all duration-200">
+        New Round
+      </button>
+    </div>
+
+    <!-- Create/Edit round form -->
+    <form *ngIf="isCreatingRound || isEditingRound" [formGroup]="roundForm" (ngSubmit)="onSubmitRound()" class="mb-6 p-4 bg-slate-50 dark:bg-slate-800 rounded-lg space-y-4">
+      <h3 class="font-semibold text-slate-900 dark:text-white">{{ isEditingRound ? 'Edit Round' : 'New Round' }}</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Name *</label>
+          <input type="text" formControlName="name" class="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white"/>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Order</label>
+          <input type="number" formControlName="order" class="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white"/>
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Description</label>
+        <textarea formControlName="description" rows="2" class="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white"></textarea>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Visible From *</label>
+          <app-datetime-picker formControlName="visible_from" placeholder="Visible from"></app-datetime-picker>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Start Time *</label>
+          <app-datetime-picker formControlName="start_time" placeholder="Start time"></app-datetime-picker>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">End Time *</label>
+          <app-datetime-picker formControlName="end_time" placeholder="End time"></app-datetime-picker>
+        </div>
+      </div>
+      <div class="flex gap-2">
+        <button type="submit" [disabled]="!roundForm.valid" class="px-4 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg disabled:opacity-50">Save</button>
+        <button type="button" (click)="cancelRoundForm()" class="px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-200 dark:bg-slate-700 rounded-lg">Cancel</button>
+      </div>
+    </form>
+
+    <div *ngIf="isLoadingRounds && !isCreatingRound && !isEditingRound" class="text-center py-8">
+      <div class="inline-flex items-center gap-2">
+        <svg class="animate-spin h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+        <p class="text-slate-500 dark:text-slate-400">Loading rounds...</p>
+      </div>
+    </div>
+
+    <div *ngIf="!isLoadingRounds && !isCreatingRound && !isEditingRound && rounds.length === 0" class="text-center py-8">
+      <p class="text-slate-500 dark:text-slate-400">No rounds yet. Create one to assign challenges.</p>
+    </div>
+
+    <div *ngIf="!isLoadingRounds && rounds.length > 0" class="space-y-2">
+      <div *ngFor="let round of rounds"
+           class="p-4 rounded-lg border transition-colors duration-150 cursor-pointer"
+           [ngClass]="{
+             'border-indigo-300 dark:border-indigo-500/40 bg-indigo-50 dark:bg-indigo-500/10': selectedRound?.id === round.id,
+             'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50': selectedRound?.id !== round.id
+           }"
+           (click)="selectRound(round)">
+        <div class="flex items-center justify-between">
+          <div class="flex-1">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="font-medium text-slate-900 dark:text-white">{{ round.name }}</span>
+              <span class="text-xs text-slate-400 dark:text-slate-500">Order: {{ round.order }}</span>
+              <span class="ml-1 px-2 py-0.5 text-xs rounded-full font-medium"
+                    [ngClass]="{
+                      'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400': getRoundStatus(round) === 'not_started',
+                      'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400': getRoundStatus(round) === 'running',
+                      'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400': getRoundStatus(round) === 'ended'
+                    }">
+                {{ getRoundStatus(round) === 'not_started' ? 'Upcoming' : getRoundStatus(round) === 'running' ? 'Running' : 'Ended' }}
+              </span>
+            </div>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">{{ formatDateForDisplay(round.start_time) }} &ndash; {{ formatDateForDisplay(round.end_time) }}</p>
+            <p *ngIf="round.visible_from" class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Visible from: {{ formatDateForDisplay(round.visible_from) }}</p>
+          </div>
+          <div class="flex gap-2 flex-shrink-0">
+            <button type="button" (click)="selectRound(round); $event.stopPropagation()" class="px-3 py-1.5 text-sm text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 rounded transition-colors" [class.font-semibold]="selectedRound?.id === round.id">Challenges</button>
+            <button type="button" (click)="startEditRound(round); $event.stopPropagation()" class="px-3 py-1.5 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors">Edit</button>
+            <button type="button" (click)="deleteRound(round); $event.stopPropagation()" class="px-3 py-1.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 rounded transition-colors">Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Round Challenges (when round selected) -->
+  <div *ngIf="selectedRound" class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-red-600/20 p-8 shadow-md">
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h2 class="text-xl font-bold text-slate-900 dark:text-white">Challenges in Round</h2>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">{{ selectedRound.name }} &mdash; {{ selectedContest?.name }}</p>
+      </div>
+      <button type="button" (click)="selectedRound = null"
+              class="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <div *ngIf="isLoadingRoundChallenges" class="text-center py-6">
+      <div class="inline-flex items-center gap-2">
+        <svg class="animate-spin h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+        <p class="text-slate-500 dark:text-slate-400">Loading challenges...</p>
+      </div>
+    </div>
+
+    <div *ngIf="!isLoadingRoundChallenges">
+      <!-- Attached challenges -->
+      <div class="mb-6">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Attached ({{ roundChallengeIds.length }})</h3>
+          <div class="flex items-center gap-2" *ngIf="roundChallengeIds.length > 0">
+            <button type="button" (click)="areAllAttachedSelected() ? deselectAllAttached() : selectAllAttached()" class="text-xs px-2 py-1 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors">{{ areAllAttachedSelected() ? 'Deselect All' : 'Select All' }}</button>
+            <button type="button" (click)="bulkDetachSelected()" [disabled]="selectedAttachedChallenges.size === 0" [class.opacity-50]="selectedAttachedChallenges.size === 0" [class.cursor-not-allowed]="selectedAttachedChallenges.size === 0" class="text-xs px-3 py-1 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded transition-colors font-medium">Remove Selected ({{ selectedAttachedChallenges.size }})</button>
+          </div>
+        </div>
+        <div *ngIf="roundChallengeIds.length === 0" class="text-center py-6 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-dashed border-slate-300 dark:border-slate-700">
+          <p class="text-slate-500 dark:text-slate-400 text-sm">No challenges attached to this round yet.</p>
+          <p class="text-slate-400 dark:text-slate-500 text-xs mt-1">Add challenges from the list below.</p>
+        </div>
+        <div *ngFor="let cid of roundChallengeIds"
+             class="flex items-center gap-3 p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 mb-2 hover:border-slate-300 dark:hover:border-slate-600 transition-colors cursor-pointer"
+             [class.bg-slate-50]="isAttachedChallengeSelected(cid)"
+             [class.dark:bg-slate-800]="isAttachedChallengeSelected(cid)"
+             (click)="toggleAttachedChallenge(cid)">
+          <input type="checkbox" [checked]="isAttachedChallengeSelected(cid)" (click)="$event.stopPropagation(); toggleAttachedChallenge(cid)" class="w-4 h-4 text-red-600 bg-white border-slate-300 rounded focus:ring-red-500 dark:bg-slate-700 dark:border-slate-600 dark:ring-offset-slate-800 focus:ring-2 flex-shrink-0">
+          <div class="flex items-center gap-3 flex-1 min-w-0">
+            <span class="font-medium text-slate-900 dark:text-white truncate">{{ getChallengeTitle(cid) }}</span>
+            <span class="px-2 py-0.5 text-xs rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 flex-shrink-0">{{ getChallengeCategory(cid) }}</span>
+            <span *ngIf="getChallengeDifficulty(cid)" class="px-2 py-0.5 text-xs rounded-full flex-shrink-0"
+                  [ngClass]="{
+                    'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400': getChallengeDifficulty(cid) === 'easy',
+                    'bg-yellow-100 dark:bg-yellow-500/20 text-yellow-700 dark:text-yellow-400': getChallengeDifficulty(cid) === 'medium',
+                    'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400': getChallengeDifficulty(cid) === 'hard'
+                  }">{{ getChallengeDifficulty(cid) }}</span>
+            <span class="text-xs text-slate-500 dark:text-slate-400 flex-shrink-0">{{ getChallengePoints(cid) }} pts</span>
+          </div>
+          <button type="button" (click)="$event.stopPropagation(); detachChallenge(cid)" class="px-3 py-1 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors flex-shrink-0">Remove</button>
+        </div>
+      </div>
+
+      <!-- Available challenges -->
+      <div>
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Available Challenges ({{ availableChallengesForRound.length }})</h3>
+          <div class="flex items-center gap-2" *ngIf="availableChallengesForRound.length > 0">
+            <button type="button" (click)="areAllAvailableSelected() ? deselectAllAvailable() : selectAllAvailable()" class="text-xs px-2 py-1 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors">{{ areAllAvailableSelected() ? 'Deselect All' : 'Select All' }}</button>
+            <button type="button" (click)="bulkAttachSelected()" [disabled]="selectedAvailableChallenges.size === 0" [class.opacity-50]="selectedAvailableChallenges.size === 0" [class.cursor-not-allowed]="selectedAvailableChallenges.size === 0" class="text-xs px-3 py-1 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 rounded transition-colors font-medium">Attach Selected ({{ selectedAvailableChallenges.size }})</button>
+          </div>
+        </div>
+        <div *ngIf="availableChallengesForRound.length === 0" class="text-center py-4">
+          <p class="text-slate-500 dark:text-slate-400 text-sm">All challenges have been attached.</p>
+        </div>
+        <div *ngFor="let ch of availableChallengesForRound"
+             class="flex items-center gap-3 p-3 rounded-lg border border-slate-200 dark:border-slate-700 mb-2 hover:border-slate-300 dark:hover:border-slate-600 transition-colors cursor-pointer"
+             [class.bg-slate-50]="isAvailableChallengeSelected(ch.id)"
+             [class.dark:bg-slate-800]="isAvailableChallengeSelected(ch.id)"
+             (click)="toggleAvailableChallenge(ch.id)">
+          <input type="checkbox" [checked]="isAvailableChallengeSelected(ch.id)" (click)="$event.stopPropagation(); toggleAvailableChallenge(ch.id)" class="w-4 h-4 text-emerald-600 bg-white border-slate-300 rounded focus:ring-emerald-500 dark:bg-slate-700 dark:border-slate-600 dark:ring-offset-slate-800 focus:ring-2 flex-shrink-0">
+          <div class="flex items-center gap-3 flex-1 min-w-0">
+            <span class="font-medium text-slate-900 dark:text-white truncate">{{ ch.title }}</span>
+            <span class="px-2 py-0.5 text-xs rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 flex-shrink-0">{{ getCategoryLabel(ch.category) }}</span>
+            <span class="px-2 py-0.5 text-xs rounded-full flex-shrink-0"
+                  [ngClass]="{
+                    'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400': ch.difficulty === 'easy',
+                    'bg-yellow-100 dark:bg-yellow-500/20 text-yellow-700 dark:text-yellow-400': ch.difficulty === 'medium',
+                    'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400': ch.difficulty === 'hard'
+                  }">{{ ch.difficulty }}</span>
+            <span class="text-xs text-slate-500 dark:text-slate-400 flex-shrink-0">{{ ch.current_points }} pts</span>
+          </div>
+          <button type="button" (click)="$event.stopPropagation(); attachChallenge(ch.id)" class="px-3 py-1 text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 rounded-lg transition-colors flex-shrink-0">Attach</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

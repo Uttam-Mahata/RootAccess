@@ -1,0 +1,48 @@
+<div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-red-600/20 p-8 shadow-md">
+  <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-6">Audit Log</h2>
+
+  <div *ngIf="isLoadingAudit" class="text-center py-8">
+    <p class="text-slate-500 dark:text-slate-400">Loading audit logs...</p>
+  </div>
+
+  <div *ngIf="!isLoadingAudit && auditLogs.length === 0" class="text-center py-8">
+    <p class="text-slate-500 dark:text-slate-400">No audit logs yet.</p>
+  </div>
+
+  <div *ngIf="!isLoadingAudit && auditLogs.length > 0" class="overflow-x-auto max-w-full">
+    <table class="w-full text-sm min-w-[600px]">
+      <thead>
+        <tr class="border-b border-slate-200 dark:border-slate-700">
+          <th class="text-left py-3 px-4 text-slate-600 dark:text-slate-400 font-medium">Time</th>
+          <th class="text-left py-3 px-4 text-slate-600 dark:text-slate-400 font-medium">User</th>
+          <th class="text-left py-3 px-4 text-slate-600 dark:text-slate-400 font-medium">Action</th>
+          <th class="text-left py-3 px-4 text-slate-600 dark:text-slate-400 font-medium">Details</th>
+          <th class="text-left py-3 px-4 text-slate-600 dark:text-slate-400 font-medium">IP</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let log of auditLogs" class="border-b border-slate-100 dark:border-slate-800">
+          <td class="py-3 px-4 text-slate-500 dark:text-slate-400 whitespace-nowrap">{{ log.created_at | date:'short' }}</td>
+          <td class="py-3 px-4 text-slate-900 dark:text-white font-medium">{{ log.username }}</td>
+          <td class="py-3 px-4 text-slate-700 dark:text-slate-300">{{ log.action }}</td>
+          <td class="py-3 px-4 text-slate-500 dark:text-slate-400">{{ log.details }}</td>
+          <td class="py-3 px-4 text-slate-500 dark:text-slate-400 font-mono text-xs">{{ log.ip_address }}</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="flex items-center justify-between mt-4">
+      <span class="text-sm text-slate-500 dark:text-slate-400">Total: {{ auditTotal }} logs</span>
+      <div class="flex gap-2">
+        <button (click)="prevAuditPage()" [disabled]="auditPage <= 1"
+                class="px-3 py-1 text-sm font-medium text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 rounded-lg disabled:opacity-50 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors duration-200">
+          Previous
+        </button>
+        <span class="px-3 py-1 text-sm text-slate-600 dark:text-slate-400">Page {{ auditPage }}</span>
+        <button (click)="nextAuditPage()"
+                class="px-3 py-1 text-sm font-medium text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors duration-200">
+          Next
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

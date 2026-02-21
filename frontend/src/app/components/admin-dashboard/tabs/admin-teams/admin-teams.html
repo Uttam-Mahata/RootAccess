@@ -1,0 +1,136 @@
+<div class="space-y-6">
+  <div *ngIf="teamsLoading" class="text-center py-12">
+    <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-red-500 mx-auto"></div>
+  </div>
+  <div *ngIf="!teamsLoading && teams.length === 0" class="text-center py-12 text-slate-500 dark:text-slate-400">
+    No teams found.
+  </div>
+  <div *ngIf="!teamsLoading && teams.length > 0" class="bg-white dark:bg-slate-800 rounded-lg shadow overflow-hidden">
+    <div class="overflow-x-auto max-w-full">
+      <table class="w-full text-left text-sm min-w-[800px]">
+        <thead>
+          <tr class="text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+            <th class="px-4 py-3">Team Name</th>
+            <th class="px-4 py-3">Leader</th>
+            <th class="px-4 py-3">Members</th>
+            <th class="px-4 py-3">Score</th>
+            <th class="px-4 py-3">Invite Code</th>
+            <th class="px-4 py-3">Created</th>
+            <th class="px-4 py-3">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let team of teams" class="border-b border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer" (click)="viewTeamDetails(team)">
+            <td class="px-4 py-3 font-medium text-slate-900 dark:text-white">{{ team.name }}</td>
+            <td class="px-4 py-3 text-slate-600 dark:text-slate-400">{{ team.leader_name }}</td>
+            <td class="px-4 py-3">
+              <span class="px-2 py-1 rounded-full text-xs bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300">
+                {{ team.member_count }} members
+              </span>
+            </td>
+            <td class="px-4 py-3 font-semibold text-emerald-600 dark:text-emerald-400">{{ team.score }}</td>
+            <td class="px-4 py-3 font-mono text-xs text-slate-600 dark:text-slate-400">{{ team.invite_code }}</td>
+            <td class="px-4 py-3 text-slate-600 dark:text-slate-400 text-xs">{{ team.created_at | date:'short' }}</td>
+            <td class="px-4 py-3" (click)="$event.stopPropagation()">
+              <div class="flex gap-2">
+                <button (click)="deleteTeam(team.id, team.name)" class="text-xs px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-900/50">Delete</button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Team Details Panel -->
+  <div *ngIf="selectedTeam" class="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
+    <div class="flex justify-between items-start mb-4">
+      <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Team: {{ selectedTeam.name }}</h3>
+      <button (click)="selectedTeam = null" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      <div>
+        <p class="text-sm text-slate-500 dark:text-slate-400">Description</p>
+        <p class="text-slate-900 dark:text-white">{{ selectedTeam.description || 'No description' }}</p>
+      </div>
+      <div>
+        <p class="text-sm text-slate-500 dark:text-slate-400">Score</p>
+        <p class="text-emerald-600 dark:text-emerald-400 font-bold">{{ selectedTeam.score }}</p>
+      </div>
+      <div>
+        <p class="text-sm text-slate-500 dark:text-slate-400">Invite Code</p>
+        <p class="text-slate-900 dark:text-white font-mono">{{ selectedTeam.invite_code }}</p>
+      </div>
+      <div>
+        <p class="text-sm text-slate-500 dark:text-slate-400">Created At</p>
+        <p class="text-slate-900 dark:text-white">{{ selectedTeam.created_at | date:'medium' }}</p>
+      </div>
+    </div>
+
+    <!-- Team Members -->
+    <div class="mt-4">
+      <h4 class="text-sm font-semibold text-slate-900 dark:text-white mb-2">Team Members</h4>
+      <div class="bg-slate-50 dark:bg-slate-900/50 rounded p-3">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-slate-500 dark:text-slate-400">
+              <th class="text-left pb-2">Username</th>
+              <th class="text-left pb-2">Email</th>
+              <th class="text-left pb-2">Role</th>
+              <th class="text-left pb-2">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let member of selectedTeam.members" class="border-t border-slate-200 dark:border-slate-700">
+              <td class="py-2 font-medium text-slate-900 dark:text-white">
+                {{ member.username }}
+                <span *ngIf="member.is_leader" class="ml-1 text-xs px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded">Leader</span>
+              </td>
+              <td class="py-2 text-slate-600 dark:text-slate-400">{{ member.email }}</td>
+              <td class="py-2 text-slate-600 dark:text-slate-400">{{ member.is_leader ? 'Leader' : 'Member' }}</td>
+              <td class="py-2">
+                <div class="flex gap-2">
+                  <button *ngIf="!member.is_leader" (click)="changeTeamLeader(selectedTeam.id, member.id)" class="text-xs px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded hover:bg-amber-200 dark:hover:bg-amber-900/50">Make Leader</button>
+                  <button *ngIf="!member.is_leader" (click)="removeTeamMember(selectedTeam.id, member.id)" class="text-xs px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-900/50">Remove</button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Manual Score Adjustment -->
+    <div class="mt-6 border-t border-slate-200 dark:border-slate-700 pt-4">
+      <h4 class="text-sm font-semibold text-slate-900 dark:text-white mb-3">Adjust Team Score</h4>
+      <div class="flex flex-col md:flex-row gap-3 items-start md:items-end">
+        <div>
+          <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+            Delta (use negative value to deduct)
+          </label>
+          <input type="number"
+                 [(ngModel)]="teamScoreDelta"
+                 class="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 w-32">
+        </div>
+        <div class="flex-1 w-full">
+          <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+            Reason (optional)
+          </label>
+          <input type="text"
+                 [(ngModel)]="teamScoreReason"
+                 placeholder="e.g. bonus for hosting, penalty for abuse"
+                 class="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 w-full">
+        </div>
+        <button (click)="applyTeamScoreAdjustment()"
+                class="px-4 py-2 text-sm font-semibold bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed">
+          Apply
+        </button>
+      </div>
+      <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
+        Current score: <span class="font-semibold text-emerald-600 dark:text-emerald-400">{{ selectedTeam.score }}</span>
+      </p>
+    </div>
+  </div>
+</div>

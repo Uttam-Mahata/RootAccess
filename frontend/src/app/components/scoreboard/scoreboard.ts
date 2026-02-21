@@ -1,4 +1,5 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef, ChangeDetectionStrategy, ElementRef, ViewChild } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, ChangeDetectionStrategy, ElementRef, ViewChild, inject, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -33,6 +34,15 @@ interface TeamProgression {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ScoreboardComponent implements OnInit, OnDestroy {
+  private destroyRef = inject(DestroyRef);
+  private teamService = inject(TeamService);
+  private scoreboardService = inject(ScoreboardService);
+  private contestService = inject(ContestService);
+  private wsService = inject(WebSocketService);
+  private themeService = inject(ThemeService);
+  private http = inject(HttpClient);
+  private cdr = inject(ChangeDetectorRef);
+
   teams: Team[] = [];
   users: UserScore[] = [];
   isLoading = true;
@@ -62,15 +72,7 @@ export class ScoreboardComponent implements OnInit, OnDestroy {
     }
   }
 
-  constructor(
-    private teamService: TeamService,
-    private scoreboardService: ScoreboardService,
-    private contestService: ContestService,
-    private wsService: WebSocketService,
-    private themeService: ThemeService,
-    private http: HttpClient,
-    private cdr: ChangeDetectorRef
-  ) { }
+  constructor() { }
 
   ngOnInit(): void {
     this.loadContests();
@@ -78,11 +80,12 @@ export class ScoreboardComponent implements OnInit, OnDestroy {
     // Subscribe to WebSocket scoreboard updates
     this.wsService.connect();
 
-    this.wsConnectedSub = this.wsService.connected$.subscribe(connected => {
+    this.wsConnectedSub = this.wsService.connected$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(connected => {
       this.wsConnected = connected;
+      this.cdr.markForCheck();
     });
 
-    this.wsSub = this.wsService.on('scoreboard_update').subscribe(() => {
+    this.wsSub = this.wsService.on('scoreboard_update').pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
       if (!this.selectedContestId) return;
       if (this.viewMode === 'teams') {
         this.loadTeamScoreboard();
@@ -90,6 +93,7 @@ export class ScoreboardComponent implements OnInit, OnDestroy {
       } else {
         this.loadIndividualScoreboard();
       }
+      this.cdr.markForCheck();
     });
 
     // Polling fallback
@@ -105,8 +109,6 @@ export class ScoreboardComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.wsSub?.unsubscribe();
-    this.wsConnectedSub?.unsubscribe();
     if (this.pollingInterval) {
       clearInterval(this.pollingInterval);
     }
@@ -127,7 +129,8 @@ export class ScoreboardComponent implements OnInit, OnDestroy {
 
   loadContests(): void {
     this.contestsLoading = true;
-    this.contestService.getScoreboardContests().subscribe({
+    this.cdr.markForCheck();
+    this.contestService.getScoreboardContests().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (response) => {
         this.contests = response.contests || [];
         this.contestsLoading = false;
@@ -137,6 +140,8 @@ export class ScoreboardComponent implements OnInit, OnDestroy {
           const running = this.contests.find(c => c.status === 'running');
           this.selectedContestId = (running || this.contests[0]).id;
           this.loadScoreboardData();
+        } else {
+          this.isLoading = false;
         }
         this.cdr.markForCheck();
       },
@@ -177,7 +182,7 @@ export class ScoreboardComponent implements OnInit, OnDestroy {
     this.http.get<{ progressions: TeamProgression[] }>(
       `${environment.apiUrl}/scoreboard/teams/statistics?days=30&contest_id=${this.selectedContestId}`,
       { withCredentials: true }
-    ).subscribe({
+    ).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (response) => {
         this.teamProgressions = response.progressions || [];
         this.chartsLoading = false;
@@ -313,7 +318,7 @@ export class ScoreboardComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     this.cdr.markForCheck();
 
-    this.teamService.getTeamScoreboard(this.selectedContestId).subscribe({
+    this.teamService.getTeamScoreboard(this.selectedContestId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (response) => {
         this.teams = response.teams || [];
         this.isLoading = false;
@@ -335,7 +340,7 @@ export class ScoreboardComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     this.cdr.markForCheck();
 
-    this.scoreboardService.getScoreboard(this.selectedContestId).subscribe({
+    this.scoreboardService.getScoreboard(this.selectedContestId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (response) => {
         this.users = response || [];
         this.isLoading = false;

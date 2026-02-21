@@ -247,6 +247,9 @@
 
           <!-- Members List -->
           <div class="space-y-2">
+            <div *ngIf="members.length === 0" class="text-center py-8 text-slate-600 dark:text-slate-400">
+              No members found.
+            </div>
             <div *ngFor="let member of members" class="bg-slate-100 dark:bg-slate-700/50 p-4 rounded-lg flex justify-between items-center">
               <div class="flex items-center gap-3">
                 <div class="w-10 h-10 bg-gradient-to-br from-slate-500 to-slate-700 rounded-full flex items-center justify-center text-white font-bold">

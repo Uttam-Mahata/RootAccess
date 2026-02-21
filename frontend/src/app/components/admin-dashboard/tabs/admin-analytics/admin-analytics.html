@@ -1,0 +1,123 @@
+<div class="space-y-6">
+  <div *ngIf="analyticsLoading" class="text-center py-12">
+    <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-red-500 mx-auto"></div>
+  </div>
+  <div *ngIf="analytics && !analyticsLoading">
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-4 text-center">
+        <div class="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{{ analytics.total_users }}</div>
+        <div class="text-xs text-slate-500 dark:text-slate-400">Users</div>
+      </div>
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-4 text-center">
+        <div class="text-2xl font-bold text-green-600 dark:text-green-400">{{ analytics.total_teams }}</div>
+        <div class="text-xs text-slate-500 dark:text-slate-400">Teams</div>
+      </div>
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-4 text-center">
+        <div class="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{{ analytics.total_challenges }}</div>
+        <div class="text-xs text-slate-500 dark:text-slate-400">Challenges</div>
+      </div>
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-4 text-center">
+        <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ analytics.total_submissions }}</div>
+        <div class="text-xs text-slate-500 dark:text-slate-400">Submissions</div>
+      </div>
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-4 text-center">
+        <div class="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{{ analytics.total_correct }}</div>
+        <div class="text-xs text-slate-500 dark:text-slate-400">Correct</div>
+      </div>
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-4 text-center">
+        <div class="text-2xl font-bold text-orange-600 dark:text-orange-400">{{ (analytics.success_rate * 100).toFixed(1) }}%</div>
+        <div class="text-xs text-slate-500 dark:text-slate-400">Success Rate</div>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Solves Over Time (30 days)</h3>
+        <div class="h-64 relative"><canvas id="solvesOverTimeChart"></canvas></div>
+      </div>
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Submissions Over Time (30 days)</h3>
+        <div class="h-64 relative"><canvas id="submissionsOverTimeChart"></canvas></div>
+      </div>
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">User Growth (30 days)</h3>
+        <div class="h-64 relative"><canvas id="userGrowthChart"></canvas></div>
+      </div>
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Team Growth (30 days)</h3>
+        <div class="h-64 relative"><canvas id="teamGrowthChart"></canvas></div>
+      </div>
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Challenges by Category</h3>
+        <div class="h-64 relative"><canvas id="categoryBreakdownChart"></canvas></div>
+      </div>
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Challenges by Difficulty</h3>
+        <div class="h-64 relative"><canvas id="difficultyBreakdownChart"></canvas></div>
+      </div>
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Top Teams by Score</h3>
+        <div class="h-72 relative"><canvas id="topTeamsChart"></canvas></div>
+      </div>
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Top Users by Score</h3>
+        <div class="h-72 relative"><canvas id="topUsersChart"></canvas></div>
+      </div>
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-6 lg:col-span-2">
+        <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Challenge Popularity (Top 10 by solves)</h3>
+        <div class="h-72 relative"><canvas id="challengePopularityChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Category & Difficulty Breakdown Lists -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Category Breakdown</h3>
+        <div class="space-y-2" *ngIf="categoryKeys.length > 0">
+          <div *ngFor="let key of categoryKeys" class="flex justify-between items-center">
+            <span class="text-sm text-slate-700 dark:text-slate-300 capitalize">{{ key }}</span>
+            <span class="text-sm font-medium text-slate-900 dark:text-white">{{ analytics.category_breakdown[key] }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Difficulty Breakdown</h3>
+        <div class="space-y-2" *ngIf="difficultyKeys.length > 0">
+          <div *ngFor="let key of difficultyKeys" class="flex justify-between items-center">
+            <span class="text-sm text-slate-700 dark:text-slate-300 capitalize">{{ key }}</span>
+            <span class="text-sm font-medium text-slate-900 dark:text-white">{{ analytics.difficulty_breakdown[key] }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Challenge Popularity Table -->
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-6" *ngIf="analytics.challenge_popularity && analytics.challenge_popularity.length > 0">
+      <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Challenge Popularity</h3>
+      <div class="overflow-x-auto max-w-full">
+        <table class="w-full text-left text-sm min-w-[600px]">
+          <thead>
+            <tr class="text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700">
+              <th class="pb-3">Challenge</th>
+              <th class="pb-3">Category</th>
+              <th class="pb-3">Solves</th>
+              <th class="pb-3">Attempts</th>
+              <th class="pb-3">Success Rate</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let cp of analytics.challenge_popularity" class="border-b border-slate-100 dark:border-slate-700/50">
+              <td class="py-2 font-medium text-slate-900 dark:text-white">{{ cp.title }}</td>
+              <td class="py-2"><span class="px-2 py-1 text-xs rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 capitalize">{{ cp.category }}</span></td>
+              <td class="py-2 text-green-600 dark:text-green-400">{{ cp.solve_count }}</td>
+              <td class="py-2">{{ cp.attempt_count }}</td>
+              <td class="py-2">{{ (cp.success_rate * 100).toFixed(1) }}%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

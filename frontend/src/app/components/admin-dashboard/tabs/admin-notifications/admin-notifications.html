@@ -1,0 +1,162 @@
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <!-- Create/Edit Notification Form -->
+  <div class="relative group">
+    <div class="absolute -inset-0.5 bg-gradient-to-r from-red-600 to-red-700 rounded-2xl blur opacity-20 group-hover:opacity-30 dark:opacity-30 dark:group-hover:opacity-40 transition duration-300"></div>
+
+    <div class="relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-red-600/20 p-6 shadow-md transition-colors duration-300">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-xl font-bold text-slate-900 dark:text-white">
+          {{ isEditingNotification ? 'Edit Notification' : 'Create Notification' }}
+        </h2>
+        <button *ngIf="isEditingNotification"
+                (click)="cancelEditNotification()"
+                class="text-slate-500 hover:text-red-500 transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <form [formGroup]="notificationForm" (ngSubmit)="onSubmitNotification()" class="space-y-4">
+        <!-- Title -->
+        <div>
+          <label for="notif-title" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            Title *
+          </label>
+          <input
+            id="notif-title"
+            type="text"
+            formControlName="title"
+            class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all duration-200"
+            placeholder="e.g., Competition starts soon!"
+          />
+        </div>
+
+        <!-- Content -->
+        <div>
+          <label for="notif-content" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            Content *
+          </label>
+          <textarea
+            id="notif-content"
+            formControlName="content"
+            rows="3"
+            class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all duration-200 resize-none"
+            placeholder="Enter the notification message..."
+          ></textarea>
+        </div>
+
+        <!-- Type -->
+        <div>
+          <label for="notif-type" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            Type *
+          </label>
+          <select
+            id="notif-type"
+            formControlName="type"
+            class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all duration-200">
+            <option *ngFor="let type of notificationTypes" [value]="type.value">{{ type.label }}</option>
+          </select>
+        </div>
+
+        <!-- Submit Button -->
+        <button
+          type="submit"
+          [disabled]="!notificationForm.valid"
+          class="w-full py-3 px-4 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 dark:hover:from-red-500 dark:hover:to-red-600 rounded-lg transition-all duration-200 shadow-sm hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
+          {{ isEditingNotification ? 'Update Notification' : 'Create Notification' }}
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Notifications List -->
+  <div>
+    <!-- Loading State -->
+    <div *ngIf="isLoadingNotifications" class="flex justify-center items-center py-12">
+      <svg class="animate-spin h-8 w-8 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+    </div>
+
+    <!-- Empty State -->
+    <div *ngIf="!isLoadingNotifications && notifications.length === 0" class="text-center py-12">
+      <div class="relative group inline-block">
+        <div class="absolute -inset-0.5 bg-gradient-to-r from-red-600 to-red-700 rounded-2xl blur opacity-20"></div>
+        <div class="relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-red-600/20 p-8">
+          <svg class="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+          </svg>
+          <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-1">No notifications</h3>
+          <p class="text-slate-600 dark:text-slate-400 text-sm">Create your first announcement</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notifications List -->
+    <div *ngIf="!isLoadingNotifications && notifications.length > 0" class="space-y-4">
+      <div *ngFor="let notification of notifications" class="relative group">
+        <div class="absolute -inset-0.5 bg-gradient-to-r from-red-600/50 to-red-700/50 rounded-xl blur opacity-0 group-hover:opacity-20 transition duration-300"></div>
+
+        <div class="relative bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-4 transition-colors duration-300"
+             [ngClass]="{'opacity-50': !notification.is_active}">
+          <div class="flex items-start justify-between gap-4">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="px-2 py-0.5 text-xs font-medium rounded-full"
+                      [ngClass]="{
+                        'bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400': notification.type === 'info',
+                        'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400': notification.type === 'warning',
+                        'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400': notification.type === 'success',
+                        'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400': notification.type === 'error'
+                      }">
+                  {{ getNotificationTypeLabel(notification.type) }}
+                </span>
+                <span *ngIf="!notification.is_active" class="px-2 py-0.5 text-xs font-medium rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400">
+                  Inactive
+                </span>
+              </div>
+              <h3 class="text-slate-900 dark:text-white font-semibold truncate">{{ notification.title }}</h3>
+              <p class="text-slate-600 dark:text-slate-400 text-sm mt-1 line-clamp-2">{{ notification.content }}</p>
+            </div>
+
+            <div class="flex items-center gap-1 flex-shrink-0">
+              <!-- Toggle Active -->
+              <button
+                (click)="toggleNotificationActive(notification)"
+                class="p-2 text-slate-500 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10 rounded-lg transition-colors"
+                [title]="notification.is_active ? 'Deactivate' : 'Activate'">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path *ngIf="notification.is_active" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  <path *ngIf="notification.is_active" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                  <path *ngIf="!notification.is_active" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
+                </svg>
+              </button>
+
+              <!-- Edit -->
+              <button
+                (click)="editNotification(notification)"
+                class="p-2 text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-lg transition-colors"
+                title="Edit">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                </svg>
+              </button>
+
+              <!-- Delete -->
+              <button
+                (click)="deleteNotification(notification)"
+                class="p-2 text-slate-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
+                title="Delete">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

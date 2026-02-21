@@ -1,8 +1,8 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, inject, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { Subscription } from 'rxjs';
 import { NotificationService, Notification } from '../../services/notification';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-notifications',
@@ -11,11 +11,10 @@ import { NotificationService, Notification } from '../../services/notification';
   templateUrl: './notifications.html',
   styleUrls: ['./notifications.scss']
 })
-export class NotificationsComponent implements OnInit, OnDestroy {
+export class NotificationsComponent implements OnInit {
+  private destroyRef = inject(DestroyRef);
   notifications: Notification[] = [];
   loading = true;
-
-  private subscription?: Subscription;
 
   constructor(private notificationService: NotificationService) {}
 
@@ -26,17 +25,13 @@ export class NotificationsComponent implements OnInit, OnDestroy {
     // Mark all notifications as read when the page opens (clears badge)
     this.notificationService.markAllAsRead();
 
-    this.subscription = this.notificationService.notifications$.subscribe(list => {
+    this.notificationService.notifications$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(list => {
       // Sort newest first for a stable, readable view
       this.notifications = [...list].sort(
         (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
       this.loading = false;
     });
-  }
-
-  ngOnDestroy(): void {
-    this.subscription?.unsubscribe();
   }
 
   dismiss(id: string): void {

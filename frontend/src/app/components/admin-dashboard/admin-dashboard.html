@@ -1,11 +1,11 @@
 <div class="flex min-h-screen w-full min-w-0 overflow-x-hidden max-w-full bg-transparent">
-  
+
   <!-- Sidebar for large screens -->
-  <aside 
+  <aside
     [class.w-64]="sidebarOpen"
     [class.w-20]="!sidebarOpen"
     class="hidden lg:flex flex-col fixed left-0 top-0 h-screen bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 transition-all duration-300 z-40 shadow-sm">
-    
+
     <!-- Sidebar Header -->
     <div class="flex items-center p-4 border-b border-slate-200 dark:border-slate-800"
          [class.justify-between]="sidebarOpen"
@@ -21,15 +21,13 @@
           <p class="text-xs text-slate-500 dark:text-slate-400">Control Center</p>
         </div>
       </div>
-      <button 
+      <button
         (click)="toggleSidebar()"
         [title]="sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'"
         class="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200 flex-shrink-0">
-        <!-- Collapse icon (when sidebar is open) -->
         <svg *ngIf="sidebarOpen" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
         </svg>
-        <!-- Expand icon (when sidebar is closed) -->
         <svg *ngIf="!sidebarOpen" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
         </svg>
@@ -41,47 +39,30 @@
          [class.flex]="!sidebarOpen"
          [class.flex-col]="!sidebarOpen"
          [class.items-center]="!sidebarOpen">
-      <!-- Create Challenge -->
-      <button 
-        (click)="switchTab('create')"
-        [title]="!sidebarOpen ? (isEditMode ? 'Edit Challenge' : 'Create Challenge') : ''"
-        [class.bg-red-50]="activeTab === 'create' && sidebarOpen"
-        [class.dark:bg-red-500/10]="activeTab === 'create'"
-        [class.text-red-600]="activeTab === 'create'"
-        [class.dark:text-red-400]="activeTab === 'create'"
-        [class.bg-slate-50]="activeTab === 'create' && !sidebarOpen"
-        [class.justify-center]="!sidebarOpen"
-        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-200 group">
-        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-        </svg>
-        <span [class.hidden]="!sidebarOpen" class="text-sm font-medium">{{ isEditMode ? 'Edit Challenge' : 'Create Challenge' }}</span>
-      </button>
 
-      <!-- Manage Challenges -->
-      <button 
-        (click)="switchTab('manage')"
-        [title]="!sidebarOpen ? 'Manage Challenges' : ''"
-        [class.bg-red-50]="activeTab === 'manage' && sidebarOpen"
-        [class.dark:bg-red-500/10]="activeTab === 'manage'"
-        [class.text-red-600]="activeTab === 'manage'"
-        [class.dark:text-red-400]="activeTab === 'manage'"
-        [class.bg-slate-50]="activeTab === 'manage' && !sidebarOpen"
+      <!-- Challenges -->
+      <button
+        (click)="switchTab('challenges')"
+        [title]="!sidebarOpen ? (isEditMode ? 'Edit Challenge' : 'Challenges') : ''"
+        [class.bg-red-50]="activeTab === 'challenges' && sidebarOpen"
+        [class.dark:bg-red-500/10]="activeTab === 'challenges'"
+        [class.text-red-600]="activeTab === 'challenges'"
+        [class.dark:text-red-400]="activeTab === 'challenges'"
+        [class.bg-slate-50]="activeTab === 'challenges' && !sidebarOpen"
         [class.justify-center]="!sidebarOpen"
         class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-200 group relative">
         <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
         </svg>
         <span [class.hidden]="!sidebarOpen" class="text-sm font-medium flex items-center justify-between flex-1">
-          <span>Manage Challenges</span>
-          <span class="text-xs px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400">{{ challenges.length }}</span>
+          <span>{{ isEditMode ? 'Edit Challenge' : 'Challenges' }}</span>
+          <span class="text-xs px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400">{{ challengeCount }}</span>
         </span>
-        <!-- Badge for collapsed state -->
-        <span *ngIf="!sidebarOpen && challenges.length > 0" class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">{{ challenges.length }}</span>
+        <span *ngIf="!sidebarOpen && challengeCount > 0" class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">{{ challengeCount }}</span>
       </button>
 
       <!-- Notifications -->
-      <button 
+      <button
         (click)="switchTab('notifications')"
         [title]="!sidebarOpen ? 'Notifications' : ''"
         [class.bg-red-50]="activeTab === 'notifications' && sidebarOpen"
@@ -96,14 +77,13 @@
         </svg>
         <span [class.hidden]="!sidebarOpen" class="text-sm font-medium flex items-center justify-between flex-1">
           <span>Notifications</span>
-          <span class="text-xs px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400">{{ notifications.length }}</span>
+          <span class="text-xs px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400">{{ notificationCount }}</span>
         </span>
-        <!-- Badge for collapsed state -->
-        <span *ngIf="!sidebarOpen && notifications.length > 0" class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">{{ notifications.length }}</span>
+        <span *ngIf="!sidebarOpen && notificationCount > 0" class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">{{ notificationCount }}</span>
       </button>
 
       <!-- Contest -->
-      <button 
+      <button
         (click)="switchTab('contest')"
         [title]="!sidebarOpen ? 'Contest' : ''"
         [class.bg-red-50]="activeTab === 'contest' && sidebarOpen"
@@ -120,7 +100,7 @@
       </button>
 
       <!-- Writeups -->
-      <button 
+      <button
         (click)="switchTab('writeups')"
         [title]="!sidebarOpen ? 'Writeups' : ''"
         [class.bg-red-50]="activeTab === 'writeups' && sidebarOpen"
@@ -135,9 +115,9 @@
         </svg>
         <span [class.hidden]="!sidebarOpen" class="text-sm font-medium flex items-center justify-between flex-1">
           <span>Writeups</span>
-          <span *ngIf="writeups.length > 0" class="text-xs px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400">{{ writeups.length }}</span>
+          <span *ngIf="writeupsCount > 0" class="text-xs px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400">{{ writeupsCount }}</span>
         </span>
-        <span *ngIf="!sidebarOpen && writeups.length > 0" class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">{{ writeups.length }}</span>
+        <span *ngIf="!sidebarOpen && writeupsCount > 0" class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">{{ writeupsCount }}</span>
       </button>
 
       <!-- Divider -->
@@ -145,7 +125,7 @@
       <div *ngIf="!sidebarOpen" class="w-12 border-t border-slate-200 dark:border-slate-700 my-2"></div>
 
       <!-- Audit Log -->
-      <button 
+      <button
         (click)="switchTab('audit')"
         [title]="!sidebarOpen ? 'Audit Log' : ''"
         [class.bg-red-50]="activeTab === 'audit' && sidebarOpen"
@@ -162,7 +142,7 @@
       </button>
 
       <!-- Analytics -->
-      <button 
+      <button
         (click)="switchTab('analytics')"
         [title]="!sidebarOpen ? 'Analytics' : ''"
         [class.bg-red-50]="activeTab === 'analytics' && sidebarOpen"
@@ -179,7 +159,7 @@
       </button>
 
       <!-- Users -->
-      <button 
+      <button
         (click)="switchTab('users')"
         [title]="!sidebarOpen ? 'Users' : ''"
         [class.bg-red-50]="activeTab === 'users' && sidebarOpen"
@@ -194,13 +174,13 @@
         </svg>
         <span [class.hidden]="!sidebarOpen" class="text-sm font-medium flex items-center justify-between flex-1">
           <span>Users</span>
-          <span *ngIf="users.length > 0" class="text-xs px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400">{{ users.length }}</span>
+          <span *ngIf="usersCount > 0" class="text-xs px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400">{{ usersCount }}</span>
         </span>
-        <span *ngIf="!sidebarOpen && users.length > 0" class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">{{ users.length }}</span>
+        <span *ngIf="!sidebarOpen && usersCount > 0" class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">{{ usersCount }}</span>
       </button>
 
       <!-- Teams -->
-      <button 
+      <button
         (click)="switchTab('teams')"
         [title]="!sidebarOpen ? 'Teams' : ''"
         [class.bg-red-50]="activeTab === 'teams' && sidebarOpen"
@@ -215,19 +195,19 @@
         </svg>
         <span [class.hidden]="!sidebarOpen" class="text-sm font-medium flex items-center justify-between flex-1">
           <span>Teams</span>
-          <span class="text-xs px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400">{{ teams.length }}</span>
+          <span class="text-xs px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400">{{ teamsCount }}</span>
         </span>
-        <span *ngIf="!sidebarOpen && teams.length > 0" class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">{{ teams.length }}</span>
+        <span *ngIf="!sidebarOpen && teamsCount > 0" class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">{{ teamsCount }}</span>
       </button>
     </nav>
   </aside>
 
   <!-- Main Content -->
-  <div 
+  <div
     [class.lg:ml-64]="sidebarOpen"
     [class.lg:ml-20]="!sidebarOpen"
     class="flex-1 min-w-0 overflow-x-hidden transition-all duration-300">
-    
+
     <!-- Mobile Header with Dropdown -->
     <header class="lg:hidden sticky top-0 z-30 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl mx-1 mt-1 mb-4 px-4 py-3 shadow-sm transition-colors duration-300">
       <div class="flex items-center justify-between">
@@ -237,11 +217,9 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
             </svg>
           </div>
-          <div>
-            <h1 class="text-sm font-bold text-slate-900 dark:text-white">Admin Panel</h1>
-          </div>
+          <h1 class="text-sm font-bold text-slate-900 dark:text-white">Admin Panel</h1>
         </div>
-        <button 
+        <button
           (click)="toggleMobileMenu()"
           class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -253,19 +231,15 @@
 
       <!-- Mobile Dropdown Menu -->
       <div *ngIf="mobileMenuOpen" class="mt-3 py-2 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
-        <button (click)="switchTab('create')" [class.bg-red-50]="activeTab === 'create'" [class.dark:bg-red-500/10]="activeTab === 'create'" [class.text-red-600]="activeTab === 'create'" [class.dark:text-red-400]="activeTab === 'create'" class="w-full px-4 py-2.5 text-left text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-3">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-          {{ isEditMode ? 'Edit Challenge' : 'Create Challenge' }}
-        </button>
-        <button (click)="switchTab('manage')" [class.bg-red-50]="activeTab === 'manage'" [class.dark:bg-red-500/10]="activeTab === 'manage'" [class.text-red-600]="activeTab === 'manage'" [class.dark:text-red-400]="activeTab === 'manage'" class="w-full px-4 py-2.5 text-left text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-3">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
-          Manage Challenges
-          <span class="ml-auto text-xs px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400">{{ challenges.length }}</span>
+        <button (click)="switchTab('challenges')" [class.bg-red-50]="activeTab === 'challenges'" [class.dark:bg-red-500/10]="activeTab === 'challenges'" [class.text-red-600]="activeTab === 'challenges'" [class.dark:text-red-400]="activeTab === 'challenges'" class="w-full px-4 py-2.5 text-left text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-3">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+          Challenges
+          <span class="ml-auto text-xs px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400">{{ challengeCount }}</span>
         </button>
         <button (click)="switchTab('notifications')" [class.bg-red-50]="activeTab === 'notifications'" [class.dark:bg-red-500/10]="activeTab === 'notifications'" [class.text-red-600]="activeTab === 'notifications'" [class.dark:text-red-400]="activeTab === 'notifications'" class="w-full px-4 py-2.5 text-left text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-3">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
           Notifications
-          <span class="ml-auto text-xs px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400">{{ notifications.length }}</span>
+          <span class="ml-auto text-xs px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400">{{ notificationCount }}</span>
         </button>
         <button (click)="switchTab('contest')" [class.bg-red-50]="activeTab === 'contest'" [class.dark:bg-red-500/10]="activeTab === 'contest'" [class.text-red-600]="activeTab === 'contest'" [class.dark:text-red-400]="activeTab === 'contest'" class="w-full px-4 py-2.5 text-left text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-3">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -291,19 +265,18 @@
         <button (click)="switchTab('teams')" [class.bg-red-50]="activeTab === 'teams'" [class.dark:bg-red-500/10]="activeTab === 'teams'" [class.text-red-600]="activeTab === 'teams'" [class.dark:text-red-400]="activeTab === 'teams'" class="w-full px-4 py-2.5 text-left text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-3">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
           Teams
-          <span class="ml-auto text-xs px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400">{{ teams.length }}</span>
+          <span class="ml-auto text-xs px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400">{{ teamsCount }}</span>
         </button>
       </div>
     </header>
 
     <!-- Page Content -->
     <div class="p-2 sm:p-3 lg:p-4 xl:p-6 w-full min-w-0 overflow-x-hidden rounded-2xl bg-transparent transition-colors duration-300">
-      
+
       <!-- Page Header -->
       <div class="mb-8">
         <h1 class="text-3xl font-bold text-slate-900 dark:text-white mb-2">
-          <span *ngIf="activeTab === 'create'">{{ isEditMode ? 'Edit Challenge' : 'Create New Challenge' }}</span>
-          <span *ngIf="activeTab === 'manage'">Manage Challenges</span>
+          <span *ngIf="activeTab === 'challenges'">{{ isEditMode ? 'Edit Challenge' : 'Challenges' }}</span>
           <span *ngIf="activeTab === 'notifications'">Notifications</span>
           <span *ngIf="activeTab === 'contest'">Contest Configuration</span>
           <span *ngIf="activeTab === 'writeups'">Writeup Management</span>
@@ -313,9 +286,8 @@
           <span *ngIf="activeTab === 'teams'">Team Management</span>
         </h1>
         <p class="text-slate-600 dark:text-slate-400">
-          <span *ngIf="activeTab === 'create' && !isEditMode">Create and configure CTF challenges with dynamic scoring</span>
-          <span *ngIf="activeTab === 'create' && isEditMode">Modify challenge details and settings</span>
-          <span *ngIf="activeTab === 'manage'">View, edit, and organize all CTF challenges</span>
+          <span *ngIf="activeTab === 'challenges' && !isEditMode">Create and manage CTF challenges with dynamic scoring</span>
+          <span *ngIf="activeTab === 'challenges' && isEditMode">Modify challenge details and settings</span>
           <span *ngIf="activeTab === 'notifications'">Manage platform-wide announcements and alerts</span>
           <span *ngIf="activeTab === 'contest'">Configure contest timing and settings</span>
           <span *ngIf="activeTab === 'writeups'">Review and approve challenge writeups</span>
@@ -328,8 +300,8 @@
 
       <!-- Global Message -->
       <div *ngIf="message" class="mb-6 rounded-lg p-4 transition-colors duration-300"
-           [ngClass]="messageType === 'success' 
-             ? 'bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30' 
+           [ngClass]="messageType === 'success'
+             ? 'bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30'
              : 'bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30'">
         <div class="flex items-center space-x-2">
           <svg *ngIf="messageType === 'success'" class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="currentColor" viewBox="0 0 20 20">
@@ -345,1744 +317,63 @@
         </div>
       </div>
 
-      <!-- CREATE TAB -->
-      <div *ngIf="activeTab === 'create'" class="w-full">
-    <div class="relative group">
-      <!-- Glow Effect -->
-      <div class="absolute -inset-0.5 bg-gradient-to-r from-red-600 to-red-700 rounded-2xl blur opacity-20 group-hover:opacity-30 dark:opacity-30 dark:group-hover:opacity-40 transition duration-300"></div>
-      
-      <!-- Form Card -->
-      <div class="relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-red-600/20 p-4 lg:p-6 xl:p-8 shadow-md transition-colors duration-300">
-        <div class="flex items-center justify-between mb-6">
-          <h2 class="text-2xl font-bold text-slate-900 dark:text-white">
-            {{ isEditMode ? 'Edit Challenge' : 'Create New Challenge' }}
-          </h2>
-          <button *ngIf="isEditMode" 
-                  (click)="cancelEdit()"
-                  class="text-slate-500 hover:text-red-500 transition-colors">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-            </svg>
-          </button>
-        </div>
-        
-        <form [formGroup]="challengeForm" (ngSubmit)="onSubmit()">
-          <!-- Two Column Layout -->
-          <div class="grid grid-cols-1 xl:grid-cols-4 gap-6">
-            
-            <!-- Left Column: Main Content (3/4 width on XL screens) -->
-            <div class="xl:col-span-3 space-y-6">
-              <!-- Title -->
-              <div>
-                <label for="title" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                  Challenge Title *
-                </label>
-                <input
-                  id="title"
-                  type="text"
-                  formControlName="title"
-                  class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all duration-200"
-                  placeholder="e.g., SQL Injection 101"
-                />
-              </div>
+      <!-- Tab Outlets -->
+      @if (activeTab === 'challenges') {
+        <app-admin-challenges
+          [initialView]="challengesInitialView"
+          (viewChanged)="onChallengesViewChanged($event)"
+          (isEditModeChanged)="isEditMode = $event"
+          (countChanged)="challengeCount = $event"
+          (messageEmitted)="showMessage($event.msg, $event.type)">
+        </app-admin-challenges>
+      }
 
-              <!-- Description (Rich Text Editor) -->
-              <div>
-                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                  Description * (Rich Text)
-                </label>
-                <div class="rounded-lg overflow-hidden border border-slate-300 dark:border-slate-700">
-                  @if (showEditor) {
-                    <editor
-                      [init]="editorConfig"
-                      [initialValue]="editorContent"
-                      (onInit)="onEditorChange($event)"
-                      (onChange)="onEditorChange($event)">
-                    </editor>
-                  }
-                </div>
-                <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                  Use the rich text editor to format your challenge description. Supports code blocks, lists, links, and more.
-                </p>
-              </div>
-            </div>
+      @if (activeTab === 'notifications') {
+        <app-admin-notifications
+          (countChanged)="notificationCount = $event"
+          (messageEmitted)="showMessage($event.msg, $event.type)">
+        </app-admin-notifications>
+      }
 
-            <!-- Right Column: Configuration (1/3 width on XL screens) -->
-            <div class="space-y-6">
-              
-              <!-- Basic Settings Card -->
-              <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-5 border border-slate-200 dark:border-slate-700 space-y-4">
-                <h3 class="text-base font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-                  <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
-                  </svg>
-                  Basic Settings
-                </h3>
-                
-                <!-- Category -->
-                <div>
-                  <label for="category" class="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                    Category *
-                  </label>
-                  <select
-                    id="category"
-                    formControlName="category"
-                    class="w-full px-3 py-2.5 text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all duration-200">
-                    <option value="" disabled>Select category</option>
-                    <option *ngFor="let cat of categories" [value]="cat.value">{{ cat.label }}</option>
-                  </select>
-                </div>
+      @if (activeTab === 'contest') {
+        <app-admin-contest
+          (messageEmitted)="showMessage($event.msg, $event.type)">
+        </app-admin-contest>
+      }
 
-                <!-- Difficulty -->
-                <div>
-                  <label for="difficulty" class="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                    Difficulty *
-                  </label>
-                  <select
-                    id="difficulty"
-                    formControlName="difficulty"
-                    class="w-full px-3 py-2.5 text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all duration-200">
-                    <option value="" disabled>Select difficulty</option>
-                    <option *ngFor="let diff of difficulties" [value]="diff.value">{{ diff.label }}</option>
-                  </select>
-                </div>
-              </div>
+      @if (activeTab === 'writeups') {
+        <app-admin-writeups
+          (countChanged)="writeupsCount = $event"
+          (messageEmitted)="showMessage($event.msg, $event.type)">
+        </app-admin-writeups>
+      }
 
-              <!-- Scoring Card -->
-              <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-5 border border-slate-200 dark:border-slate-700 space-y-4">
-                <h3 class="text-base font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-                  <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
-                  </svg>
-                  Scoring
-                </h3>
-                
-                <!-- Max Points -->
-                <div>
-                  <label for="max_points" class="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                    Max Points *
-                  </label>
-                  <input
-                    id="max_points"
-                    type="number"
-                    formControlName="max_points"
-                    min="1"
-                    class="w-full px-3 py-2.5 text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all duration-200"
-                    placeholder="500"
-                  />
-                  <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Initial points</p>
-                </div>
+      @if (activeTab === 'audit') {
+        <app-admin-audit
+          (messageEmitted)="showMessage($event.msg, $event.type)">
+        </app-admin-audit>
+      }
 
-                <!-- Min Points -->
-                <div>
-                  <label for="min_points" class="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                    Min Points *
-                  </label>
-                  <input
-                    id="min_points"
-                    type="number"
-                    formControlName="min_points"
-                    min="1"
-                    class="w-full px-3 py-2.5 text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all duration-200"
-                    placeholder="100"
-                  />
-                  <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Floor points</p>
-                </div>
+      @if (activeTab === 'analytics') {
+        <app-admin-analytics
+          (messageEmitted)="showMessage($event.msg, $event.type)">
+        </app-admin-analytics>
+      }
 
-                <!-- Decay -->
-                <div>
-                  <label for="decay" class="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                    Decay *
-                  </label>
-                  <input
-                    id="decay"
-                    type="number"
-                    formControlName="decay"
-                    min="1"
-                    class="w-full px-3 py-2.5 text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all duration-200"
-                    placeholder="10"
-                  />
-                  <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Solves to reach midpoint</p>
-                </div>
+      @if (activeTab === 'users') {
+        <app-admin-users
+          (countChanged)="usersCount = $event"
+          (messageEmitted)="showMessage($event.msg, $event.type)">
+        </app-admin-users>
+      }
 
-                <!-- Scoring Type -->
-                <div>
-                  <label for="scoring_type" class="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                    Scoring Type *
-                  </label>
-                  <select
-                    id="scoring_type"
-                    formControlName="scoring_type"
-                    class="w-full px-3 py-2.5 text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all duration-200">
-                    <option *ngFor="let st of scoringTypes" [value]="st.value">{{ st.label }}</option>
-                  </select>
-                  <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Dynamic / Linear / Static</p>
-                </div>
-              </div>
+      @if (activeTab === 'teams') {
+        <app-admin-teams
+          (countChanged)="teamsCount = $event"
+          (messageEmitted)="showMessage($event.msg, $event.type)">
+        </app-admin-teams>
+      }
 
-              <!-- Flag & Resources Card -->
-              <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-5 border border-slate-200 dark:border-slate-700 space-y-4">
-                <h3 class="text-base font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-                  <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"/>
-                  </svg>
-                  Flag & Resources
-                </h3>
-                
-                <!-- Flag -->
-                <div>
-                  <label for="flag" class="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                    Flag {{ isEditMode ? '(Leave empty to keep current)' : '*' }}
-                  </label>
-                  <input
-                    id="flag"
-                    type="text"
-                    formControlName="flag"
-                    class="w-full px-3 py-2.5 text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all duration-200 font-mono"
-                    [placeholder]="isEditMode ? 'Leave empty to keep current flag' : 'CTF{example_flag_here}'"
-                  />
-                  <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                    Stored as SHA-256 hash
-                  </p>
-                </div>
-
-                <!-- Files -->
-                <div>
-                  <label for="files" class="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                    Files (comma-separated URLs)
-                  </label>
-                  <textarea
-                    id="files"
-                    formControlName="files"
-                    rows="3"
-                    class="w-full px-3 py-2.5 text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all duration-200 resize-none"
-                    placeholder="https://example.com/file1.zip&#10;https://example.com/file2.txt"
-                  ></textarea>
-                  <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Optional files</p>
-                </div>
-
-                <!-- Tags -->
-                <div>
-                  <label for="tags" class="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                    Tags (comma-separated)
-                  </label>
-                  <input
-                    id="tags"
-                    type="text"
-                    formControlName="tags"
-                    class="w-full px-3 py-2.5 text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all duration-200"
-                    placeholder="web, crypto, pwn"
-                  />
-                  <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Optional tags</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Submit Buttons (Full Width Below) -->
-          <div class="flex gap-4 mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
-            <button
-              type="submit"
-              [disabled]="!challengeForm.valid"
-              class="flex-1 xl:flex-initial xl:px-8 py-3 px-4 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 dark:hover:from-red-500 dark:hover:to-red-600 rounded-lg transition-all duration-200 shadow-sm hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
-              <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-              </svg>
-              {{ isEditMode ? 'Update Challenge' : 'Create Challenge' }}
-            </button>
-            <button
-              *ngIf="isEditMode"
-              type="button"
-              (click)="cancelEdit()"
-              class="px-6 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-all duration-200">
-              Cancel
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-      </div>
-
-      <!-- MANAGE TAB -->
-      <div *ngIf="activeTab === 'manage'">
-    <!-- Export Button -->
-    <div class="flex justify-end mb-4" *ngIf="!isLoading && challenges.length > 0">
-      <button 
-        (click)="exportChallenges()"
-        class="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 rounded-lg transition-all duration-200 shadow-sm flex items-center gap-2">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-        </svg>
-        Export Challenges
-      </button>
-    </div>
-    <!-- Loading State -->
-    <div *ngIf="isLoading" class="flex justify-center items-center py-12">
-      <svg class="animate-spin h-8 w-8 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-      </svg>
-    </div>
-
-    <!-- Empty State -->
-    <div *ngIf="!isLoading && challenges.length === 0" class="text-center py-12">
-      <div class="relative group inline-block">
-        <div class="absolute -inset-0.5 bg-gradient-to-r from-red-600 to-red-700 rounded-2xl blur opacity-20"></div>
-        <div class="relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-red-600/20 p-12">
-          <svg class="w-16 h-16 text-slate-300 dark:text-slate-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-          </svg>
-          <h3 class="text-xl font-semibold text-slate-900 dark:text-white mb-2">No challenges yet</h3>
-          <p class="text-slate-600 dark:text-slate-400 mb-6">Create your first CTF challenge to get started</p>
-          <button 
-            (click)="switchTab('create')"
-            class="px-6 py-3 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 rounded-lg transition-all duration-200 shadow-sm">
-            Create Challenge
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Challenges Table -->
-    <div *ngIf="!isLoading && challenges.length > 0" class="relative group">
-      <div class="absolute -inset-0.5 bg-gradient-to-r from-red-600 to-red-700 rounded-2xl blur opacity-10 group-hover:opacity-20 dark:opacity-20 dark:group-hover:opacity-30 transition duration-300"></div>
-      
-      <div class="relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-red-600/20 overflow-hidden shadow-md transition-colors duration-300">
-        <!-- Desktop Table View (hidden on mobile) -->
-        <div class="hidden md:block overflow-x-auto">
-          <table class="w-full min-w-full">
-            <thead class="bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-              <tr>
-                <th class="px-6 py-4 text-left text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Title</th>
-                <th class="px-6 py-4 text-left text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Category</th>
-                <th class="px-6 py-4 text-left text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Difficulty</th>
-                <th class="px-6 py-4 text-left text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Points</th>
-                <th class="px-6 py-4 text-left text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Solves</th>
-                <th class="px-6 py-4 text-right text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
-              <ng-container *ngFor="let challenge of challenges">
-                <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors duration-150">
-                  <!-- Title -->
-                  <td class="px-6 py-4">
-                    <div class="flex items-center">
-                      <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center text-white font-bold text-sm mr-3 flex-shrink-0">
-                        {{ challenge.title.charAt(0).toUpperCase() }}
-                      </div>
-                      <div>
-                        <p class="text-slate-900 dark:text-white font-medium">{{ challenge.title }}</p>
-                        <p class="text-slate-500 dark:text-slate-400 text-xs truncate max-w-xs">
-                          {{ (challenge.files && challenge.files.length) || 0 }} file(s)
-                        </p>
-                      </div>
-                    </div>
-                  </td>
-                  
-                  <!-- Category -->
-                  <td class="px-6 py-4">
-                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
-                      {{ getCategoryLabel(challenge.category) }}
-                    </span>
-                  </td>
-                  
-                  <!-- Difficulty -->
-                  <td class="px-6 py-4">
-                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium"
-                          [ngClass]="{
-                            'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400': challenge.difficulty === 'easy',
-                            'bg-yellow-100 dark:bg-yellow-500/20 text-yellow-700 dark:text-yellow-400': challenge.difficulty === 'medium',
-                            'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400': challenge.difficulty === 'hard'
-                          }">
-                      {{ getDifficultyLabel(challenge.difficulty) }}
-                    </span>
-                  </td>
-                  
-                  <!-- Points (Dynamic) -->
-                  <td class="px-6 py-4">
-                    <span class="text-slate-900 dark:text-white font-semibold">{{ challenge.current_points }} pts</span>
-                  </td>
-                  
-                  <!-- Solves -->
-                  <td class="px-6 py-4">
-                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400">
-                      {{ challenge.solve_count }}
-                    </span>
-                  </td>
-                  
-                  <!-- Actions -->
-                  <td class="px-6 py-4 text-right">
-                    <div class="flex items-center justify-end gap-2">
-                      <button 
-                        (click)="previewChallengeToggle(challenge)"
-                        class="p-2 text-slate-500 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-500/10 rounded-lg transition-colors"
-                        title="Preview">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                        </svg>
-                      </button>
-                      <button 
-                        (click)="editChallenge(challenge)"
-                        class="p-2 text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-lg transition-colors"
-                        title="Edit">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                        </svg>
-                      </button>
-                      <button 
-                        (click)="duplicateChallenge(challenge.id)"
-                        class="p-2 text-slate-500 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-500/10 rounded-lg transition-colors"
-                        title="Duplicate">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                        </svg>
-                      </button>
-                      <button 
-                        (click)="deleteChallenge(challenge)"
-                        class="p-2 text-slate-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
-                        title="Delete">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                        </svg>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              </ng-container>
-            </tbody>
-          </table>
-        </div>
-        
-        <!-- Mobile Card View (visible on mobile only) -->
-        <div class="md:hidden divide-y divide-slate-200 dark:divide-slate-700">
-          <div *ngFor="let challenge of challenges" class="p-4">
-            <div class="flex items-start justify-between mb-3">
-              <div class="flex-1 min-w-0">
-                <h3 class="text-base font-semibold text-slate-900 dark:text-white break-words">{{ challenge.title }}</h3>
-                <div class="flex flex-wrap gap-2 mt-2">
-                  <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
-                    {{ getCategoryLabel(challenge.category) }}
-                  </span>
-                  <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
-                        [ngClass]="{
-                          'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400': challenge.difficulty === 'easy',
-                          'bg-yellow-100 dark:bg-yellow-500/20 text-yellow-700 dark:text-yellow-400': challenge.difficulty === 'medium',
-                          'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400': challenge.difficulty === 'hard'
-                        }">
-                    {{ getDifficultyLabel(challenge.difficulty) }}
-                  </span>
-                </div>
-              </div>
-            </div>
-            
-            <div class="grid grid-cols-2 gap-2 text-sm mb-3">
-              <div>
-                <span class="text-slate-500 dark:text-slate-400">Points:</span>
-                <span class="ml-1 font-semibold text-slate-900 dark:text-white">{{ challenge.current_points }}</span>
-              </div>
-              <div>
-                <span class="text-slate-500 dark:text-slate-400">Solves:</span>
-                <span class="ml-1 font-semibold text-blue-600 dark:text-blue-400">{{ challenge.solve_count }}</span>
-              </div>
-            </div>
-            
-            <div class="flex flex-wrap gap-2">
-              <button 
-                (click)="previewChallengeToggle(challenge)"
-                class="flex-1 min-w-[100px] px-3 py-2 text-xs font-medium text-purple-700 dark:text-purple-400 bg-purple-50 dark:bg-purple-500/10 hover:bg-purple-100 dark:hover:bg-purple-500/20 rounded-lg transition-colors">
-                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                </svg>
-                Preview
-              </button>
-              <button 
-                (click)="editChallenge(challenge)"
-                class="flex-1 min-w-[100px] px-3 py-2 text-xs font-medium text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 hover:bg-blue-100 dark:hover:bg-blue-500/20 rounded-lg transition-colors">
-                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                </svg>
-                Edit
-              </button>
-              <button 
-                (click)="duplicateChallenge(challenge.id)"
-                class="px-3 py-2 text-xs font-medium text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-500/10 hover:bg-green-100 dark:hover:bg-green-500/20 rounded-lg transition-colors">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                </svg>
-              </button>
-              <button 
-                (click)="deleteChallenge(challenge)"
-                class="px-3 py-2 text-xs font-medium text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 rounded-lg transition-colors">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                </svg>
-              </button>
-            </div>
-            
-          </div>
-        </div>
-      </div>
-    </div>
-      </div>
-
-      <!-- NOTIFICATIONS TAB -->
-      <div *ngIf="activeTab === 'notifications'">
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <!-- Create/Edit Notification Form -->
-      <div class="relative group">
-        <div class="absolute -inset-0.5 bg-gradient-to-r from-red-600 to-red-700 rounded-2xl blur opacity-20 group-hover:opacity-30 dark:opacity-30 dark:group-hover:opacity-40 transition duration-300"></div>
-        
-        <div class="relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-red-600/20 p-6 shadow-md transition-colors duration-300">
-          <div class="flex items-center justify-between mb-6">
-            <h2 class="text-xl font-bold text-slate-900 dark:text-white">
-              {{ isEditingNotification ? 'Edit Notification' : 'Create Notification' }}
-            </h2>
-            <button *ngIf="isEditingNotification" 
-                    (click)="cancelEditNotification()"
-                    class="text-slate-500 hover:text-red-500 transition-colors">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-              </svg>
-            </button>
-          </div>
-          
-          <form [formGroup]="notificationForm" (ngSubmit)="onSubmitNotification()" class="space-y-4">
-            <!-- Title -->
-            <div>
-              <label for="notif-title" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Title *
-              </label>
-              <input
-                id="notif-title"
-                type="text"
-                formControlName="title"
-                class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all duration-200"
-                placeholder="e.g., Competition starts soon!"
-              />
-            </div>
-
-            <!-- Content -->
-            <div>
-              <label for="notif-content" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Content *
-              </label>
-              <textarea
-                id="notif-content"
-                formControlName="content"
-                rows="3"
-                class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all duration-200 resize-none"
-                placeholder="Enter the notification message..."
-              ></textarea>
-            </div>
-
-            <!-- Type -->
-            <div>
-              <label for="notif-type" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Type *
-              </label>
-              <select
-                id="notif-type"
-                formControlName="type"
-                class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all duration-200">
-                <option *ngFor="let type of notificationTypes" [value]="type.value">{{ type.label }}</option>
-              </select>
-            </div>
-
-            <!-- Submit Button -->
-            <button
-              type="submit"
-              [disabled]="!notificationForm.valid"
-              class="w-full py-3 px-4 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 dark:hover:from-red-500 dark:hover:to-red-600 rounded-lg transition-all duration-200 shadow-sm hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
-              {{ isEditingNotification ? 'Update Notification' : 'Create Notification' }}
-            </button>
-          </form>
-        </div>
-      </div>
-
-      <!-- Notifications List -->
-      <div>
-        <!-- Loading State -->
-        <div *ngIf="isLoadingNotifications" class="flex justify-center items-center py-12">
-          <svg class="animate-spin h-8 w-8 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-        </div>
-
-        <!-- Empty State -->
-        <div *ngIf="!isLoadingNotifications && notifications.length === 0" class="text-center py-12">
-          <div class="relative group inline-block">
-            <div class="absolute -inset-0.5 bg-gradient-to-r from-red-600 to-red-700 rounded-2xl blur opacity-20"></div>
-            <div class="relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-red-600/20 p-8">
-              <svg class="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
-              </svg>
-              <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-1">No notifications</h3>
-              <p class="text-slate-600 dark:text-slate-400 text-sm">Create your first announcement</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Notifications List -->
-        <div *ngIf="!isLoadingNotifications && notifications.length > 0" class="space-y-4">
-          <div *ngFor="let notification of notifications" class="relative group">
-            <div class="absolute -inset-0.5 bg-gradient-to-r from-red-600/50 to-red-700/50 rounded-xl blur opacity-0 group-hover:opacity-20 transition duration-300"></div>
-            
-            <div class="relative bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-4 transition-colors duration-300"
-                 [ngClass]="{'opacity-50': !notification.is_active}">
-              <div class="flex items-start justify-between gap-4">
-                <div class="flex-1 min-w-0">
-                  <div class="flex items-center gap-2 mb-1">
-                    <span class="px-2 py-0.5 text-xs font-medium rounded-full"
-                          [ngClass]="{
-                            'bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400': notification.type === 'info',
-                            'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400': notification.type === 'warning',
-                            'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400': notification.type === 'success',
-                            'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400': notification.type === 'error'
-                          }">
-                      {{ getNotificationTypeLabel(notification.type) }}
-                    </span>
-                    <span *ngIf="!notification.is_active" class="px-2 py-0.5 text-xs font-medium rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400">
-                      Inactive
-                    </span>
-                  </div>
-                  <h3 class="text-slate-900 dark:text-white font-semibold truncate">{{ notification.title }}</h3>
-                  <p class="text-slate-600 dark:text-slate-400 text-sm mt-1 line-clamp-2">{{ notification.content }}</p>
-                </div>
-                
-                <div class="flex items-center gap-1 flex-shrink-0">
-                  <!-- Toggle Active -->
-                  <button 
-                    (click)="toggleNotificationActive(notification)"
-                    class="p-2 text-slate-500 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10 rounded-lg transition-colors"
-                    [title]="notification.is_active ? 'Deactivate' : 'Activate'">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path *ngIf="notification.is_active" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                      <path *ngIf="notification.is_active" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                      <path *ngIf="!notification.is_active" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
-                    </svg>
-                  </button>
-                  
-                  <!-- Edit -->
-                  <button 
-                    (click)="editNotification(notification)"
-                    class="p-2 text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-lg transition-colors"
-                    title="Edit">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                    </svg>
-                  </button>
-                  
-                  <!-- Delete -->
-                  <button 
-                    (click)="deleteNotification(notification)"
-                    class="p-2 text-slate-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
-                    title="Delete">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-      </div>
-
-      <!-- Contest Config Tab -->
-      <div *ngIf="activeTab === 'contest'">
-    <div class="space-y-6">
-      <!-- Contests list -->
-      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-red-600/20 p-8 shadow-md">
-        <div class="flex items-center justify-between mb-6">
-          <h2 class="text-2xl font-bold text-slate-900 dark:text-white">Contests</h2>
-          <button type="button" (click)="startCreateContest()"
-                  class="px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 rounded-lg transition-all duration-200">
-            New Contest
-          </button>
-        </div>
-
-        <!-- Create/Edit contest form -->
-        <form *ngIf="isCreatingContest || isEditingContest" [formGroup]="contestEntityForm" (ngSubmit)="onSubmitContestEntity()" class="mb-6 p-4 bg-slate-50 dark:bg-slate-800 rounded-lg space-y-4">
-          <h3 class="font-semibold text-slate-900 dark:text-white">{{ isEditingContest ? 'Edit Contest' : 'New Contest' }}</h3>
-          <div>
-            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Name *</label>
-            <input type="text" formControlName="name" class="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white"/>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Description</label>
-            <textarea formControlName="description" rows="2" class="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white"></textarea>
-          </div>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Start Time *</label>
-              <app-datetime-picker formControlName="start_time" placeholder="Select start time"></app-datetime-picker>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">End Time *</label>
-              <app-datetime-picker formControlName="end_time" placeholder="Select end time"></app-datetime-picker>
-            </div>
-          </div>
-          <div class="flex gap-2">
-            <button type="submit" [disabled]="!contestEntityForm.valid" class="px-4 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg disabled:opacity-50">Save</button>
-            <button type="button" (click)="cancelContestForm()" class="px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-200 dark:bg-slate-700 rounded-lg">Cancel</button>
-          </div>
-        </form>
-
-        <div *ngIf="(isLoadingContest || isLoadingContests) && !isCreatingContest && !isEditingContest" class="text-center py-8">
-          <div class="inline-flex items-center gap-2">
-            <svg class="animate-spin h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-            </svg>
-            <p class="text-slate-500 dark:text-slate-400">Loading contests...</p>
-          </div>
-        </div>
-
-        <div *ngIf="!isLoadingContest && !isLoadingContests && !isCreatingContest && !isEditingContest && contests.length === 0" class="text-center py-8">
-          <p class="text-slate-500 dark:text-slate-400">No contests yet. Create one to get started.</p>
-        </div>
-
-        <div *ngIf="!isLoadingContest && !isLoadingContests && contests.length > 0" class="space-y-2">
-          <div *ngFor="let contest of contests" class="flex items-center justify-between p-4 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors duration-150"
-               [class.bg-red-50]="selectedContest?.id === contest.id"
-               [class.dark:bg-red-500/10]="selectedContest?.id === contest.id"
-               [class.border-red-300]="selectedContest?.id === contest.id"
-               [class.dark:border-red-600/40]="selectedContest?.id === contest.id"
-               (click)="selectContest(contest)">
-            <div class="flex-1">
-              <div class="flex items-center gap-2 flex-wrap">
-                <span class="font-medium text-slate-900 dark:text-white">{{ contest.name }}</span>
-                <span *ngIf="activeContestId === contest.id" class="px-2 py-0.5 text-xs rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-medium">Active</span>
-                <span class="px-2 py-0.5 text-xs rounded-full font-medium"
-                      [ngClass]="{
-                        'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400': getContestStatus(contest) === 'not_started',
-                        'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400': getContestStatus(contest) === 'running',
-                        'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400': getContestStatus(contest) === 'ended'
-                      }">
-                  {{ getContestStatus(contest) === 'not_started' ? 'Upcoming' : getContestStatus(contest) === 'running' ? 'Running' : 'Ended' }}
-                </span>
-              </div>
-              <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                {{ formatDateForDisplay(contest.start_time) }} &ndash; {{ formatDateForDisplay(contest.end_time) }}
-              </p>
-            </div>
-            <div class="flex gap-2 flex-shrink-0">
-              <button type="button" (click)="startEditContest(contest); $event.stopPropagation()" class="px-3 py-1.5 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors">Edit</button>
-              <button *ngIf="activeContestId !== contest.id" type="button" (click)="setActiveContest(contest.id); $event.stopPropagation()" class="px-3 py-1.5 text-sm text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 rounded transition-colors">Set Active</button>
-              <button type="button" (click)="deleteContest(contest); $event.stopPropagation()" class="px-3 py-1.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 rounded transition-colors">Delete</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Rounds (when contest selected) -->
-      <div *ngIf="selectedContest" class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-red-600/20 p-8 shadow-md">
-        <div class="flex items-center justify-between mb-6">
-          <div>
-            <h2 class="text-2xl font-bold text-slate-900 dark:text-white">Rounds</h2>
-            <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">{{ selectedContest.name }}</p>
-          </div>
-          <button type="button" (click)="startCreateRound()"
-                  class="px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 rounded-lg transition-all duration-200">
-            New Round
-          </button>
-        </div>
-
-        <!-- Create/Edit round form -->
-        <form *ngIf="isCreatingRound || isEditingRound" [formGroup]="roundForm" (ngSubmit)="onSubmitRound()" class="mb-6 p-4 bg-slate-50 dark:bg-slate-800 rounded-lg space-y-4">
-          <h3 class="font-semibold text-slate-900 dark:text-white">{{ isEditingRound ? 'Edit Round' : 'New Round' }}</h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Name *</label>
-              <input type="text" formControlName="name" class="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white"/>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Order</label>
-              <input type="number" formControlName="order" class="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white"/>
-            </div>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Description</label>
-            <textarea formControlName="description" rows="2" class="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white"></textarea>
-          </div>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Visible From *</label>
-              <app-datetime-picker formControlName="visible_from" placeholder="Visible from"></app-datetime-picker>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Start Time *</label>
-              <app-datetime-picker formControlName="start_time" placeholder="Start time"></app-datetime-picker>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">End Time *</label>
-              <app-datetime-picker formControlName="end_time" placeholder="End time"></app-datetime-picker>
-            </div>
-          </div>
-          <div class="flex gap-2">
-            <button type="submit" [disabled]="!roundForm.valid" class="px-4 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg disabled:opacity-50">Save</button>
-            <button type="button" (click)="cancelRoundForm()" class="px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-200 dark:bg-slate-700 rounded-lg">Cancel</button>
-          </div>
-        </form>
-
-        <!-- Loading rounds -->
-        <div *ngIf="isLoadingRounds && !isCreatingRound && !isEditingRound" class="text-center py-8">
-          <div class="inline-flex items-center gap-2">
-            <svg class="animate-spin h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-            </svg>
-            <p class="text-slate-500 dark:text-slate-400">Loading rounds...</p>
-          </div>
-        </div>
-
-        <div *ngIf="!isLoadingRounds && !isCreatingRound && !isEditingRound && rounds.length === 0" class="text-center py-8">
-          <p class="text-slate-500 dark:text-slate-400">No rounds yet. Create one to assign challenges.</p>
-        </div>
-
-        <div *ngIf="!isLoadingRounds && rounds.length > 0" class="space-y-2">
-          <div *ngFor="let round of rounds"
-               class="p-4 rounded-lg border transition-colors duration-150 cursor-pointer"
-               [ngClass]="{
-                 'border-indigo-300 dark:border-indigo-500/40 bg-indigo-50 dark:bg-indigo-500/10': selectedRound?.id === round.id,
-                 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50': selectedRound?.id !== round.id
-               }"
-               (click)="selectRound(round)">
-            <div class="flex items-center justify-between">
-              <div class="flex-1">
-                <div class="flex items-center gap-2 flex-wrap">
-                  <span class="font-medium text-slate-900 dark:text-white">{{ round.name }}</span>
-                  <span class="text-xs text-slate-400 dark:text-slate-500">Order: {{ round.order }}</span>
-                  <span class="ml-1 px-2 py-0.5 text-xs rounded-full font-medium"
-                        [ngClass]="{
-                          'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400': getRoundStatus(round) === 'not_started',
-                          'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400': getRoundStatus(round) === 'running',
-                          'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400': getRoundStatus(round) === 'ended'
-                        }">
-                    {{ getRoundStatus(round) === 'not_started' ? 'Upcoming' : getRoundStatus(round) === 'running' ? 'Running' : 'Ended' }}
-                  </span>
-                </div>
-                <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                  {{ formatDateForDisplay(round.start_time) }} &ndash; {{ formatDateForDisplay(round.end_time) }}
-                </p>
-                <p *ngIf="round.visible_from" class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
-                  Visible from: {{ formatDateForDisplay(round.visible_from) }}
-                </p>
-              </div>
-              <div class="flex gap-2 flex-shrink-0">
-                <button type="button" (click)="selectRound(round); $event.stopPropagation()"
-                        class="px-3 py-1.5 text-sm text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 rounded transition-colors"
-                        [class.font-semibold]="selectedRound?.id === round.id">
-                  Challenges
-                </button>
-                <button type="button" (click)="startEditRound(round); $event.stopPropagation()" class="px-3 py-1.5 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors">Edit</button>
-                <button type="button" (click)="deleteRound(round); $event.stopPropagation()" class="px-3 py-1.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 rounded transition-colors">Delete</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Round Challenges (when round selected) -->
-      <div *ngIf="selectedRound" class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-red-600/20 p-8 shadow-md">
-        <div class="flex items-center justify-between mb-6">
-          <div>
-            <h2 class="text-xl font-bold text-slate-900 dark:text-white">Challenges in Round</h2>
-            <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">{{ selectedRound.name }} &mdash; {{ selectedContest?.name }}</p>
-          </div>
-          <button type="button" (click)="selectedRound = null"
-                  class="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-            </svg>
-          </button>
-        </div>
-
-        <!-- Loading -->
-        <div *ngIf="isLoadingRoundChallenges" class="text-center py-6">
-          <div class="inline-flex items-center gap-2">
-            <svg class="animate-spin h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-            </svg>
-            <p class="text-slate-500 dark:text-slate-400">Loading challenges...</p>
-          </div>
-        </div>
-
-        <div *ngIf="!isLoadingRoundChallenges">
-          <!-- Attached challenges -->
-          <div class="mb-6">
-            <div class="flex items-center justify-between mb-3">
-              <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                Attached ({{ roundChallengeIds.length }})
-              </h3>
-              <div class="flex items-center gap-2" *ngIf="roundChallengeIds.length > 0">
-                <button 
-                  type="button"
-                  (click)="areAllAttachedSelected() ? deselectAllAttached() : selectAllAttached()"
-                  class="text-xs px-2 py-1 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors">
-                  {{ areAllAttachedSelected() ? 'Deselect All' : 'Select All' }}
-                </button>
-                <button 
-                  type="button"
-                  (click)="bulkDetachSelected()"
-                  [disabled]="selectedAttachedChallenges.size === 0"
-                  [class.opacity-50]="selectedAttachedChallenges.size === 0"
-                  [class.cursor-not-allowed]="selectedAttachedChallenges.size === 0"
-                  class="text-xs px-3 py-1 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded transition-colors font-medium">
-                  Remove Selected ({{ selectedAttachedChallenges.size }})
-                </button>
-              </div>
-            </div>
-            <div *ngIf="roundChallengeIds.length === 0" class="text-center py-6 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-dashed border-slate-300 dark:border-slate-700">
-              <p class="text-slate-500 dark:text-slate-400 text-sm">No challenges attached to this round yet.</p>
-              <p class="text-slate-400 dark:text-slate-500 text-xs mt-1">Add challenges from the list below.</p>
-            </div>
-            <div *ngFor="let cid of roundChallengeIds" 
-                 class="flex items-center gap-3 p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 mb-2 hover:border-slate-300 dark:hover:border-slate-600 transition-colors cursor-pointer"
-                 [class.bg-slate-50]="isAttachedChallengeSelected(cid)"
-                 [class.dark:bg-slate-800]="isAttachedChallengeSelected(cid)"
-                 (click)="toggleAttachedChallenge(cid)">
-              <input 
-                type="checkbox"
-                [checked]="isAttachedChallengeSelected(cid)"
-                (click)="$event.stopPropagation(); toggleAttachedChallenge(cid)"
-                class="w-4 h-4 text-red-600 bg-white border-slate-300 rounded focus:ring-red-500 dark:bg-slate-700 dark:border-slate-600 dark:ring-offset-slate-800 focus:ring-2 flex-shrink-0">
-              <div class="flex items-center gap-3 flex-1 min-w-0">
-                <span class="font-medium text-slate-900 dark:text-white truncate">{{ getChallengeTitle(cid) }}</span>
-                <span class="px-2 py-0.5 text-xs rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 flex-shrink-0">{{ getChallengeCategory(cid) }}</span>
-                <span *ngIf="getChallengeDifficulty(cid)" class="px-2 py-0.5 text-xs rounded-full flex-shrink-0"
-                      [ngClass]="{
-                        'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400': getChallengeDifficulty(cid) === 'easy',
-                        'bg-yellow-100 dark:bg-yellow-500/20 text-yellow-700 dark:text-yellow-400': getChallengeDifficulty(cid) === 'medium',
-                        'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400': getChallengeDifficulty(cid) === 'hard'
-                      }">{{ getChallengeDifficulty(cid) }}</span>
-                <span class="text-xs text-slate-500 dark:text-slate-400 flex-shrink-0">{{ getChallengePoints(cid) }} pts</span>
-              </div>
-              <button 
-                type="button" 
-                (click)="$event.stopPropagation(); detachChallenge(cid)"
-                class="px-3 py-1 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors flex-shrink-0">
-                Remove
-              </button>
-            </div>
-          </div>
-
-          <!-- Available challenges -->
-          <div>
-            <div class="flex items-center justify-between mb-3">
-              <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                Available Challenges ({{ availableChallengesForRound.length }})
-              </h3>
-              <div class="flex items-center gap-2" *ngIf="availableChallengesForRound.length > 0">
-                <button 
-                  type="button"
-                  (click)="areAllAvailableSelected() ? deselectAllAvailable() : selectAllAvailable()"
-                  class="text-xs px-2 py-1 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors">
-                  {{ areAllAvailableSelected() ? 'Deselect All' : 'Select All' }}
-                </button>
-                <button 
-                  type="button"
-                  (click)="bulkAttachSelected()"
-                  [disabled]="selectedAvailableChallenges.size === 0"
-                  [class.opacity-50]="selectedAvailableChallenges.size === 0"
-                  [class.cursor-not-allowed]="selectedAvailableChallenges.size === 0"
-                  class="text-xs px-3 py-1 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 rounded transition-colors font-medium">
-                  Attach Selected ({{ selectedAvailableChallenges.size }})
-                </button>
-              </div>
-            </div>
-            <div *ngIf="availableChallengesForRound.length === 0" class="text-center py-4">
-              <p class="text-slate-500 dark:text-slate-400 text-sm">All challenges have been attached.</p>
-            </div>
-            <div *ngFor="let ch of availableChallengesForRound" 
-                 class="flex items-center gap-3 p-3 rounded-lg border border-slate-200 dark:border-slate-700 mb-2 hover:border-slate-300 dark:hover:border-slate-600 transition-colors cursor-pointer"
-                 [class.bg-slate-50]="isAvailableChallengeSelected(ch.id)"
-                 [class.dark:bg-slate-800]="isAvailableChallengeSelected(ch.id)"
-                 (click)="toggleAvailableChallenge(ch.id)">
-              <input 
-                type="checkbox"
-                [checked]="isAvailableChallengeSelected(ch.id)"
-                (click)="$event.stopPropagation(); toggleAvailableChallenge(ch.id)"
-                class="w-4 h-4 text-emerald-600 bg-white border-slate-300 rounded focus:ring-emerald-500 dark:bg-slate-700 dark:border-slate-600 dark:ring-offset-slate-800 focus:ring-2 flex-shrink-0">
-              <div class="flex items-center gap-3 flex-1 min-w-0">
-                <span class="font-medium text-slate-900 dark:text-white truncate">{{ ch.title }}</span>
-                <span class="px-2 py-0.5 text-xs rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 flex-shrink-0">{{ getCategoryLabel(ch.category) }}</span>
-                <span class="px-2 py-0.5 text-xs rounded-full flex-shrink-0"
-                      [ngClass]="{
-                        'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400': ch.difficulty === 'easy',
-                        'bg-yellow-100 dark:bg-yellow-500/20 text-yellow-700 dark:text-yellow-400': ch.difficulty === 'medium',
-                        'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400': ch.difficulty === 'hard'
-                      }">{{ ch.difficulty }}</span>
-                <span class="text-xs text-slate-500 dark:text-slate-400 flex-shrink-0">{{ ch.current_points }} pts</span>
-              </div>
-              <button 
-                type="button" 
-                (click)="$event.stopPropagation(); attachChallenge(ch.id)"
-                class="px-3 py-1 text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 rounded-lg transition-colors flex-shrink-0">
-                Attach
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-      </div>
-
-      <!-- Writeups Tab -->
-      <div *ngIf="activeTab === 'writeups'">
-    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-red-600/20 p-8 shadow-md">
-      <div class="flex items-center justify-between mb-6">
-        <h2 class="text-2xl font-bold text-slate-900 dark:text-white">Writeup Management</h2>
-        <select 
-          [(ngModel)]="selectedTeamFilter" 
-          (ngModelChange)="onTeamFilterChange()"
-          class="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-red-500 transition-colors duration-200">
-          <option value="">All Teams</option>
-          <option *ngFor="let team of teams" [value]="team.id">{{ team.name }}</option>
-        </select>
-      </div>
-      
-      <div *ngIf="isLoadingWriteups" class="text-center py-8">
-        <p class="text-slate-500 dark:text-slate-400">Loading writeups...</p>
-      </div>
-
-      <div *ngIf="!isLoadingWriteups && writeups.length === 0" class="text-center py-8">
-        <p class="text-slate-500 dark:text-slate-400">No writeups submitted yet.</p>
-      </div>
-
-      <div *ngIf="!isLoadingWriteups" class="space-y-4">
-        <div *ngFor="let writeup of writeups" class="bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4 text-slate-900 dark:text-slate-200">
-          <div class="flex items-center justify-between mb-2">
-            <div>
-              <span class="font-medium text-slate-900 dark:text-white">{{ writeup.username }}</span>
-              <span class="ml-2 px-2 py-0.5 text-xs rounded-full"
-                    [ngClass]="{
-                      'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400': writeup.status === 'pending',
-                      'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400': writeup.status === 'approved',
-                      'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400': writeup.status === 'rejected'
-                    }">
-                {{ writeup.status }}
-              </span>
-            </div>
-            <span class="text-xs text-slate-500 dark:text-slate-400">{{ writeup.created_at | date:'short' }}</span>
-          </div>
-          <div class="prose prose-sm prose-slate dark:prose-invert max-w-none mb-3 line-clamp-3
-                      prose-headings:text-slate-900 dark:prose-headings:text-white
-                      prose-p:text-slate-700 dark:prose-p:text-slate-200
-                      prose-strong:text-slate-900 dark:prose-strong:text-white
-                      prose-ul:text-slate-700 dark:prose-ul:text-slate-200
-                      prose-ol:text-slate-700 dark:prose-ol:text-slate-200
-                      prose-li:text-slate-700 dark:prose-li:text-slate-200
-                      prose-code:text-blue-600 dark:prose-code:text-blue-400 prose-code:bg-slate-100 dark:prose-code:bg-slate-900 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none
-                      prose-a:text-blue-600 dark:prose-a:text-blue-400
-                      prose-blockquote:text-slate-700 dark:prose-blockquote:text-slate-200"
-               [innerHTML]="renderWriteupContent(writeup)"></div>
-          <div class="flex gap-2">
-            <button (click)="viewWriteup(writeup)"
-                    class="px-3 py-1 text-xs font-medium text-blue-700 dark:text-blue-400 bg-blue-100 dark:bg-blue-500/20 hover:bg-blue-200 dark:hover:bg-blue-500/30 rounded-lg transition-colors duration-200">
-              View Full
-            </button>
-            <button *ngIf="writeup.status !== 'approved'" (click)="approveWriteup(writeup.id)"
-                    class="px-3 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-500/20 hover:bg-emerald-200 dark:hover:bg-emerald-500/30 rounded-lg transition-colors duration-200">
-              Approve
-            </button>
-            <button *ngIf="writeup.status !== 'rejected'" (click)="rejectWriteup(writeup.id)"
-                    class="px-3 py-1 text-xs font-medium text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-500/20 hover:bg-amber-200 dark:hover:bg-amber-500/30 rounded-lg transition-colors duration-200">
-              Reject
-            </button>
-            <button (click)="deleteWriteup(writeup.id)"
-                    class="px-3 py-1 text-xs font-medium text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-500/20 hover:bg-red-200 dark:hover:bg-red-500/30 rounded-lg transition-colors duration-200">
-              Delete
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-      </div>
-
-      <!-- Audit Log Tab -->
-      <div *ngIf="activeTab === 'audit'">
-    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-red-600/20 p-8 shadow-md">
-      <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-6">Audit Log</h2>
-
-      <div *ngIf="isLoadingAudit" class="text-center py-8">
-        <p class="text-slate-500 dark:text-slate-400">Loading audit logs...</p>
-      </div>
-
-      <div *ngIf="!isLoadingAudit && auditLogs.length === 0" class="text-center py-8">
-        <p class="text-slate-500 dark:text-slate-400">No audit logs yet.</p>
-      </div>
-
-      <div *ngIf="!isLoadingAudit && auditLogs.length > 0" class="overflow-x-auto max-w-full">
-        <table class="w-full text-sm min-w-[600px]">
-          <thead>
-            <tr class="border-b border-slate-200 dark:border-slate-700">
-              <th class="text-left py-3 px-4 text-slate-600 dark:text-slate-400 font-medium">Time</th>
-              <th class="text-left py-3 px-4 text-slate-600 dark:text-slate-400 font-medium">User</th>
-              <th class="text-left py-3 px-4 text-slate-600 dark:text-slate-400 font-medium">Action</th>
-              <th class="text-left py-3 px-4 text-slate-600 dark:text-slate-400 font-medium">Details</th>
-              <th class="text-left py-3 px-4 text-slate-600 dark:text-slate-400 font-medium">IP</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let log of auditLogs" class="border-b border-slate-100 dark:border-slate-800">
-              <td class="py-3 px-4 text-slate-500 dark:text-slate-400 whitespace-nowrap">{{ log.created_at | date:'short' }}</td>
-              <td class="py-3 px-4 text-slate-900 dark:text-white font-medium">{{ log.username }}</td>
-              <td class="py-3 px-4 text-slate-700 dark:text-slate-300">{{ log.action }}</td>
-              <td class="py-3 px-4 text-slate-500 dark:text-slate-400">{{ log.details }}</td>
-              <td class="py-3 px-4 text-slate-500 dark:text-slate-400 font-mono text-xs">{{ log.ip_address }}</td>
-            </tr>
-          </tbody>
-        </table>
-        <div class="flex items-center justify-between mt-4">
-          <span class="text-sm text-slate-500 dark:text-slate-400">Total: {{ auditTotal }} logs</span>
-          <div class="flex gap-2">
-            <button (click)="prevAuditPage()" [disabled]="auditPage <= 1"
-                    class="px-3 py-1 text-sm font-medium text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 rounded-lg disabled:opacity-50 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors duration-200">
-              Previous
-            </button>
-            <span class="px-3 py-1 text-sm text-slate-600 dark:text-slate-400">Page {{ auditPage }}</span>
-            <button (click)="nextAuditPage()"
-                    class="px-3 py-1 text-sm font-medium text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors duration-200">
-              Next
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-      </div>
-
-      <!-- Analytics Tab -->
-      <div *ngIf="activeTab === 'analytics'" class="space-y-6">
-    <div *ngIf="analyticsLoading" class="text-center py-12">
-      <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-red-500 mx-auto"></div>
-    </div>
-    <div *ngIf="analytics && !analyticsLoading">
-      <!-- Stats Cards -->
-      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-        <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-4 text-center">
-          <div class="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{{ analytics.total_users }}</div>
-          <div class="text-xs text-slate-500 dark:text-slate-400">Users</div>
-        </div>
-        <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-4 text-center">
-          <div class="text-2xl font-bold text-green-600 dark:text-green-400">{{ analytics.total_teams }}</div>
-          <div class="text-xs text-slate-500 dark:text-slate-400">Teams</div>
-        </div>
-        <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-4 text-center">
-          <div class="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{{ analytics.total_challenges }}</div>
-          <div class="text-xs text-slate-500 dark:text-slate-400">Challenges</div>
-        </div>
-        <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-4 text-center">
-          <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ analytics.total_submissions }}</div>
-          <div class="text-xs text-slate-500 dark:text-slate-400">Submissions</div>
-        </div>
-        <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-4 text-center">
-          <div class="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{{ analytics.total_correct }}</div>
-          <div class="text-xs text-slate-500 dark:text-slate-400">Correct</div>
-        </div>
-        <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-4 text-center">
-          <div class="text-2xl font-bold text-orange-600 dark:text-orange-400">{{ (analytics.success_rate * 100).toFixed(1) }}%</div>
-          <div class="text-xs text-slate-500 dark:text-slate-400">Success Rate</div>
-        </div>
-      </div>
-
-      <!-- Statistics Charts (Chart.js) -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
-          <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Solves Over Time (30 days)</h3>
-          <div class="h-64 relative">
-            <canvas id="solvesOverTimeChart"></canvas>
-          </div>
-        </div>
-        <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
-          <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Submissions Over Time (30 days)</h3>
-          <div class="h-64 relative">
-            <canvas id="submissionsOverTimeChart"></canvas>
-          </div>
-        </div>
-        <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
-          <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">User Growth (30 days)</h3>
-          <div class="h-64 relative">
-            <canvas id="userGrowthChart"></canvas>
-          </div>
-        </div>
-        <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
-          <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Team Growth (30 days)</h3>
-          <div class="h-64 relative">
-            <canvas id="teamGrowthChart"></canvas>
-          </div>
-        </div>
-        <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
-          <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Challenges by Category</h3>
-          <div class="h-64 relative">
-            <canvas id="categoryBreakdownChart"></canvas>
-          </div>
-        </div>
-        <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
-          <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Challenges by Difficulty</h3>
-          <div class="h-64 relative">
-            <canvas id="difficultyBreakdownChart"></canvas>
-          </div>
-        </div>
-        <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
-          <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Top Teams by Score</h3>
-          <div class="h-72 relative">
-            <canvas id="topTeamsChart"></canvas>
-          </div>
-        </div>
-        <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
-          <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Top Users by Score</h3>
-          <div class="h-72 relative">
-            <canvas id="topUsersChart"></canvas>
-          </div>
-        </div>
-        <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-6 lg:col-span-2">
-          <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Challenge Popularity (Top 10 by solves)</h3>
-          <div class="h-72 relative">
-            <canvas id="challengePopularityChart"></canvas>
-          </div>
-        </div>
-      </div>
-
-      <!-- Category & Difficulty Breakdown (list view) -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
-          <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Category Breakdown</h3>
-          <div class="space-y-2" *ngIf="categoryKeys.length > 0">
-            <div *ngFor="let key of categoryKeys" class="flex justify-between items-center">
-              <span class="text-sm text-slate-700 dark:text-slate-300 capitalize">{{ key }}</span>
-              <span class="text-sm font-medium text-slate-900 dark:text-white">{{ analytics.category_breakdown[key] }}</span>
-            </div>
-          </div>
-        </div>
-        <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
-          <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Difficulty Breakdown</h3>
-          <div class="space-y-2" *ngIf="difficultyKeys.length > 0">
-            <div *ngFor="let key of difficultyKeys" class="flex justify-between items-center">
-              <span class="text-sm text-slate-700 dark:text-slate-300 capitalize">{{ key }}</span>
-              <span class="text-sm font-medium text-slate-900 dark:text-white">{{ analytics.difficulty_breakdown[key] }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Challenge Popularity -->
-      <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-6" *ngIf="analytics.challenge_popularity && analytics.challenge_popularity.length > 0">
-        <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Challenge Popularity</h3>
-        <div class="overflow-x-auto max-w-full">
-          <table class="w-full text-left text-sm min-w-[600px]">
-            <thead>
-              <tr class="text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700">
-                <th class="pb-3">Challenge</th>
-                <th class="pb-3">Category</th>
-                <th class="pb-3">Solves</th>
-                <th class="pb-3">Attempts</th>
-                <th class="pb-3">Success Rate</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let cp of analytics.challenge_popularity" class="border-b border-slate-100 dark:border-slate-700/50">
-                <td class="py-2 font-medium text-slate-900 dark:text-white">{{ cp.title }}</td>
-                <td class="py-2"><span class="px-2 py-1 text-xs rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 capitalize">{{ cp.category }}</span></td>
-                <td class="py-2 text-green-600 dark:text-green-400">{{ cp.solve_count }}</td>
-                <td class="py-2">{{ cp.attempt_count }}</td>
-                <td class="py-2">{{ (cp.success_rate * 100).toFixed(1) }}%</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-      </div>
-
-      <!-- Users Tab -->
-      <div *ngIf="activeTab === 'users'" class="space-y-6">
-        <div *ngIf="usersLoading" class="text-center py-12">
-          <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-red-500 mx-auto"></div>
-        </div>
-        <div *ngIf="!usersLoading && users.length > 0" class="bg-white dark:bg-slate-800 rounded-lg shadow overflow-hidden">
-          <div class="overflow-x-auto max-w-full">
-            <table class="w-full text-left text-sm min-w-[900px]">
-              <thead>
-                <tr class="text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
-                  <th class="px-4 py-3">Username</th>
-                  <th class="px-4 py-3">Email</th>
-                  <th class="px-4 py-3">Role</th>
-                  <th class="px-4 py-3">Status</th>
-                  <th class="px-4 py-3">Last IP</th>
-                  <th class="px-4 py-3">Team</th>
-                  <th class="px-4 py-3">Last Login</th>
-                  <th class="px-4 py-3">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let user of users" class="border-b border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer" (click)="viewUserDetails(user)">
-                  <td class="px-4 py-3 font-medium text-slate-900 dark:text-white">
-                    <div class="flex items-center gap-2">
-                      {{ user.username }}
-                      <span *ngIf="user.oauth_provider" class="text-xs px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded">{{ user.oauth_provider }}</span>
-                      <span *ngIf="user.email_verified" class="text-green-500" title="Email verified">✓</span>
-                    </div>
-                  </td>
-                  <td class="px-4 py-3 text-slate-600 dark:text-slate-400">{{ user.email }}</td>
-                  <td class="px-4 py-3">
-                    <span [class]="user.role === 'admin' ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-slate-600 dark:text-slate-400'">
-                      {{ user.role }}
-                    </span>
-                  </td>
-                  <td class="px-4 py-3">
-                    <span class="px-2 py-1 rounded-full text-xs" [class]="{
-                      'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400': user.status === 'active' || !user.status,
-                      'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400': user.status === 'banned',
-                      'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400': user.status === 'suspended'
-                    }">
-                      {{ user.status || 'active' }}
-                    </span>
-                  </td>
-                  <td class="px-4 py-3 text-slate-600 dark:text-slate-400 font-mono text-xs">
-                    {{ user.last_ip || '-' }}
-                  </td>
-                  <td class="px-4 py-3 text-slate-600 dark:text-slate-400">
-                    <span *ngIf="user.team_name" class="text-xs px-2 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded">{{ user.team_name }}</span>
-                    <span *ngIf="!user.team_name" class="text-slate-400">-</span>
-                  </td>
-                  <td class="px-4 py-3 text-slate-600 dark:text-slate-400 text-xs">
-                    {{ user.last_login_at ? (user.last_login_at | date:'short') : '-' }}
-                  </td>
-                  <td class="px-4 py-3" (click)="$event.stopPropagation()">
-                    <div class="flex gap-2 flex-wrap">
-                      <button *ngIf="user.role !== 'admin'" (click)="updateUserRole(user.id, 'admin')" class="text-xs px-2 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded hover:bg-indigo-200 dark:hover:bg-indigo-900/50">Admin</button>
-                      <button *ngIf="user.role === 'admin'" (click)="updateUserRole(user.id, 'user')" class="text-xs px-2 py-1 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded hover:bg-slate-200 dark:hover:bg-slate-600">Demote</button>
-                      <button *ngIf="user.status !== 'banned'" (click)="updateUserStatus(user.id, 'banned')" class="text-xs px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-900/50">Ban</button>
-                      <button *ngIf="user.status === 'banned'" (click)="updateUserStatus(user.id, 'active')" class="text-xs px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded hover:bg-green-200 dark:hover:bg-green-900/50">Unban</button>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- User Details Modal -->
-        <div *ngIf="selectedUser" class="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
-          <div class="flex justify-between items-start mb-4">
-            <h3 class="text-lg font-semibold text-slate-900 dark:text-white">User Details: {{ selectedUser.username }}</h3>
-            <button (click)="selectedUser = null" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-            </button>
-          </div>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div>
-              <p class="text-sm text-slate-500 dark:text-slate-400">Email</p>
-              <p class="text-slate-900 dark:text-white">{{ selectedUser.email }}</p>
-            </div>
-            <div>
-              <p class="text-sm text-slate-500 dark:text-slate-400">Role</p>
-              <p class="text-slate-900 dark:text-white">{{ selectedUser.role }}</p>
-            </div>
-            <div>
-              <p class="text-sm text-slate-500 dark:text-slate-400">Created At</p>
-              <p class="text-slate-900 dark:text-white">{{ selectedUser.created_at | date:'medium' }}</p>
-            </div>
-            <div>
-              <p class="text-sm text-slate-500 dark:text-slate-400">Last Login</p>
-              <p class="text-slate-900 dark:text-white">{{ selectedUser.last_login_at ? (selectedUser.last_login_at | date:'medium') : 'Never' }}</p>
-            </div>
-            <div>
-              <p class="text-sm text-slate-500 dark:text-slate-400">Last IP</p>
-              <p class="text-slate-900 dark:text-white font-mono">{{ selectedUser.last_ip || 'Unknown' }}</p>
-            </div>
-            <div>
-              <p class="text-sm text-slate-500 dark:text-slate-400">Team</p>
-              <p class="text-slate-900 dark:text-white">{{ selectedUser.team_name || 'No team' }}</p>
-            </div>
-            <div *ngIf="selectedUser.ban_reason">
-              <p class="text-sm text-slate-500 dark:text-slate-400">Ban Reason</p>
-              <p class="text-red-600 dark:text-red-400">{{ selectedUser.ban_reason }}</p>
-            </div>
-          </div>
-          
-          <!-- IP History -->
-          <div *ngIf="selectedUser.ip_history && selectedUser.ip_history.length > 0" class="mt-4">
-            <h4 class="text-sm font-semibold text-slate-900 dark:text-white mb-2">IP History (Last 50)</h4>
-            <div class="max-h-48 overflow-y-auto bg-slate-50 dark:bg-slate-900/50 rounded p-3">
-              <table class="w-full text-sm">
-                <thead>
-                  <tr class="text-slate-500 dark:text-slate-400">
-                    <th class="text-left pb-2">IP Address</th>
-                    <th class="text-left pb-2">Action</th>
-                    <th class="text-left pb-2">Time</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let ip of selectedUser.ip_history" class="border-t border-slate-200 dark:border-slate-700">
-                    <td class="py-1 font-mono text-slate-700 dark:text-slate-300">{{ ip.ip }}</td>
-                    <td class="py-1 text-slate-600 dark:text-slate-400">{{ ip.action || '-' }}</td>
-                    <td class="py-1 text-slate-600 dark:text-slate-400">{{ ip.timestamp | date:'short' }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <!-- Manual User Score Adjustment -->
-          <div class="mt-6 border-t border-slate-200 dark:border-slate-700 pt-4">
-            <h4 class="text-sm font-semibold text-slate-900 dark:text-white mb-3">Adjust User Score</h4>
-            <div class="flex flex-col md:flex-row gap-3 items-start md:items-end">
-              <div>
-                <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-                  Delta (use negative value to deduct)
-                </label>
-                <input type="number"
-                       [(ngModel)]="userScoreDelta"
-                       class="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 w-32">
-              </div>
-              <div class="flex-1 w-full">
-                <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-                  Reason (optional)
-                </label>
-                <input type="text"
-                       [(ngModel)]="userScoreReason"
-                       placeholder="e.g. bonus, penalty, manual correction"
-                       class="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 w-full">
-              </div>
-              <button (click)="applyUserScoreAdjustment()"
-                      class="px-4 py-2 text-sm font-semibold bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed">
-                Apply
-              </button>
-            </div>
-            <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
-              This affects the individual scoreboard and analytics; it does not create a challenge solve.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Teams Tab -->
-      <div *ngIf="activeTab === 'teams'" class="space-y-6">
-        <div *ngIf="teamsLoading" class="text-center py-12">
-          <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-red-500 mx-auto"></div>
-        </div>
-        <div *ngIf="!teamsLoading && teams.length === 0" class="text-center py-12 text-slate-500 dark:text-slate-400">
-          No teams found.
-        </div>
-        <div *ngIf="!teamsLoading && teams.length > 0" class="bg-white dark:bg-slate-800 rounded-lg shadow overflow-hidden">
-          <div class="overflow-x-auto max-w-full">
-            <table class="w-full text-left text-sm min-w-[800px]">
-              <thead>
-                <tr class="text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
-                  <th class="px-4 py-3">Team Name</th>
-                  <th class="px-4 py-3">Leader</th>
-                  <th class="px-4 py-3">Members</th>
-                  <th class="px-4 py-3">Score</th>
-                  <th class="px-4 py-3">Invite Code</th>
-                  <th class="px-4 py-3">Created</th>
-                  <th class="px-4 py-3">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let team of teams" class="border-b border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer" (click)="viewTeamDetails(team)">
-                  <td class="px-4 py-3 font-medium text-slate-900 dark:text-white">{{ team.name }}</td>
-                  <td class="px-4 py-3 text-slate-600 dark:text-slate-400">{{ team.leader_name }}</td>
-                  <td class="px-4 py-3">
-                    <span class="px-2 py-1 rounded-full text-xs bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300">
-                      {{ team.member_count }} members
-                    </span>
-                  </td>
-                  <td class="px-4 py-3 font-semibold text-emerald-600 dark:text-emerald-400">{{ team.score }}</td>
-                  <td class="px-4 py-3 font-mono text-xs text-slate-600 dark:text-slate-400">{{ team.invite_code }}</td>
-                  <td class="px-4 py-3 text-slate-600 dark:text-slate-400 text-xs">{{ team.created_at | date:'short' }}</td>
-                  <td class="px-4 py-3" (click)="$event.stopPropagation()">
-                    <div class="flex gap-2">
-                      <button (click)="deleteTeam(team.id, team.name)" class="text-xs px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-900/50">Delete</button>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Team Details Modal -->
-        <div *ngIf="selectedTeam" class="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
-          <div class="flex justify-between items-start mb-4">
-            <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Team: {{ selectedTeam.name }}</h3>
-            <button (click)="selectedTeam = null" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-            </button>
-          </div>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div>
-              <p class="text-sm text-slate-500 dark:text-slate-400">Description</p>
-              <p class="text-slate-900 dark:text-white">{{ selectedTeam.description || 'No description' }}</p>
-            </div>
-            <div>
-              <p class="text-sm text-slate-500 dark:text-slate-400">Score</p>
-              <p class="text-emerald-600 dark:text-emerald-400 font-bold">{{ selectedTeam.score }}</p>
-            </div>
-            <div>
-              <p class="text-sm text-slate-500 dark:text-slate-400">Invite Code</p>
-              <p class="text-slate-900 dark:text-white font-mono">{{ selectedTeam.invite_code }}</p>
-            </div>
-            <div>
-              <p class="text-sm text-slate-500 dark:text-slate-400">Created At</p>
-              <p class="text-slate-900 dark:text-white">{{ selectedTeam.created_at | date:'medium' }}</p>
-            </div>
-          </div>
-          
-          <!-- Team Members -->
-          <div class="mt-4">
-            <h4 class="text-sm font-semibold text-slate-900 dark:text-white mb-2">Team Members</h4>
-            <div class="bg-slate-50 dark:bg-slate-900/50 rounded p-3">
-              <table class="w-full text-sm">
-                <thead>
-                  <tr class="text-slate-500 dark:text-slate-400">
-                    <th class="text-left pb-2">Username</th>
-                    <th class="text-left pb-2">Email</th>
-                    <th class="text-left pb-2">Role</th>
-                    <th class="text-left pb-2">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let member of selectedTeam.members" class="border-t border-slate-200 dark:border-slate-700">
-                    <td class="py-2 font-medium text-slate-900 dark:text-white">
-                      {{ member.username }}
-                      <span *ngIf="member.is_leader" class="ml-1 text-xs px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded">Leader</span>
-                    </td>
-                    <td class="py-2 text-slate-600 dark:text-slate-400">{{ member.email }}</td>
-                    <td class="py-2 text-slate-600 dark:text-slate-400">{{ member.is_leader ? 'Leader' : 'Member' }}</td>
-                    <td class="py-2">
-                      <div class="flex gap-2">
-                        <button *ngIf="!member.is_leader" (click)="changeTeamLeader(selectedTeam.id, member.id)" class="text-xs px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded hover:bg-amber-200 dark:hover:bg-amber-900/50">Make Leader</button>
-                        <button *ngIf="!member.is_leader" (click)="removeTeamMember(selectedTeam.id, member.id)" class="text-xs px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-900/50">Remove</button>
-                      </div>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <!-- Manual Score Adjustment -->
-          <div class="mt-6 border-t border-slate-200 dark:border-slate-700 pt-4">
-            <h4 class="text-sm font-semibold text-slate-900 dark:text-white mb-3">Adjust Team Score</h4>
-            <div class="flex flex-col md:flex-row gap-3 items-start md:items-end">
-              <div>
-                <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-                  Delta (use negative value to deduct)
-                </label>
-                <input type="number"
-                       [(ngModel)]="teamScoreDelta"
-                       class="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 w-32">
-              </div>
-              <div class="flex-1 w-full">
-                <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-                  Reason (optional)
-                </label>
-                <input type="text"
-                       [(ngModel)]="teamScoreReason"
-                       placeholder="e.g. bonus for hosting, penalty for abuse"
-                       class="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 w-full">
-              </div>
-              <button (click)="applyTeamScoreAdjustment()"
-                      class="px-4 py-2 text-sm font-semibold bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed">
-                Apply
-              </button>
-            </div>
-            <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
-              Current score: <span class="font-semibold text-emerald-600 dark:text-emerald-400">{{ selectedTeam.score }}</span>
-            </p>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </div>
-</div>
-
-<!-- Writeup View Modal -->
-<div *ngIf="selectedWriteup" class="fixed inset-0 z-50 overflow-y-auto">
-  <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-    <!-- Background overlay -->
-    <div class="fixed inset-0 bg-black/50 dark:bg-black/50 transition-opacity" (click)="selectedWriteup = null"></div>
-    
-    <!-- Modal panel -->
-    <div class="relative inline-block align-bottom bg-white dark:bg-slate-900 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full z-10" (click)="$event.stopPropagation()">
-      <div class="bg-white dark:bg-slate-900 px-6 py-4 border-b border-slate-200 dark:border-slate-700">
-        <div class="flex items-center justify-between">
-          <div>
-            <h3 class="text-2xl font-bold text-slate-900 dark:text-white">Writeup by {{ selectedWriteup.username }}</h3>
-            <div class="flex items-center gap-3 mt-2">
-              <span class="px-2 py-0.5 text-xs rounded-full"
-                    [ngClass]="{
-                      'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400': selectedWriteup.status === 'pending',
-                      'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400': selectedWriteup.status === 'approved',
-                      'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400': selectedWriteup.status === 'rejected'
-                    }">
-                {{ selectedWriteup.status }}
-              </span>
-              <span class="text-sm text-slate-500 dark:text-slate-400">{{ selectedWriteup.created_at | date:'medium' }}</span>
-            </div>
-          </div>
-          <button 
-            (click)="selectedWriteup = null"
-            class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-            </svg>
-          </button>
-        </div>
-      </div>
-      
-      <div class="bg-white dark:bg-slate-900 px-6 py-6 max-h-[60vh] overflow-y-auto text-slate-900 dark:text-slate-200">
-        <!-- Full Writeup Content -->
-        <div class="prose prose-slate dark:prose-invert max-w-none
-                    prose-headings:text-slate-900 dark:prose-headings:text-white prose-headings:break-words
-                    prose-p:text-slate-700 dark:prose-p:text-slate-200 prose-p:break-words
-                    prose-a:text-blue-600 dark:prose-a:text-blue-400 prose-a:break-words
-                    prose-code:text-blue-600 dark:prose-code:text-blue-400 prose-code:bg-slate-100 dark:prose-code:bg-slate-800 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none
-                    prose-pre:bg-slate-900 dark:prose-pre:bg-slate-950 prose-pre:border prose-pre:border-slate-700 prose-pre:overflow-x-auto prose-pre:max-w-full
-                    prose-strong:text-slate-900 dark:prose-strong:text-white prose-strong:break-words
-                    prose-ul:text-slate-700 dark:prose-ul:text-slate-200
-                    prose-ol:text-slate-700 dark:prose-ol:text-slate-200
-                    prose-li:text-slate-700 dark:prose-li:text-slate-200 prose-li:break-words
-                    prose-blockquote:text-slate-700 dark:prose-blockquote:text-slate-200 prose-blockquote:border-blue-500 dark:prose-blockquote:border-blue-500
-                    prose-hr:border-slate-300 dark:prose-hr:border-slate-700
-                    prose-table:block prose-table:overflow-x-auto prose-table:max-w-full"
-             [innerHTML]="renderWriteupContent(selectedWriteup)"></div>
-      </div>
-      
-      <div class="bg-slate-50 dark:bg-slate-800 px-6 py-4 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center">
-        <div class="flex gap-2">
-          <button *ngIf="selectedWriteup.status !== 'approved'" (click)="approveWriteup(selectedWriteup.id); selectedWriteup.status = 'approved'"
-                  class="px-4 py-2 text-sm font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-500/20 hover:bg-emerald-200 dark:hover:bg-emerald-500/30 rounded-lg transition-colors duration-200">
-            Approve
-          </button>
-          <button *ngIf="selectedWriteup.status !== 'rejected'" (click)="rejectWriteup(selectedWriteup.id); selectedWriteup.status = 'rejected'"
-                  class="px-4 py-2 text-sm font-medium text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-500/20 hover:bg-amber-200 dark:hover:bg-amber-500/30 rounded-lg transition-colors duration-200">
-            Reject
-          </button>
-          <button (click)="deleteWriteup(selectedWriteup.id)"
-                  class="px-4 py-2 text-sm font-medium text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-500/20 hover:bg-red-200 dark:hover:bg-red-500/30 rounded-lg transition-colors duration-200">
-            Delete
-          </button>
-        </div>
-        <button 
-          (click)="selectedWriteup = null"
-          class="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors">
-          Close
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Challenge Preview Modal -->
-<div *ngIf="previewChallenge" class="fixed inset-0 z-50 overflow-y-auto">
-  <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-    <!-- Background overlay -->
-    <div class="fixed inset-0 bg-black/50 dark:bg-black/50 transition-opacity" (click)="previewChallenge = null"></div>
-    
-    <!-- Modal panel -->
-    <div class="relative inline-block align-bottom bg-white dark:bg-slate-900 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full z-10" (click)="$event.stopPropagation()">
-      <div class="bg-white dark:bg-slate-900 px-6 py-4 border-b border-slate-200 dark:border-slate-700">
-        <div class="flex items-center justify-between">
-          <h3 class="text-2xl font-bold text-slate-900 dark:text-white">{{ previewChallenge.title }}</h3>
-          <button 
-            (click)="previewChallenge = null"
-            class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-            </svg>
-          </button>
-        </div>
-        
-        <!-- Metadata -->
-        <div class="flex items-center gap-6 mt-4 pb-4 border-b border-slate-200 dark:border-slate-700">
-          <div class="flex items-center gap-2">
-            <span class="text-sm text-slate-500 dark:text-slate-400">Category:</span>
-            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
-              {{ getCategoryLabel(previewChallenge.category) }}
-            </span>
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="text-sm text-slate-500 dark:text-slate-400">Difficulty:</span>
-            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium"
-                  [ngClass]="{
-                    'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400': previewChallenge.difficulty === 'easy',
-                    'bg-yellow-100 dark:bg-yellow-500/20 text-yellow-700 dark:text-yellow-400': previewChallenge.difficulty === 'medium',
-                    'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400': previewChallenge.difficulty === 'hard'
-                  }">
-              {{ getDifficultyLabel(previewChallenge.difficulty) }}
-            </span>
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="text-sm text-slate-500 dark:text-slate-400">Points:</span>
-            <span class="text-sm font-semibold text-slate-900 dark:text-white">{{ previewChallenge.current_points }}</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="text-sm text-slate-500 dark:text-slate-400">Solves:</span>
-            <span class="text-sm font-semibold text-blue-600 dark:text-blue-400">{{ previewChallenge.solve_count }}</span>
-          </div>
-        </div>
-      </div>
-      
-      <div class="bg-white dark:bg-slate-900 px-6 py-6 max-h-[60vh] overflow-y-auto text-slate-900 dark:text-slate-200">
-        <!-- Rendered Description -->
-        <div class="prose prose-slate dark:prose-invert max-w-none
-                    prose-headings:text-slate-900 dark:prose-headings:text-white prose-headings:break-words
-                    prose-p:text-slate-700 dark:prose-p:text-slate-200 prose-p:break-words
-                    prose-a:text-red-600 dark:prose-a:text-red-400 prose-a:break-words
-                    prose-code:text-red-600 dark:prose-code:text-red-400 prose-code:bg-slate-100 dark:prose-code:bg-slate-800 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none
-                    prose-pre:bg-slate-900 dark:prose-pre:bg-slate-950 prose-pre:border prose-pre:border-slate-700 prose-pre:overflow-x-auto prose-pre:max-w-full
-                    prose-strong:text-slate-900 dark:prose-strong:text-white prose-strong:break-words
-                    prose-ul:text-slate-700 dark:prose-ul:text-slate-200
-                    prose-ol:text-slate-700 dark:prose-ol:text-slate-200
-                    prose-li:text-slate-700 dark:prose-li:text-slate-200 prose-li:break-words
-                    prose-blockquote:text-slate-700 dark:prose-blockquote:text-slate-200 prose-blockquote:border-red-500 dark:prose-blockquote:border-red-500
-                    prose-hr:border-slate-300 dark:prose-hr:border-slate-700
-                    prose-table:block prose-table:overflow-x-auto prose-table:max-w-full"
-             [innerHTML]="renderChallengeDescription(previewChallenge)"></div>
-        
-        <!-- Files -->
-        <div *ngIf="previewChallenge.files && previewChallenge.files.length > 0" class="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700">
-          <h4 class="text-sm font-semibold text-slate-900 dark:text-white mb-3">Files:</h4>
-          <div class="flex flex-wrap gap-2">
-            <span *ngFor="let file of previewChallenge.files" class="text-xs px-3 py-1.5 bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400 rounded-lg font-mono">
-              {{ file }}
-            </span>
-          </div>
-        </div>
-        
-        <!-- Tags -->
-        <div *ngIf="previewChallenge.tags && previewChallenge.tags.length > 0" class="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700">
-          <h4 class="text-sm font-semibold text-slate-900 dark:text-white mb-3">Tags:</h4>
-          <div class="flex flex-wrap gap-2">
-            <span *ngFor="let tag of previewChallenge.tags" class="text-xs px-3 py-1.5 bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 rounded-lg">
-              {{ tag }}
-            </span>
-          </div>
-        </div>
-      </div>
-      
-      <div class="bg-slate-50 dark:bg-slate-800 px-6 py-4 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-3">
-        <button 
-          (click)="previewChallenge = null"
-          class="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors">
-          Close
-        </button>
-        <button 
-          (click)="editChallenge(previewChallenge); previewChallenge = null"
-          class="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 rounded-lg transition-all duration-200 shadow-sm">
-          Edit Challenge
-        </button>
-      </div>
     </div>
   </div>
 </div>

@@ -262,3 +262,38 @@ table {
 :root:not(.dark) .prose code[class*="language-"] {
   color: #e2e8f0;
 }
+
+/* ============================================
+   PROSE CODE BLOCK WHITESPACE PRESERVATION
+   Required for [innerHTML]-rendered Showdown output in challenge/writeup modals.
+   Angular ViewEncapsulation does NOT scope [innerHTML] nodes, so these rules
+   must live here (not in component SCSS) to take effect.
+   ============================================ */
+
+.prose pre,
+div.prose pre {
+  white-space: pre !important;
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+
+  code {
+    white-space: pre !important;
+    word-break: normal !important;
+    overflow-wrap: normal !important;
+    display: block !important;
+  }
+}
+
+.prose pre code,
+div.prose pre code,
+.prose pre > code {
+  white-space: pre !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+  display: block !important;
+  font-family: 'Courier New', Courier, monospace !important;
+}
+
+.prose code {
+  font-family: 'Courier New', Courier, monospace !important;
+}
