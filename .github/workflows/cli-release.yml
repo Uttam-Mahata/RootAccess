@@ -1,0 +1,42 @@
+name: Build and Release CLI
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'cli/**'
+      - '.github/workflows/cli-release.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build CLI Binaries
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache-dependency-path: cli/go.sum
+
+      - name: Build Binaries
+        working-directory: cli
+        run: |
+          mkdir -p bin
+          GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o bin/rootaccess-linux-amd64 main.go
+          GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o bin/rootaccess-linux-arm64 main.go
+          GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o bin/rootaccess-darwin-amd64 main.go
+          GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o bin/rootaccess-darwin-arm64 main.go
+          GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o bin/rootaccess-windows-amd64.exe main.go
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: rootaccess-cli-binaries
+          path: cli/bin/*
+
+  # This job will be used if we want to create a GitHub Release
+  # For now, we'll focus on the frontend deployment integration

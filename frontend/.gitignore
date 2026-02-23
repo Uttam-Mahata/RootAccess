@@ -44,3 +44,6 @@ frontend/environments/*
 .DS_Store
 Thumbs.db
 .vercel
+
+# Built CLI binaries
+/public/bin/

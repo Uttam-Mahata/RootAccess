@@ -21,6 +21,22 @@ jobs:
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache-dependency-path: cli/go.sum
+
+      - name: Build CLI Binaries
+        working-directory: cli
+        run: |
+          mkdir -p ../frontend/public/bin
+          GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o ../frontend/public/bin/rootaccess-linux-amd64 main.go
+          GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o ../frontend/public/bin/rootaccess-linux-arm64 main.go
+          GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o ../frontend/public/bin/rootaccess-darwin-amd64 main.go
+          GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o ../frontend/public/bin/rootaccess-darwin-arm64 main.go
+          GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o ../frontend/public/bin/rootaccess-windows-amd64.exe main.go
+
       - name: Install dependencies
         working-directory: frontend
         run: npm ci
