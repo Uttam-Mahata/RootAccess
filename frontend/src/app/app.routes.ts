@@ -87,6 +87,7 @@ export const routes: Routes = [
   { path: 'forgot-password', loadComponent: () => import('./components/forgot-password/forgot-password').then(m => m.ForgotPasswordComponent) },
   { path: 'reset-password', loadComponent: () => import('./components/reset-password/reset-password').then(m => m.ResetPasswordComponent) },
   { path: 'auth/callback', loadComponent: () => import('./components/oauth-callback/oauth-callback').then(m => m.OAuthCallbackComponent) },
+  { path: 'cli', loadComponent: () => import('./components/cli-download/cli-download').then(m => m.CLIDownloadComponent) },
   { path: 'cli/auth', loadComponent: () => import('./components/cli-auth/cli-auth').then(m => m.CLIAuthComponent) },
   { path: 'legal', loadComponent: () => import('./components/legal/legal').then(m => m.LegalComponent) },
   { path: 'profile/:username', loadComponent: () => import('./components/user-profile/user-profile').then(m => m.UserProfileComponent) },
