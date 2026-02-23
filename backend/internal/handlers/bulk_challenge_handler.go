@@ -168,18 +168,20 @@ func (h *BulkChallengeHandler) DuplicateChallenge(c *gin.Context) {
 	}
 
 	duplicate := &models.Challenge{
-		Title:       original.Title + " (Copy)",
-		Description: original.Description,
-		Category:    original.Category,
-		Difficulty:  original.Difficulty,
-		MaxPoints:   original.MaxPoints,
-		MinPoints:   original.MinPoints,
-		Decay:       original.Decay,
-		ScoringType: original.ScoringType,
-		FlagHash:    original.FlagHash,
-		Files:       original.Files,
-		Tags:        original.Tags,
-		IsPublished: false,
+		Title:             original.Title + " (Copy)",
+		Description:       original.Description,
+		DescriptionFormat: original.DescriptionFormat,
+		Category:          original.Category,
+		Difficulty:        original.Difficulty,
+		MaxPoints:         original.MaxPoints,
+		MinPoints:         original.MinPoints,
+		Decay:             original.Decay,
+		ScoringType:       original.ScoringType,
+		FlagHash:          original.FlagHash,
+		Files:             original.Files,
+		Tags:              original.Tags,
+		Hints:             original.Hints,
+		IsPublished:       original.IsPublished,
 	}
 
 	if err := h.challengeService.CreateChallenge(duplicate); err != nil {
