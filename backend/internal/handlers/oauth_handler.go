@@ -39,8 +39,9 @@ func (h *OAuthHandler) generateStateToken() (string, error) {
 
 // GoogleLogin initiates the Google OAuth flow
 // @Summary Google OAuth login
-// @Description Redirect to Google's OAuth consent page.
+// @Description Redirect to Google's OAuth consent page. Supports 'cli=true' for CLI-based login.
 // @Tags Auth
+// @Param cli query bool false "Set to true for CLI-based login"
 // @Success 307 {string} string "Redirect to Google"
 // @Router /auth/google [get]
 func (h *OAuthHandler) GoogleLogin(c *gin.Context) {
@@ -56,10 +57,17 @@ func (h *OAuthHandler) GoogleLogin(c *gin.Context) {
 		return
 	}
 
+	// Check if this is a CLI login
+	isCLI := c.Query("cli") == "true"
+	stateValue := "valid"
+	if isCLI {
+		stateValue = "cli"
+	}
+
 	// Store state in Redis with 10 minute expiry
 	ctx := context.Background()
 	stateKey := fmt.Sprintf("oauth_state:%s", state)
-	if err := h.redisClient.Set(ctx, stateKey, "valid", 10*time.Minute).Err(); err != nil {
+	if err := h.redisClient.Set(ctx, stateKey, stateValue, 10*time.Minute).Err(); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to store state token"})
 		return
 	}
@@ -98,7 +106,7 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 	ctx := context.Background()
 	stateKey := fmt.Sprintf("oauth_state:%s", state)
 	val, err := h.redisClient.Get(ctx, stateKey).Result()
-	if err != nil || val != "valid" {
+	if err != nil || (val != "valid" && val != "cli") {
 		h.redirectToFrontendWithError(c, "invalid or expired state token")
 		return
 	}
@@ -110,6 +118,51 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 	token, userInfo, err := h.oauthService.HandleGoogleCallback(ctx, code)
 	if err != nil {
 		h.redirectToFrontendWithError(c, fmt.Sprintf("OAuth authentication failed: %s", err.Error()))
+		return
+	}
+
+	// If it's a CLI login, return the token in a simple HTML page
+	if val == "cli" {
+		c.Header("Content-Type", "text/html")
+		c.String(http.StatusOK, fmt.Sprintf(`
+			<!DOCTYPE html>
+			<html>
+			<head>
+				<title>RootAccess CLI Login Success</title>
+				<style>
+					body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #1a202c; color: #e2e8f0; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+					.card { background-color: #2d3748; padding: 2.5rem; border-radius: 0.75rem; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3); max-width: 28rem; width: 100%%; text-align: center; }
+					h1 { color: #63b3ed; margin-bottom: 1.5rem; }
+					p { margin-bottom: 2rem; color: #a0aec0; line-height: 1.6; }
+					.token-container { background-color: #1a202c; padding: 1rem; border-radius: 0.5rem; font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace; font-size: 0.875rem; word-break: break-all; margin-bottom: 2rem; border: 1px solid #4a5568; }
+					button { background-color: #4299e1; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 0.375rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; }
+					button:hover { background-color: #3182ce; }
+				</style>
+			</head>
+			<body>
+				<div class="card">
+					<h1>RootAccess CLI</h1>
+					<p>Login successful! Copy the token below and paste it into your CLI terminal.</p>
+					<div class="token-container" id="token">%s</div>
+					<button onclick="copyToken()">Copy to Clipboard</button>
+				</div>
+				<script>
+					function copyToken() {
+						const token = document.getElementById('token').innerText;
+						navigator.clipboard.writeText(token).then(() => {
+							const btn = document.querySelector('button');
+							btn.innerText = 'Copied!';
+							btn.style.backgroundColor = '#48bb78';
+							setTimeout(() => {
+								btn.innerText = 'Copy to Clipboard';
+								btn.style.backgroundColor = '#4299e1';
+							}, 2000);
+						});
+					}
+				</script>
+			</body>
+			</html>
+		`, token))
 		return
 	}
 
