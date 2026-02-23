@@ -49,6 +49,30 @@
 
       <!-- Change Password Card -->
       <div class="lg:col-span-2 space-y-6">
+        <!-- CLI Integration Card -->
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6 border border-slate-200 dark:border-slate-700">
+          <div class="flex items-center gap-3 mb-6">
+            <svg class="w-6 h-6 text-red-600 dark:text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            <h2 class="text-xl font-semibold text-slate-900 dark:text-white">CLI Integration</h2>
+          </div>
+          <p class="text-slate-600 dark:text-slate-400 mb-4">
+            Use our CLI tool to solve challenges directly from your terminal.
+          </p>
+          <div class="flex flex-col sm:flex-row gap-3">
+            <a routerLink="/legal" class="px-4 py-2 text-sm font-medium text-center text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg transition-colors">
+              Install CLI
+            </a>
+            <a routerLink="/login" class="px-4 py-2 text-sm font-medium text-center text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors">
+              Login to CLI
+            </a>
+          </div>
+          <p class="mt-4 text-xs text-slate-500 dark:text-slate-400">
+            Running <code>rootaccess login</code> will open a browser to authenticate. If you experience issues, ensure your CLI is up to date.
+          </p>
+        </div>
+
         <!-- Update Username Card -->
         <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6 border border-slate-200 dark:border-slate-700">
           <div class="flex items-center gap-3 mb-6">

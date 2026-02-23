@@ -153,178 +153,197 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	adminUserHandler := handlers.NewAdminUserHandlerWithRepos(userRepo, teamRepo, submissionRepo, scoreAdjustmentRepo)
 	adminTeamHandler := handlers.NewAdminTeamHandler(teamRepo, userRepo, submissionRepo, teamInvitationRepo, scoreAdjustmentRepo)
 
-	// Public Routes
-	r.POST("/auth/register", middleware.IPRateLimitMiddleware(10, time.Minute), authHandler.Register)
-	r.POST("/auth/login", middleware.IPRateLimitMiddleware(10, time.Minute), authHandler.Login)
-	r.POST("/auth/logout", authHandler.Logout)
-	r.GET("/auth/verify-email", authHandler.VerifyEmail)
-	r.POST("/auth/verify-email", authHandler.VerifyEmail)
-	r.POST("/auth/resend-verification", middleware.IPRateLimitMiddleware(5, time.Minute), authHandler.ResendVerification)
-	r.POST("/auth/forgot-password", middleware.IPRateLimitMiddleware(5, time.Minute), authHandler.ForgotPassword)
-	r.POST("/auth/reset-password", middleware.IPRateLimitMiddleware(5, time.Minute), authHandler.ResetPassword)
+	// Define routes in a helper to apply to both root and /api
+	registerRoutes := func(rg *gin.RouterGroup) {
+		// Public Routes
+		rg.POST("/auth/register", middleware.IPRateLimitMiddleware(10, time.Minute), authHandler.Register)
+		rg.POST("/auth/login", middleware.IPRateLimitMiddleware(10, time.Minute), authHandler.Login)
+		rg.POST("/auth/logout", authHandler.Logout)
+		rg.GET("/auth/verify-email", authHandler.VerifyEmail)
+		rg.POST("/auth/verify-email", authHandler.VerifyEmail)
+		rg.POST("/auth/resend-verification", middleware.IPRateLimitMiddleware(5, time.Minute), authHandler.ResendVerification)
+		rg.POST("/auth/forgot-password", middleware.IPRateLimitMiddleware(5, time.Minute), authHandler.ForgotPassword)
+		rg.POST("/auth/reset-password", middleware.IPRateLimitMiddleware(5, time.Minute), authHandler.ResetPassword)
 
-	r.GET("/auth/google", oauthHandler.GoogleLogin)
-	r.GET("/auth/google/callback", oauthHandler.GoogleCallback)
-	r.GET("/auth/github", oauthHandler.GitHubLogin)
-	r.GET("/auth/github/callback", oauthHandler.GitHubCallback)
-	r.GET("/auth/discord", oauthHandler.DiscordLogin)
-	r.GET("/auth/discord/callback", oauthHandler.DiscordCallback)
+		rg.GET("/auth/google", oauthHandler.GoogleLogin)
+		rg.GET("/auth/google/callback", oauthHandler.GoogleCallback)
+		rg.GET("/auth/github", oauthHandler.GitHubLogin)
+		rg.GET("/auth/github/callback", oauthHandler.GitHubCallback)
+		rg.GET("/auth/discord", oauthHandler.DiscordLogin)
+		rg.GET("/auth/discord/callback", oauthHandler.DiscordCallback)
 
-	r.GET("/scoreboard", scoreboardHandler.GetScoreboard)
-	r.GET("/scoreboard/teams", scoreboardHandler.GetTeamScoreboard)
-	r.GET("/scoreboard/teams/statistics", scoreboardHandler.GetTeamStatistics)
-	r.GET("/contests/active", scoreboardHandler.GetScoreboardContests)
-	r.GET("/notifications", notificationHandler.GetActiveNotifications)
-	r.GET("/contest/status", contestHandler.GetContestStatus)
-	r.GET("/contests/upcoming", contestRegistrationHandler.GetUpcomingContests)
-	r.GET("/contests/:contest_id/registered-count", contestRegistrationHandler.GetRegisteredTeamsCount)
+		rg.GET("/scoreboard", scoreboardHandler.GetScoreboard)
+		rg.GET("/scoreboard/teams", scoreboardHandler.GetTeamScoreboard)
+		rg.GET("/scoreboard/teams/statistics", scoreboardHandler.GetTeamStatistics)
+		rg.GET("/contests/active", scoreboardHandler.GetScoreboardContests)
+		rg.GET("/notifications", notificationHandler.GetActiveNotifications)
+		rg.GET("/contest/status", contestHandler.GetContestStatus)
+		rg.GET("/contests/upcoming", contestRegistrationHandler.GetUpcomingContests)
+		rg.GET("/contests/:contest_id/registered-count", contestRegistrationHandler.GetRegisteredTeamsCount)
 
-	auth := r.Group("/")
-	auth.Use(middleware.AuthMiddleware(cfg))
-	{
-		auth.POST("/contests/:contest_id/register", contestRegistrationHandler.RegisterTeamForContest)
-		auth.POST("/contests/:contest_id/unregister", contestRegistrationHandler.UnregisterTeamFromContest)
-		auth.GET("/contests/:contest_id/registration-status", contestRegistrationHandler.GetTeamRegistrationStatus)
+		authGroup := rg.Group("/")
+		authGroup.Use(middleware.AuthMiddleware(cfg))
+		{
+			authGroup.POST("/contests/:contest_id/register", contestRegistrationHandler.RegisterTeamForContest)
+			authGroup.POST("/contests/:contest_id/unregister", contestRegistrationHandler.UnregisterTeamFromContest)
+			authGroup.GET("/contests/:contest_id/registration-status", contestRegistrationHandler.GetTeamRegistrationStatus)
+		}
+
+		rg.GET("/users/:username/profile", profileHandler.GetUserProfile)
+
+		rg.GET("/health", func(c *gin.Context) {
+			c.JSON(200, gin.H{"status": "healthy", "time": time.Now().Format(time.RFC3339)})
+		})
+
+		rg.GET("/auth/me", func(c *gin.Context) {
+			tokenString, err := c.Cookie("auth_token")
+			if err != nil || tokenString == "" {
+				// Also check Authorization header for CLI support
+				authHeader := c.GetHeader("Authorization")
+				if strings.HasPrefix(authHeader, "Bearer ") {
+					tokenString = strings.TrimPrefix(authHeader, "Bearer ")
+				}
+			}
+
+			if tokenString == "" {
+				c.JSON(401, gin.H{"authenticated": false})
+				return
+			}
+
+			token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+				return []byte(cfg.JWTSecret), nil
+			})
+			if err != nil || !token.Valid {
+				c.JSON(401, gin.H{"authenticated": false})
+				return
+			}
+			claims, _ := token.Claims.(jwt.MapClaims)
+			c.JSON(200, gin.H{
+				"authenticated": true,
+				"user": gin.H{
+					"id":       claims["user_id"],
+					"username": claims["username"],
+					"email":    claims["email"],
+					"role":     claims["role"],
+				},
+			})
+		})
+
+		rg.GET("/leaderboard/category", leaderboardHandler.GetCategoryLeaderboard)
+		rg.GET("/leaderboard/time", leaderboardHandler.GetTimeBasedLeaderboard)
+
+		// Internal routes for AWS Lambda WebSocket proxy
+		wsInternal := rg.Group("/ws")
+		{
+			wsInternal.POST("/connect", wsHandler.HandleLambdaConnect)
+			wsInternal.POST("/disconnect", wsHandler.HandleLambdaDisconnect)
+			wsInternal.POST("/default", wsHandler.HandleLambdaDefault)
+		}
+
+		protected := rg.Group("/")
+		protected.Use(middleware.AuthMiddleware(cfg))
+		{
+			protected.GET("/ws", wsHandler.HandleWebSocket)
+			protected.POST("/auth/change-password", authHandler.ChangePassword)
+			protected.POST("/auth/update-username", authHandler.UpdateUsername)
+			protected.GET("/challenges", challengeHandler.GetAllChallenges)
+			protected.GET("/challenges/:id", challengeHandler.GetChallengeByID)
+			protected.GET("/challenges/:id/solves", challengeHandler.GetChallengeSolves)
+			protected.POST("/challenges/:id/submit", middleware.RateLimitMiddleware(5, time.Minute), challengeHandler.SubmitFlag)
+			protected.GET("/challenges/:id/hints", hintHandler.GetHints)
+			protected.POST("/challenges/:id/hints/:hintId/reveal", hintHandler.RevealHint)
+			protected.POST("/challenges/:id/writeups", writeupHandler.CreateWriteup)
+			protected.GET("/challenges/:id/writeups", writeupHandler.GetWriteups)
+			protected.GET("/writeups/my", writeupHandler.GetMyWriteups)
+			protected.GET("/activity/me", activityHandler.GetMyActivity)
+			protected.GET("/achievements/me", achievementHandler.GetMyAchievements)
+			protected.PUT("/writeups/:id", writeupHandler.UpdateWriteup)
+			protected.POST("/writeups/:id/upvote", writeupHandler.ToggleUpvote)
+
+			teams := protected.Group("/teams")
+			{
+				teams.POST("", teamHandler.CreateTeam)
+				teams.GET("/my-team", teamHandler.GetMyTeam)
+				teams.GET("/:id", teamHandler.GetTeamDetails)
+				teams.PUT("/:id", teamHandler.UpdateTeam)
+				teams.DELETE("/:id", teamHandler.DeleteTeam)
+				teams.POST("/join/:code", teamHandler.JoinByCode)
+				teams.GET("/invitations", teamHandler.GetPendingInvitations)
+				teams.POST("/invitations/:id/accept", teamHandler.AcceptInvitation)
+				teams.POST("/invitations/:id/reject", teamHandler.RejectInvitation)
+				teams.POST("/:id/invite/username", teamHandler.InviteByUsername)
+				teams.POST("/:id/invite/email", teamHandler.InviteByEmail)
+				teams.GET("/:id/invitations", teamHandler.GetTeamPendingInvitations)
+				teams.DELETE("/:id/invitations/:invitationId", teamHandler.CancelInvitation)
+				teams.DELETE("/:id/members/:userId", teamHandler.RemoveMember)
+				teams.POST("/:id/leave", teamHandler.LeaveTeam)
+				teams.POST("/:id/regenerate-code", teamHandler.RegenerateInviteCode)
+			}
+
+			admin := protected.Group("/admin")
+			admin.Use(middleware.AdminMiddleware())
+			admin.Use(middleware.AuditMiddleware(auditLogService))
+			{
+				admin.GET("/challenges", challengeHandler.GetAllChallengesWithFlags)
+				admin.POST("/challenges", challengeHandler.CreateChallenge)
+				admin.PUT("/challenges/:id", challengeHandler.UpdateChallenge)
+				admin.DELETE("/challenges/:id", challengeHandler.DeleteChallenge)
+				admin.PUT("/challenges/:id/official-writeup", challengeHandler.UpdateOfficialWriteup)
+				admin.POST("/challenges/:id/official-writeup/publish", challengeHandler.PublishOfficialWriteup)
+				admin.GET("/notifications", notificationHandler.GetAllNotifications)
+				admin.POST("/notifications", notificationHandler.CreateNotification)
+				admin.PUT("/notifications/:id", notificationHandler.UpdateNotification)
+				admin.DELETE("/notifications/:id", notificationHandler.DeleteNotification)
+				admin.POST("/notifications/:id/toggle", notificationHandler.ToggleNotificationActive)
+				admin.GET("/contest", contestHandler.GetContestConfig)
+				admin.PUT("/contest", contestHandler.UpdateContestConfig)
+				admin.GET("/contest-entities", contestAdminHandler.ListContests)
+				admin.POST("/contest-entities", contestAdminHandler.CreateContest)
+				admin.POST("/contest-entities/set-active", contestAdminHandler.SetActiveContest)
+				admin.GET("/contest-entities/:id", contestAdminHandler.GetContest)
+				admin.PUT("/contest-entities/:id", contestAdminHandler.UpdateContest)
+				admin.DELETE("/contest-entities/:id", contestAdminHandler.DeleteContest)
+				admin.GET("/contest-entities/:id/rounds", contestAdminHandler.ListRounds)
+				admin.POST("/contest-entities/:id/rounds", contestAdminHandler.CreateRound)
+				admin.PUT("/contest-entities/:id/rounds/:roundId", contestAdminHandler.UpdateRound)
+				admin.DELETE("/contest-entities/:id/rounds/:roundId", contestAdminHandler.DeleteRound)
+				admin.GET("/contest-entities/:id/rounds/:roundId/challenges", contestAdminHandler.GetRoundChallenges)
+				admin.POST("/contest-entities/:id/rounds/:roundId/challenges", contestAdminHandler.AttachChallenges)
+				admin.DELETE("/contest-entities/:id/rounds/:roundId/challenges", contestAdminHandler.DetachChallenges)
+				admin.GET("/writeups", writeupHandler.GetAllWriteups)
+				admin.PUT("/writeups/:id/status", writeupHandler.UpdateWriteupStatus)
+				admin.DELETE("/writeups/:id", writeupHandler.DeleteWriteup)
+				admin.GET("/audit-logs", auditLogHandler.GetAuditLogs)
+				admin.GET("/analytics", analyticsHandler.GetPlatformAnalytics)
+				admin.POST("/challenges/import", bulkChallengeHandler.ImportChallenges)
+				admin.GET("/challenges/export", bulkChallengeHandler.ExportChallenges)
+				admin.POST("/challenges/:id/duplicate", bulkChallengeHandler.DuplicateChallenge)
+				admin.GET("/users", adminUserHandler.ListUsers)
+				admin.GET("/users/:id", adminUserHandler.GetUser)
+				admin.PUT("/users/:id/status", adminUserHandler.UpdateUserStatus)
+				admin.PUT("/users/:id/role", adminUserHandler.UpdateUserRole)
+				admin.POST("/users/:id/score-adjust", adminUserHandler.AdjustUserScore)
+				admin.DELETE("/users/:id", adminUserHandler.DeleteUser)
+				admin.GET("/teams", adminTeamHandler.ListTeams)
+				admin.GET("/teams/:id", adminTeamHandler.GetTeam)
+				admin.PUT("/teams/:id", adminTeamHandler.UpdateTeam)
+				admin.PUT("/teams/:id/leader", adminTeamHandler.UpdateTeamLeader)
+				admin.POST("/teams/:id/score-adjust", adminTeamHandler.AdjustTeamScore)
+				admin.DELETE("/teams/:id/members/:memberId", adminTeamHandler.RemoveMember)
+				admin.DELETE("/teams/:id", adminTeamHandler.DeleteTeam)
+			}
+		}
 	}
 
-	r.GET("/users/:username/profile", profileHandler.GetUserProfile)
-
-	r.GET("/health", func(c *gin.Context) {
-		c.JSON(200, gin.H{"status": "healthy", "time": time.Now().Format(time.RFC3339)})
-	})
-
-	r.GET("/auth/me", func(c *gin.Context) {
-		tokenString, err := c.Cookie("auth_token")
-		if err != nil || tokenString == "" {
-			c.JSON(401, gin.H{"authenticated": false})
-			return
-		}
-		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-			return []byte(cfg.JWTSecret), nil
-		})
-		if err != nil || !token.Valid {
-			c.JSON(401, gin.H{"authenticated": false})
-			return
-		}
-		claims, _ := token.Claims.(jwt.MapClaims)
-		c.JSON(200, gin.H{
-			"authenticated": true,
-			"user": gin.H{
-				"id":       claims["user_id"],
-				"username": claims["username"],
-				"email":    claims["email"],
-				"role":     claims["role"],
-			},
-		})
-	})
+	// Register routes at both root and /api
+	registerRoutes(&r.RouterGroup)
+	apiGroup := r.Group("/api")
+	registerRoutes(apiGroup)
 
 	registerSwagger(r)
 
-	r.GET("/leaderboard/category", leaderboardHandler.GetCategoryLeaderboard)
-	r.GET("/leaderboard/time", leaderboardHandler.GetTimeBasedLeaderboard)
-
-	// Internal routes for AWS Lambda WebSocket proxy
-	// These are mapped from WebSocket events in cmd/api/main.go
-	wsInternal := r.Group("/ws")
-	{
-		wsInternal.POST("/connect", wsHandler.HandleLambdaConnect)
-		wsInternal.POST("/disconnect", wsHandler.HandleLambdaDisconnect)
-		wsInternal.POST("/default", wsHandler.HandleLambdaDefault)
-	}
-
-	protected := r.Group("/")
-	protected.Use(middleware.AuthMiddleware(cfg))
-	{
-		protected.GET("/ws", wsHandler.HandleWebSocket)
-		protected.POST("/auth/change-password", authHandler.ChangePassword)
-		protected.POST("/auth/update-username", authHandler.UpdateUsername)
-		protected.GET("/challenges", challengeHandler.GetAllChallenges)
-		protected.GET("/challenges/:id", challengeHandler.GetChallengeByID)
-		protected.GET("/challenges/:id/solves", challengeHandler.GetChallengeSolves)
-		protected.POST("/challenges/:id/submit", middleware.RateLimitMiddleware(5, time.Minute), challengeHandler.SubmitFlag)
-		protected.GET("/challenges/:id/hints", hintHandler.GetHints)
-		protected.POST("/challenges/:id/hints/:hintId/reveal", hintHandler.RevealHint)
-		protected.POST("/challenges/:id/writeups", writeupHandler.CreateWriteup)
-		protected.GET("/challenges/:id/writeups", writeupHandler.GetWriteups)
-		protected.GET("/writeups/my", writeupHandler.GetMyWriteups)
-		protected.GET("/activity/me", activityHandler.GetMyActivity)
-		protected.GET("/achievements/me", achievementHandler.GetMyAchievements)
-		protected.PUT("/writeups/:id", writeupHandler.UpdateWriteup)
-		protected.POST("/writeups/:id/upvote", writeupHandler.ToggleUpvote)
-
-		teams := protected.Group("/teams")
-		{
-			teams.POST("", teamHandler.CreateTeam)
-			teams.GET("/my-team", teamHandler.GetMyTeam)
-			teams.GET("/:id", teamHandler.GetTeamDetails)
-			teams.PUT("/:id", teamHandler.UpdateTeam)
-			teams.DELETE("/:id", teamHandler.DeleteTeam)
-			teams.POST("/join/:code", teamHandler.JoinByCode)
-			teams.GET("/invitations", teamHandler.GetPendingInvitations)
-			teams.POST("/invitations/:id/accept", teamHandler.AcceptInvitation)
-			teams.POST("/invitations/:id/reject", teamHandler.RejectInvitation)
-			teams.POST("/:id/invite/username", teamHandler.InviteByUsername)
-			teams.POST("/:id/invite/email", teamHandler.InviteByEmail)
-			teams.GET("/:id/invitations", teamHandler.GetTeamPendingInvitations)
-			teams.DELETE("/:id/invitations/:invitationId", teamHandler.CancelInvitation)
-			teams.DELETE("/:id/members/:userId", teamHandler.RemoveMember)
-			teams.POST("/:id/leave", teamHandler.LeaveTeam)
-			teams.POST("/:id/regenerate-code", teamHandler.RegenerateInviteCode)
-		}
-
-		admin := protected.Group("/admin")
-		admin.Use(middleware.AdminMiddleware())
-		admin.Use(middleware.AuditMiddleware(auditLogService))
-		{
-			admin.GET("/challenges", challengeHandler.GetAllChallengesWithFlags)
-			admin.POST("/challenges", challengeHandler.CreateChallenge)
-			admin.PUT("/challenges/:id", challengeHandler.UpdateChallenge)
-			admin.DELETE("/challenges/:id", challengeHandler.DeleteChallenge)
-			admin.PUT("/challenges/:id/official-writeup", challengeHandler.UpdateOfficialWriteup)
-			admin.POST("/challenges/:id/official-writeup/publish", challengeHandler.PublishOfficialWriteup)
-			admin.GET("/notifications", notificationHandler.GetAllNotifications)
-			admin.POST("/notifications", notificationHandler.CreateNotification)
-			admin.PUT("/notifications/:id", notificationHandler.UpdateNotification)
-			admin.DELETE("/notifications/:id", notificationHandler.DeleteNotification)
-			admin.POST("/notifications/:id/toggle", notificationHandler.ToggleNotificationActive)
-			admin.GET("/contest", contestHandler.GetContestConfig)
-			admin.PUT("/contest", contestHandler.UpdateContestConfig)
-			admin.GET("/contest-entities", contestAdminHandler.ListContests)
-			admin.POST("/contest-entities", contestAdminHandler.CreateContest)
-			admin.POST("/contest-entities/set-active", contestAdminHandler.SetActiveContest)
-			admin.GET("/contest-entities/:id", contestAdminHandler.GetContest)
-			admin.PUT("/contest-entities/:id", contestAdminHandler.UpdateContest)
-			admin.DELETE("/contest-entities/:id", contestAdminHandler.DeleteContest)
-			admin.GET("/contest-entities/:id/rounds", contestAdminHandler.ListRounds)
-			admin.POST("/contest-entities/:id/rounds", contestAdminHandler.CreateRound)
-			admin.PUT("/contest-entities/:id/rounds/:roundId", contestAdminHandler.UpdateRound)
-			admin.DELETE("/contest-entities/:id/rounds/:roundId", contestAdminHandler.DeleteRound)
-			admin.GET("/contest-entities/:id/rounds/:roundId/challenges", contestAdminHandler.GetRoundChallenges)
-			admin.POST("/contest-entities/:id/rounds/:roundId/challenges", contestAdminHandler.AttachChallenges)
-			admin.DELETE("/contest-entities/:id/rounds/:roundId/challenges", contestAdminHandler.DetachChallenges)
-			admin.GET("/writeups", writeupHandler.GetAllWriteups)
-			admin.PUT("/writeups/:id/status", writeupHandler.UpdateWriteupStatus)
-			admin.DELETE("/writeups/:id", writeupHandler.DeleteWriteup)
-			admin.GET("/audit-logs", auditLogHandler.GetAuditLogs)
-			admin.GET("/analytics", analyticsHandler.GetPlatformAnalytics)
-			admin.POST("/challenges/import", bulkChallengeHandler.ImportChallenges)
-			admin.GET("/challenges/export", bulkChallengeHandler.ExportChallenges)
-			admin.POST("/challenges/:id/duplicate", bulkChallengeHandler.DuplicateChallenge)
-			admin.GET("/users", adminUserHandler.ListUsers)
-			admin.GET("/users/:id", adminUserHandler.GetUser)
-			admin.PUT("/users/:id/status", adminUserHandler.UpdateUserStatus)
-			admin.PUT("/users/:id/role", adminUserHandler.UpdateUserRole)
-			admin.POST("/users/:id/score-adjust", adminUserHandler.AdjustUserScore)
-			admin.DELETE("/users/:id", adminUserHandler.DeleteUser)
-			admin.GET("/teams", adminTeamHandler.ListTeams)
-			admin.GET("/teams/:id", adminTeamHandler.GetTeam)
-			admin.PUT("/teams/:id", adminTeamHandler.UpdateTeam)
-			admin.PUT("/teams/:id/leader", adminTeamHandler.UpdateTeamLeader)
-			admin.POST("/teams/:id/score-adjust", adminTeamHandler.AdjustTeamScore)
-			admin.DELETE("/teams/:id/members/:memberId", adminTeamHandler.RemoveMember)
-			admin.DELETE("/teams/:id", adminTeamHandler.DeleteTeam)
-		}
-	}
+	return r
+}
 
 	return r
 }
