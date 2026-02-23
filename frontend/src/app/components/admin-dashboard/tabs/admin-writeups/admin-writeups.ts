@@ -1,4 +1,4 @@
-import { Component, OnInit, Output, EventEmitter, inject, DestroyRef } from '@angular/core';
+import { Component, OnInit, inject, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
@@ -7,6 +7,7 @@ import { take } from 'rxjs/operators';
 import Showdown from 'showdown';
 import { AdminTeamService, AdminTeam } from '../../../../services/admin-team';
 import { ConfirmationModalService } from '../../../../services/confirmation-modal.service';
+import { AdminStateService } from '../../../../services/admin-state';
 import { environment } from '../../../../../environments/environment';
 
 @Component({
@@ -21,9 +22,7 @@ export class AdminWriteupsComponent implements OnInit {
   private http = inject(HttpClient);
   private adminTeamService = inject(AdminTeamService);
   private confirmationModalService = inject(ConfirmationModalService);
-
-  @Output() countChanged = new EventEmitter<number>();
-  @Output() messageEmitted = new EventEmitter<{ msg: string; type: 'success' | 'error' }>();
+  adminState = inject(AdminStateService);
 
   writeups: any[] = [];
   isLoadingWriteups = false;
@@ -71,7 +70,7 @@ export class AdminWriteupsComponent implements OnInit {
       next: (data) => {
         this.writeups = data || [];
         this.isLoadingWriteups = false;
-        this.countChanged.emit(this.writeups.length);
+        this.adminState.writeupsCount.set(this.writeups.length);
       },
       error: () => {
         this.writeups = [];
@@ -90,10 +89,10 @@ export class AdminWriteupsComponent implements OnInit {
       const originalStatus = writeup.status;
       writeup.status = 'approved';
       this.http.put<any>(`${this.apiUrl}/admin/writeups/${id}/status`, { status: 'approved' }).subscribe({
-        next: () => this.messageEmitted.emit({ msg: 'Writeup approved', type: 'success' }),
+        next: () => this.adminState.showMessage('Writeup approved', 'success'),
         error: () => {
           writeup.status = originalStatus;
-          this.messageEmitted.emit({ msg: 'Error approving writeup', type: 'error' });
+          this.adminState.showMessage('Error approving writeup', 'error');
         }
       });
     }
@@ -105,10 +104,10 @@ export class AdminWriteupsComponent implements OnInit {
       const originalStatus = writeup.status;
       writeup.status = 'rejected';
       this.http.put<any>(`${this.apiUrl}/admin/writeups/${id}/status`, { status: 'rejected' }).subscribe({
-        next: () => this.messageEmitted.emit({ msg: 'Writeup rejected', type: 'success' }),
+        next: () => this.adminState.showMessage('Writeup rejected', 'success'),
         error: () => {
           writeup.status = originalStatus;
-          this.messageEmitted.emit({ msg: 'Error rejecting writeup', type: 'error' });
+          this.adminState.showMessage('Error rejecting writeup', 'error');
         }
       });
     }
@@ -130,10 +129,10 @@ export class AdminWriteupsComponent implements OnInit {
             this.selectedWriteup = null;
           }
           this.http.delete<any>(`${this.apiUrl}/admin/writeups/${id}`).subscribe({
-            next: () => this.messageEmitted.emit({ msg: 'Writeup deleted', type: 'success' }),
+            next: () => this.adminState.showMessage('Writeup deleted', 'success'),
             error: () => {
               this.writeups.splice(index, 0, writeup);
-              this.messageEmitted.emit({ msg: 'Error deleting writeup', type: 'error' });
+              this.adminState.showMessage('Error deleting writeup', 'error');
             }
           });
         }

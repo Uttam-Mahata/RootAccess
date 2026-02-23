@@ -1,10 +1,11 @@
-import { Component, OnInit, Output, EventEmitter, inject, DestroyRef } from '@angular/core';
+import { Component, OnInit, inject, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { take } from 'rxjs/operators';
 import { NotificationService, Notification } from '../../../../services/notification';
 import { ConfirmationModalService } from '../../../../services/confirmation-modal.service';
+import { AdminStateService } from '../../../../services/admin-state';
 
 @Component({
   selector: 'app-admin-notifications',
@@ -18,9 +19,7 @@ export class AdminNotificationsComponent implements OnInit {
   private fb = inject(FormBuilder);
   private notificationService = inject(NotificationService);
   private confirmationModalService = inject(ConfirmationModalService);
-
-  @Output() countChanged = new EventEmitter<number>();
-  @Output() messageEmitted = new EventEmitter<{ msg: string; type: 'success' | 'error' }>();
+  adminState = inject(AdminStateService);
 
   notificationForm: FormGroup;
   notifications: Notification[] = [];
@@ -53,13 +52,13 @@ export class AdminNotificationsComponent implements OnInit {
       next: (data) => {
         this.notifications = data || [];
         this.isLoadingNotifications = false;
-        this.countChanged.emit(this.notifications.length);
+        this.adminState.notificationCount.set(this.notifications.length);
       },
       error: (err) => {
         console.error('Error loading notifications:', err);
         this.notifications = [];
         this.isLoadingNotifications = false;
-        this.messageEmitted.emit({ msg: 'Error loading notifications', type: 'error' });
+        this.adminState.showMessage('Error loading notifications', 'error');
       }
     });
   }
@@ -76,13 +75,13 @@ export class AdminNotificationsComponent implements OnInit {
           is_active: true
         }).subscribe({
           next: () => {
-            this.messageEmitted.emit({ msg: 'Notification updated successfully', type: 'success' });
+            this.adminState.showMessage('Notification updated successfully', 'success');
             this.loadNotifications();
             this.resetNotificationForm();
           },
           error: (err) => {
             console.error('Error updating notification:', err);
-            this.messageEmitted.emit({ msg: 'Error updating notification', type: 'error' });
+            this.adminState.showMessage('Error updating notification', 'error');
           }
         });
       } else {
@@ -92,13 +91,13 @@ export class AdminNotificationsComponent implements OnInit {
           type: formValue.type
         }).subscribe({
           next: () => {
-            this.messageEmitted.emit({ msg: 'Notification created successfully', type: 'success' });
+            this.adminState.showMessage('Notification created successfully', 'success');
             this.loadNotifications();
             this.resetNotificationForm();
           },
           error: (err) => {
             console.error('Error creating notification:', err);
-            this.messageEmitted.emit({ msg: 'Error creating notification', type: 'error' });
+            this.adminState.showMessage('Error creating notification', 'error');
           }
         });
       }
@@ -125,12 +124,12 @@ export class AdminNotificationsComponent implements OnInit {
       if (confirmed) {
         this.notificationService.deleteNotification(notification.id).subscribe({
           next: () => {
-            this.messageEmitted.emit({ msg: 'Notification deleted successfully', type: 'success' });
+            this.adminState.showMessage('Notification deleted successfully', 'success');
             this.loadNotifications();
           },
           error: (err) => {
             console.error('Error deleting notification:', err);
-            this.messageEmitted.emit({ msg: 'Error deleting notification', type: 'error' });
+            this.adminState.showMessage('Error deleting notification', 'error');
           }
         });
       }
@@ -140,15 +139,15 @@ export class AdminNotificationsComponent implements OnInit {
   toggleNotificationActive(notification: Notification): void {
     this.notificationService.toggleNotificationActive(notification.id).subscribe({
       next: () => {
-        this.messageEmitted.emit({
-          msg: `Notification ${notification.is_active ? 'deactivated' : 'activated'} successfully`,
-          type: 'success'
-        });
+        this.adminState.showMessage(
+          `Notification ${notification.is_active ? 'deactivated' : 'activated'} successfully`,
+          'success'
+        );
         this.loadNotifications();
       },
       error: (err) => {
         console.error('Error toggling notification:', err);
-        this.messageEmitted.emit({ msg: 'Error toggling notification status', type: 'error' });
+        this.adminState.showMessage('Error toggling notification status', 'error');
       }
     });
   }
