@@ -134,7 +134,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	authHandler := handlers.NewAuthHandler(authService)
 	oauthHandler := handlers.NewOAuthHandler(oauthService, database.RDB, cfg)
 	challengeHandler := handlers.NewChallengeHandlerWithRepos(challengeService, achievementService, contestService, contestAdminService, wsHub, submissionRepo, userRepo, teamRepo)
-	scoreboardHandler := handlers.NewScoreboardHandler(scoreboardService, contestEntityRepo)
+	scoreboardHandler := handlers.NewScoreboardHandler(scoreboardService, contestEntityRepo, contestRepo)
 	teamHandler := handlers.NewTeamHandler(teamService)
 	notificationHandler := handlers.NewNotificationHandler(notificationService, wsHub)
 	profileHandler := handlers.NewProfileHandler(userRepo, submissionRepo, challengeRepo, teamRepo)

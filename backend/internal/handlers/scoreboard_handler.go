@@ -13,12 +13,14 @@ import (
 type ScoreboardHandler struct {
 	scoreboardService *services.ScoreboardService
 	contestEntityRepo *repositories.ContestEntityRepository
+	contestRepo       *repositories.ContestRepository
 }
 
-func NewScoreboardHandler(scoreboardService *services.ScoreboardService, contestEntityRepo *repositories.ContestEntityRepository) *ScoreboardHandler {
+func NewScoreboardHandler(scoreboardService *services.ScoreboardService, contestEntityRepo *repositories.ContestEntityRepository, contestRepo *repositories.ContestRepository) *ScoreboardHandler {
 	return &ScoreboardHandler{
 		scoreboardService: scoreboardService,
 		contestEntityRepo: contestEntityRepo,
+		contestRepo:       contestRepo,
 	}
 }
 
@@ -165,6 +167,25 @@ func (h *ScoreboardHandler) GetScoreboardContests(c *gin.Context) {
 	if err != nil {
 		utils.RespondWithError(c, http.StatusInternalServerError, err.Error(), err)
 		return
+	}
+
+	// Also include the contest referenced by the active ContestConfig, even if its
+	// is_active flag was not set (e.g. activated before the is_active fix was deployed).
+	if h.contestRepo != nil {
+		if cfg, err := h.contestRepo.GetActiveContest(); err == nil && cfg != nil && !cfg.ContestID.IsZero() {
+			alreadyIncluded := false
+			for _, c := range contests {
+				if c.ID == cfg.ContestID {
+					alreadyIncluded = true
+					break
+				}
+			}
+			if !alreadyIncluded {
+				if activeContest, err := h.contestEntityRepo.FindByID(cfg.ContestID.Hex()); err == nil && activeContest != nil {
+					contests = append(contests, *activeContest)
+				}
+			}
+		}
 	}
 
 	now := time.Now()
