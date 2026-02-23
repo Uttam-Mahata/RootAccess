@@ -35,7 +35,7 @@ func GetConfigPath() string {
 func LoadConfig() (*Config, error) {
 	configPath := GetConfigPath()
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		return &Config{BaseURL: DefaultBaseURL}, nil
+		return &Config{BaseURL: DefaultBaseURL, FrontendURL: DefaultFrontendURL}, nil
 	}
 
 	data, err := os.ReadFile(configPath)

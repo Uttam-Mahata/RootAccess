@@ -1,9 +1,8 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../services/auth';
-import { catchError, of, switchMap } from 'rxjs';
+import { filter, take } from 'rxjs/operators';
 
 @Component({
   selector: 'app-cli-auth',
@@ -14,7 +13,6 @@ import { catchError, of, switchMap } from 'rxjs';
 export class CLIAuthComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private authService = inject(AuthService);
-  private http = inject(HttpClient);
   private router = inject(Router);
 
   status: 'checking' | 'success' | 'error' = 'checking';
@@ -35,44 +33,41 @@ export class CLIAuthComponent implements OnInit {
 
   checkAndTransfer(): void {
     this.status = 'checking';
-    
-    // 1. Check if logged in
-    if (!this.authService.isLoggedIn()) {
-      // Not logged in, redirect to login with a return URL back to this page
-      const currentUrl = window.location.href;
-      this.router.navigate(['/login'], { queryParams: { returnUrl: currentUrl } });
-      return;
-    }
 
-    // 2. Fetch the token from backend
-    this.authService.getAuthToken().subscribe({
-      next: (resp) => {
-        this.transferToken(resp.token);
-      },
-      error: (err) => {
-        this.status = 'error';
-        this.errorMessage = 'Failed to retrieve authentication token. Please ensure you are logged in.';
+    // Wait for auth check to complete before reading login state
+    this.authService.authCheckComplete$.pipe(
+      filter(complete => complete),
+      take(1)
+    ).subscribe(() => {
+      if (!this.authService.isLoggedIn()) {
+        // Store port so oauth-callback can restore it after OAuth login
+        sessionStorage.setItem('cli_auth_port', this.port);
+        this.router.navigate(['/login'], {
+          queryParams: { returnUrl: `/cli/auth?port=${this.port}` }
+        });
+        return;
       }
+
+      // Fetch the CLI token from the backend
+      this.authService.getAuthToken().subscribe({
+        next: (resp) => {
+          this.transferToken(resp.token);
+        },
+        error: () => {
+          this.status = 'error';
+          this.errorMessage = 'Failed to retrieve authentication token. Please ensure you are logged in.';
+        }
+      });
     });
   }
 
   transferToken(token: string): void {
-    // 3. Send token to local CLI server
+    // Navigate the browser to the CLI callback URL.
+    // Using window.location.href avoids mixed-content blocking
+    // (HTTPS→HTTP navigation is allowed; XHR/fetch is not).
     const callbackUrl = `http://127.0.0.1:${this.port}/callback?token=${encodeURIComponent(token)}`;
-    
-    this.http.get(callbackUrl, { responseType: 'text' }).subscribe({
-      next: () => {
-        this.status = 'success';
-      },
-      error: (err) => {
-        // Even if it errors (e.g. CORS), the CLI might have received it.
-        // But usually, we want a clean success.
-        console.error('CLI Callback Error:', err);
-        // We'll wait a second then show success anyway if we can't detect, 
-        // or show error if we're sure it failed.
-        this.status = 'success'; 
-      }
-    });
+    this.status = 'success';
+    window.location.href = callbackUrl;
   }
 
   retry(): void {

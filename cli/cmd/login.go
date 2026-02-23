@@ -34,9 +34,10 @@ var loginCmd = &cobra.Command{
 
 		// 2. Start a local HTTP server to receive the token
 		tokenChan := make(chan string)
-		server := &http.Server{}
+		mux := http.NewServeMux()
+		server := &http.Server{Handler: mux}
 
-		http.HandleFunc("/callback", func(w http.ResponseWriter, r *http.Request) {
+		mux.HandleFunc("/callback", func(w http.ResponseWriter, r *http.Request) {
 			token := r.URL.Query().Get("token")
 			if token != "" {
 				w.Header().Set("Content-Type", "text/html")
