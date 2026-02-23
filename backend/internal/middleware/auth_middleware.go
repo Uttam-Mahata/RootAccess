@@ -11,10 +11,17 @@ import (
 
 func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Strictly use cookies for authentication
+		// Support both cookies (frontend) and Authorization header (CLI)
 		tokenString, err := c.Cookie("auth_token")
-		
 		if err != nil || tokenString == "" {
+			// Check Authorization header
+			authHeader := c.GetHeader("Authorization")
+			if authHeader != "" && len(authHeader) > 7 && authHeader[:7] == "Bearer " {
+				tokenString = authHeader[7:]
+			}
+		}
+		
+		if tokenString == "" {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication required"})
 			c.Abort()
 			return
