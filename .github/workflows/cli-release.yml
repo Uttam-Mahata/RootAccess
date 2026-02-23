@@ -38,7 +38,8 @@ jobs:
           if [[ ! $API_URL == */api ]]; then
             API_URL="${API_URL%/}/api"
           fi
-          LDFLAGS="-s -w -X 'github.com/Uttam-Mahata/RootAccess/cli/internal/config.DefaultBaseURL=$API_URL'"
+          FRONTEND_URL="https://ctf.rootaccess.live"
+          LDFLAGS="-s -w -X 'github.com/Uttam-Mahata/RootAccess/cli/internal/config.DefaultBaseURL=$API_URL' -X 'github.com/Uttam-Mahata/RootAccess/cli/internal/config.DefaultFrontendURL=$FRONTEND_URL'"
           GOOS=linux GOARCH=amd64 go build -ldflags="$LDFLAGS" -o bin/rootaccess-linux-amd64 main.go
           GOOS=linux GOARCH=arm64 go build -ldflags="$LDFLAGS" -o bin/rootaccess-linux-arm64 main.go
           GOOS=darwin GOARCH=amd64 go build -ldflags="$LDFLAGS" -o bin/rootaccess-darwin-amd64 main.go

@@ -8,13 +8,15 @@ import (
 )
 
 type Config struct {
-	Token    string `json:"token"`
-	Username string `json:"username"`
-	BaseURL  string `json:"base_url"`
+	Token       string `json:"token"`
+	Username    string `json:"username"`
+	BaseURL     string `json:"base_url"`
+	FrontendURL string `json:"frontend_url"`
 }
 
 var (
-	DefaultBaseURL = "https://ctf.rootaccess.live/api"
+	DefaultBaseURL     = "https://ctf.rootaccess.live/api"
+	DefaultFrontendURL = "https://ctf.rootaccess.live"
 )
 
 const (
@@ -48,6 +50,10 @@ func LoadConfig() (*Config, error) {
 
 	if cfg.BaseURL == "" {
 		cfg.BaseURL = DefaultBaseURL
+	}
+
+	if cfg.FrontendURL == "" {
+		cfg.FrontendURL = DefaultFrontendURL
 	}
 
 	return &cfg, nil
