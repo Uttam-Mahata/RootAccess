@@ -120,6 +120,10 @@ export class AuthService {
     );
   }
 
+  getAuthToken(): Observable<{ token: string }> {
+    return this.http.get<{ token: string }>(`${this.apiUrl}/token`, { withCredentials: true });
+  }
+
   logout(): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/logout`, {}, { withCredentials: true }).pipe(
       tap(() => {

@@ -318,3 +318,23 @@ func (h *AuthHandler) UpdateUsername(c *gin.Context) {
 		"message": "Username updated successfully!",
 	})
 }
+
+// GetToken returns the current JWT token from the cookie
+// @Summary Get current JWT token
+// @Description Retrieve the current authenticated JWT token. Used by the CLI for seamless login.
+// @Tags Auth
+// @Produce json
+// @Success 200 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Router /auth/token [get]
+func (h *AuthHandler) GetToken(c *gin.Context) {
+	token, err := c.Cookie("auth_token")
+	if err != nil || token == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "No token found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"token": token,
+	})
+}

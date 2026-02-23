@@ -243,10 +243,12 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 		protected := rg.Group("/")
 		protected.Use(middleware.AuthMiddleware(cfg))
 		{
-			protected.GET("/ws", wsHandler.HandleWebSocket)
-			protected.POST("/auth/change-password", authHandler.ChangePassword)
-			protected.POST("/auth/update-username", authHandler.UpdateUsername)
-			protected.GET("/challenges", challengeHandler.GetAllChallenges)
+					protected.GET("/ws", wsHandler.HandleWebSocket)
+					protected.POST("/auth/change-password", authHandler.ChangePassword)
+					protected.POST("/auth/update-username", authHandler.UpdateUsername)
+					protected.GET("/auth/token", authHandler.GetToken)
+					protected.GET("/challenges", challengeHandler.GetAllChallenges)
+			
 			protected.GET("/challenges/:id", challengeHandler.GetChallengeByID)
 			protected.GET("/challenges/:id/solves", challengeHandler.GetChallengeSolves)
 			protected.POST("/challenges/:id/submit", middleware.RateLimitMiddleware(5, time.Minute), challengeHandler.SubmitFlag)
