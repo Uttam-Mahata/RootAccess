@@ -65,4 +65,5 @@ docker-compose.prod.yml
 docker-compose.prod.yml
 backend/deploy_aws.sh
 .gemini/
+.cursor/
 gha-creds-*.json
