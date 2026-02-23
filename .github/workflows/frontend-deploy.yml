@@ -31,11 +31,18 @@ jobs:
         working-directory: cli
         run: |
           mkdir -p ../frontend/public/bin
-          GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o ../frontend/public/bin/rootaccess-linux-amd64 main.go
-          GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o ../frontend/public/bin/rootaccess-linux-arm64 main.go
-          GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o ../frontend/public/bin/rootaccess-darwin-amd64 main.go
-          GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o ../frontend/public/bin/rootaccess-darwin-arm64 main.go
-          GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o ../frontend/public/bin/rootaccess-windows-amd64.exe main.go
+          API_URL="${{ secrets.PROD_API_URL }}"
+          # If the secret is just the domain, add /api prefix
+          if [[ ! $API_URL == */api ]]; then
+            # But only if it doesn't already have it
+            API_URL="${API_URL%/}/api"
+          fi
+          LDFLAGS="-s -w -X 'github.com/Uttam-Mahata/RootAccess/cli/internal/config.DefaultBaseURL=$API_URL'"
+          GOOS=linux GOARCH=amd64 go build -ldflags="$LDFLAGS" -o ../frontend/public/bin/rootaccess-linux-amd64 main.go
+          GOOS=linux GOARCH=arm64 go build -ldflags="$LDFLAGS" -o ../frontend/public/bin/rootaccess-linux-arm64 main.go
+          GOOS=darwin GOARCH=amd64 go build -ldflags="$LDFLAGS" -o ../frontend/public/bin/rootaccess-darwin-amd64 main.go
+          GOOS=darwin GOARCH=arm64 go build -ldflags="$LDFLAGS" -o ../frontend/public/bin/rootaccess-darwin-arm64 main.go
+          GOOS=windows GOARCH=amd64 go build -ldflags="$LDFLAGS" -o ../frontend/public/bin/rootaccess-windows-amd64.exe main.go
 
       - name: Install dependencies
         working-directory: frontend

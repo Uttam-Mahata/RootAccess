@@ -26,11 +26,20 @@ jobs:
         working-directory: cli
         run: |
           mkdir -p bin
-          GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o bin/rootaccess-linux-amd64 main.go
-          GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o bin/rootaccess-linux-arm64 main.go
-          GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o bin/rootaccess-darwin-amd64 main.go
-          GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o bin/rootaccess-darwin-arm64 main.go
-          GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o bin/rootaccess-windows-amd64.exe main.go
+          API_URL="${{ secrets.PROD_API_URL }}"
+          # Use default if secret not available (e.g. on fork)
+          if [ -z "$API_URL" ]; then
+            API_URL="https://ctf.rootaccess.live/api"
+          fi
+          if [[ ! $API_URL == */api ]]; then
+            API_URL="${API_URL%/}/api"
+          fi
+          LDFLAGS="-s -w -X 'github.com/Uttam-Mahata/RootAccess/cli/internal/config.DefaultBaseURL=$API_URL'"
+          GOOS=linux GOARCH=amd64 go build -ldflags="$LDFLAGS" -o bin/rootaccess-linux-amd64 main.go
+          GOOS=linux GOARCH=arm64 go build -ldflags="$LDFLAGS" -o bin/rootaccess-linux-arm64 main.go
+          GOOS=darwin GOARCH=amd64 go build -ldflags="$LDFLAGS" -o bin/rootaccess-darwin-amd64 main.go
+          GOOS=darwin GOARCH=arm64 go build -ldflags="$LDFLAGS" -o bin/rootaccess-darwin-arm64 main.go
+          GOOS=windows GOARCH=amd64 go build -ldflags="$LDFLAGS" -o bin/rootaccess-windows-amd64.exe main.go
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
