@@ -68,6 +68,17 @@ export class AdminDashboardComponent implements OnInit {
     }
   }
 
+  showCreateChallenge(): void {
+    this.activeTab = 'challenges';
+    this.challengesInitialView = 'create';
+    this.mobileMenuOpen = false;
+    setTimeout(() => {
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', 'create');
+      window.history.replaceState({}, '', url.toString());
+    }, 0);
+  }
+
   switchTab(tab: AdminTab): void {
     if (this.activeTab === tab) return;
     this.activeTab = tab;

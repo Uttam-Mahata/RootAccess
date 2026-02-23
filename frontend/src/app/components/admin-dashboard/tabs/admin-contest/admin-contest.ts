@@ -379,7 +379,7 @@ export class AdminContestComponent implements OnInit {
     this.roundChallengeIds = [...this.roundChallengeIds, ...newIds];
     this.computeAvailableChallenges(); this.selectedAvailableChallenges.clear();
     this.contestAdminService.attachChallenges(this.selectedContest.id, this.selectedRound.id, challengeIds).subscribe({
-      next: () => { this.messageEmitted.emit({ msg: challengeIds.length === 1 ? 'Challenge attached to round' : `${challengeIds.length} challenges attached to round`, type: 'success' }); this.loadRoundChallenges(); },
+      next: () => { this.challengeService.invalidateChallengeCache(); this.messageEmitted.emit({ msg: challengeIds.length === 1 ? 'Challenge attached to round' : `${challengeIds.length} challenges attached to round`, type: 'success' }); this.loadRoundChallenges(); },
       error: (err) => { this.roundChallengeIds = this.roundChallengeIds.filter(id => !newIds.includes(id)); this.computeAvailableChallenges(); this.messageEmitted.emit({ msg: err.error?.error || 'Error attaching challenges', type: 'error' }); }
     });
   }
@@ -394,7 +394,7 @@ export class AdminContestComponent implements OnInit {
       this.roundChallengeIds = this.roundChallengeIds.filter(id => !challengeIds.includes(id));
       this.computeAvailableChallenges(); this.selectedAttachedChallenges.clear();
       this.contestAdminService.detachChallenges(this.selectedContest!.id, this.selectedRound!.id, challengeIds).subscribe({
-        next: () => { this.messageEmitted.emit({ msg: challengeIds.length === 1 ? 'Challenge detached from round' : `${challengeIds.length} challenges detached from round`, type: 'success' }); this.loadRoundChallenges(); },
+        next: () => { this.challengeService.invalidateChallengeCache(); this.messageEmitted.emit({ msg: challengeIds.length === 1 ? 'Challenge detached from round' : `${challengeIds.length} challenges detached from round`, type: 'success' }); this.loadRoundChallenges(); },
         error: (err) => { this.roundChallengeIds = [...this.roundChallengeIds, ...hadChallenges]; this.computeAvailableChallenges(); this.messageEmitted.emit({ msg: err.error?.error || 'Error detaching challenges', type: 'error' }); }
       });
     });

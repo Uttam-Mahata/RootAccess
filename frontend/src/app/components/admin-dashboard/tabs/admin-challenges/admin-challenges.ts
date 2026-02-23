@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, Output, EventEmitter, effect, ChangeDetectorRef, inject, DestroyRef } from '@angular/core';
+import { Component, OnInit, OnChanges, SimpleChanges, Input, Output, EventEmitter, effect, ChangeDetectorRef, inject, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { EditorModule, TINYMCE_SCRIPT_SRC } from '@tinymce/tinymce-angular';
@@ -21,7 +21,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
   templateUrl: './admin-challenges.html',
   styleUrls: ['./admin-challenges.scss']
 })
-export class AdminChallengesComponent implements OnInit {
+export class AdminChallengesComponent implements OnInit, OnChanges {
   private destroyRef = inject(DestroyRef);
   private challengeService = inject(ChallengeService);
   private bulkChallengeService = inject(BulkChallengeService);
@@ -116,6 +116,12 @@ export class AdminChallengesComponent implements OnInit {
   ngOnInit(): void {
     this.activeView = this.initialView;
     this.loadChallenges();
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['initialView'] && !changes['initialView'].firstChange) {
+      this.activeView = changes['initialView'].currentValue;
+    }
   }
 
   private updateEditorConfig(): void {
@@ -283,6 +289,7 @@ export class AdminChallengesComponent implements OnInit {
       if (this.isEditMode && this.editingChallengeId) {
         this.challengeService.updateChallenge(this.editingChallengeId, challenge).subscribe({
           next: () => {
+            this.challengeService.invalidateChallengeCache();
             this.messageEmitted.emit({ msg: 'Challenge updated successfully', type: 'success' });
             this.loadChallenges();
             this.resetForm();
@@ -295,6 +302,7 @@ export class AdminChallengesComponent implements OnInit {
       } else {
         this.challengeService.createChallenge(challenge).subscribe({
           next: () => {
+            this.challengeService.invalidateChallengeCache();
             this.messageEmitted.emit({ msg: 'Challenge created successfully', type: 'success' });
             this.loadChallenges();
             this.resetForm();

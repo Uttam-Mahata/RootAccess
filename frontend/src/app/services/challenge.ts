@@ -133,6 +133,11 @@ export class ChallengeService {
     return this.http.post<SubmitFlagResponse>(`${this.apiUrl}/challenges/${id}/submit`, { flag });
   }
 
+  invalidateChallengeCache(): void {
+    this.challengesCache$ = undefined;
+    this.challengeByIdCache.clear();
+  }
+
   // Admin methods
   getChallengesForAdmin(listOnly = false): Observable<ChallengeAdmin[]> {
     const url = listOnly ? `${this.apiUrl}/admin/challenges?list=1` : `${this.apiUrl}/admin/challenges`;

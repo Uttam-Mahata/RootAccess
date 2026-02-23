@@ -583,7 +583,17 @@ func (h *ChallengeHandler) SubmitFlag(c *gin.Context) {
 	}
 
 	clientIP := c.ClientIP()
-	result, err := h.challengeService.SubmitFlag(userID, challengeID, req.Flag, clientIP)
+
+	// Resolve active contest ID for submission tracking
+	var contestID *primitive.ObjectID
+	if h.contestAdminService != nil {
+		if cfg, err := h.contestAdminService.GetActiveContestConfig(); err == nil && cfg != nil && !cfg.ContestID.IsZero() {
+			id := cfg.ContestID
+			contestID = &id
+		}
+	}
+
+	result, err := h.challengeService.SubmitFlag(userID, challengeID, req.Flag, clientIP, contestID)
 	if err != nil {
 		utils.RespondWithError(c, http.StatusInternalServerError, err.Error(), err)
 		return
