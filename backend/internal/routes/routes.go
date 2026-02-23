@@ -344,6 +344,3 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 
 	return r
 }
-
-	return r
-}
