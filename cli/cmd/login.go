@@ -54,9 +54,7 @@ var loginCmd = &cobra.Command{
 		}()
 
 		// 3. Open the browser to the frontend CLI auth page
-		// Determine frontend URL from BaseURL (strip /api)
-		frontendURL := strings.TrimSuffix(cfg.BaseURL, "/api")
-		loginURL := fmt.Sprintf("%s/cli/auth?port=%d", frontendURL, port)
+		loginURL := fmt.Sprintf("%s/cli/auth?port=%d", strings.TrimSuffix(cfg.FrontendURL, "/"), port)
 
 		fmt.Printf("Opening your browser to authenticate...\n")
 		fmt.Printf("If the browser doesn't open automatically, visit: %s\n", loginURL)
