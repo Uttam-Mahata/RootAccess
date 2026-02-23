@@ -1,4 +1,4 @@
-import { Component, OnInit, OnChanges, SimpleChanges, Input, Output, EventEmitter, effect, ChangeDetectorRef, inject, DestroyRef } from '@angular/core';
+import { Component, OnInit, inject, DestroyRef, ChangeDetectorRef, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { EditorModule, TINYMCE_SCRIPT_SRC } from '@tinymce/tinymce-angular';
@@ -8,6 +8,7 @@ import { ChallengeService, ChallengeAdmin, ChallengeRequest } from '../../../../
 import { BulkChallengeService } from '../../../../services/bulk-challenge';
 import { ThemeService } from '../../../../services/theme';
 import { ConfirmationModalService } from '../../../../services/confirmation-modal.service';
+import { AdminStateService } from '../../../../services/admin-state';
 import { take } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
@@ -21,7 +22,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
   templateUrl: './admin-challenges.html',
   styleUrls: ['./admin-challenges.scss']
 })
-export class AdminChallengesComponent implements OnInit, OnChanges {
+export class AdminChallengesComponent implements OnInit {
   private destroyRef = inject(DestroyRef);
   private challengeService = inject(ChallengeService);
   private bulkChallengeService = inject(BulkChallengeService);
@@ -29,12 +30,7 @@ export class AdminChallengesComponent implements OnInit, OnChanges {
   private confirmationModalService = inject(ConfirmationModalService);
   private cdr = inject(ChangeDetectorRef);
   private fb = inject(FormBuilder);
-
-  @Input() initialView: 'create' | 'manage' = 'manage';
-  @Output() viewChanged = new EventEmitter<'create' | 'manage'>();
-  @Output() isEditModeChanged = new EventEmitter<boolean>();
-  @Output() countChanged = new EventEmitter<number>();
-  @Output() messageEmitted = new EventEmitter<{ msg: string; type: 'success' | 'error' }>();
+  adminState = inject(AdminStateService);
 
   activeView: 'create' | 'manage' = 'manage';
 
@@ -111,17 +107,19 @@ export class AdminChallengesComponent implements OnInit, OnChanges {
       this.themeService.isDarkMode();
       this.updateEditorConfig();
     });
+
+    // Listen to initialView signal
+    effect(() => {
+      const view = this.adminState.challengesInitialView();
+      if (view !== this.activeView) {
+        this.switchView(view);
+      }
+    });
   }
 
   ngOnInit(): void {
-    this.activeView = this.initialView;
+    this.activeView = this.adminState.challengesInitialView();
     this.loadChallenges();
-  }
-
-  ngOnChanges(changes: SimpleChanges): void {
-    if (changes['initialView'] && !changes['initialView'].firstChange) {
-      this.activeView = changes['initialView'].currentValue;
-    }
   }
 
   private updateEditorConfig(): void {
@@ -231,8 +229,8 @@ export class AdminChallengesComponent implements OnInit, OnChanges {
   switchView(view: 'create' | 'manage'): void {
     if (this.activeView === view) return;
     this.activeView = view;
+    this.adminState.challengesInitialView.set(view);
     this.cdr.markForCheck();
-    this.viewChanged.emit(view);
     if (view === 'create' && !this.isEditMode) {
       this.resetForm();
     }
@@ -244,12 +242,12 @@ export class AdminChallengesComponent implements OnInit, OnChanges {
       next: (data) => {
         this.challenges = data || [];
         this.isLoading = false;
-        this.countChanged.emit(this.challenges.length);
+        this.adminState.challengeCount.set(this.challenges.length);
       },
       error: () => {
         this.challenges = [];
         this.isLoading = false;
-        this.messageEmitted.emit({ msg: 'Error loading challenges', type: 'error' });
+        this.adminState.showMessage('Error loading challenges', 'error');
       }
     });
   }
@@ -290,30 +288,30 @@ export class AdminChallengesComponent implements OnInit, OnChanges {
         this.challengeService.updateChallenge(this.editingChallengeId, challenge).subscribe({
           next: () => {
             this.challengeService.invalidateChallengeCache();
-            this.messageEmitted.emit({ msg: 'Challenge updated successfully', type: 'success' });
+            this.adminState.showMessage('Challenge updated successfully', 'success');
             this.loadChallenges();
             this.resetForm();
             this.switchView('manage');
           },
           error: () => {
-            this.messageEmitted.emit({ msg: 'Error updating challenge', type: 'error' });
+            this.adminState.showMessage('Error updating challenge', 'error');
           }
         });
       } else {
         this.challengeService.createChallenge(challenge).subscribe({
           next: () => {
             this.challengeService.invalidateChallengeCache();
-            this.messageEmitted.emit({ msg: 'Challenge created successfully', type: 'success' });
+            this.adminState.showMessage('Challenge created successfully', 'success');
             this.loadChallenges();
             this.resetForm();
           },
           error: () => {
-            this.messageEmitted.emit({ msg: 'Error creating challenge', type: 'error' });
+            this.adminState.showMessage('Error creating challenge', 'error');
           }
         });
       }
     } else if (!this.editorContent.trim()) {
-      this.messageEmitted.emit({ msg: 'Please provide a description for the challenge', type: 'error' });
+      this.adminState.showMessage('Please provide a description for the challenge', 'error');
     }
   }
 
@@ -323,7 +321,7 @@ export class AdminChallengesComponent implements OnInit, OnChanges {
         next: (full) => {
           this.previewChallenge = { ...challenge, description: full.description, description_format: full.description_format };
         },
-        error: () => this.messageEmitted.emit({ msg: 'Failed to load challenge details', type: 'error' })
+        error: () => this.adminState.showMessage('Failed to load challenge details', 'error')
       });
     } else {
       this.previewChallenge = challenge;
@@ -333,7 +331,7 @@ export class AdminChallengesComponent implements OnInit, OnChanges {
   editChallenge(challenge: ChallengeAdmin): void {
     this.isEditMode = true;
     this.editingChallengeId = challenge.id;
-    this.isEditModeChanged.emit(true);
+    this.adminState.isEditMode.set(true);
 
     const applyEdit = (ch: ChallengeAdmin) => {
       const format = ch.description_format || 'markdown';
@@ -358,7 +356,7 @@ export class AdminChallengesComponent implements OnInit, OnChanges {
         tags: ch.tags ? ch.tags.join(', ') : ''
       });
       this.switchView('create');
-      this.messageEmitted.emit({ msg: `Editing: ${ch.title} (Leave flag empty to keep current flag)`, type: 'success' });
+      this.adminState.showMessage(`Editing: ${ch.title} (Leave flag empty to keep current flag)`, 'success');
     };
 
     if (!challenge.description) {
@@ -366,7 +364,7 @@ export class AdminChallengesComponent implements OnInit, OnChanges {
         next: (full) => {
           applyEdit({ ...challenge, description: full.description, description_format: full.description_format });
         },
-        error: () => this.messageEmitted.emit({ msg: 'Failed to load challenge for edit', type: 'error' })
+        error: () => this.adminState.showMessage('Failed to load challenge for edit', 'error')
       });
     } else {
       applyEdit(challenge);
@@ -383,11 +381,11 @@ export class AdminChallengesComponent implements OnInit, OnChanges {
       if (confirmed) {
         this.challengeService.deleteChallenge(challenge.id).subscribe({
           next: () => {
-            this.messageEmitted.emit({ msg: 'Challenge deleted successfully', type: 'success' });
+            this.adminState.showMessage('Challenge deleted successfully', 'success');
             this.loadChallenges();
           },
           error: () => {
-            this.messageEmitted.emit({ msg: 'Error deleting challenge', type: 'error' });
+            this.adminState.showMessage('Error deleting challenge', 'error');
           }
         });
       }
@@ -398,7 +396,7 @@ export class AdminChallengesComponent implements OnInit, OnChanges {
     this.isEditMode = false;
     this.editingChallengeId = null;
     this.editorContent = '';
-    this.isEditModeChanged.emit(false);
+    this.adminState.isEditMode.set(false);
     this.challengeForm.get('flag')?.setValidators(Validators.required);
     this.challengeForm.get('flag')?.updateValueAndValidity();
     this.challengeForm.reset({
@@ -431,19 +429,19 @@ export class AdminChallengesComponent implements OnInit, OnChanges {
         a.download = 'challenges.json';
         a.click();
         window.URL.revokeObjectURL(url);
-        this.messageEmitted.emit({ msg: 'Challenges exported', type: 'success' });
+        this.adminState.showMessage('Challenges exported', 'success');
       },
-      error: () => this.messageEmitted.emit({ msg: 'Failed to export challenges', type: 'error' })
+      error: () => this.adminState.showMessage('Failed to export challenges', 'error')
     });
   }
 
   duplicateChallenge(challengeId: string): void {
     this.bulkChallengeService.duplicateChallenge(challengeId).subscribe({
       next: () => {
-        this.messageEmitted.emit({ msg: 'Challenge duplicated', type: 'success' });
+        this.adminState.showMessage('Challenge duplicated', 'success');
         this.loadChallenges();
       },
-      error: () => this.messageEmitted.emit({ msg: 'Failed to duplicate challenge', type: 'error' })
+      error: () => this.adminState.showMessage('Failed to duplicate challenge', 'error')
     });
   }
 

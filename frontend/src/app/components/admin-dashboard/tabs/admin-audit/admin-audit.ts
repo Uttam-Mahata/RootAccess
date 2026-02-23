@@ -1,7 +1,8 @@
-import { Component, OnInit, Output, EventEmitter, inject, DestroyRef } from '@angular/core';
+import { Component, OnInit, inject, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { AdminStateService } from '../../../../services/admin-state';
 import { environment } from '../../../../../environments/environment';
 
 @Component({
@@ -14,8 +15,7 @@ import { environment } from '../../../../../environments/environment';
 export class AdminAuditComponent implements OnInit {
   private destroyRef = inject(DestroyRef);
   private http = inject(HttpClient);
-
-  @Output() messageEmitted = new EventEmitter<{ msg: string; type: 'success' | 'error' }>();
+  adminState = inject(AdminStateService);
 
   auditLogs: any[] = [];
   auditTotal = 0;
@@ -43,6 +43,7 @@ export class AdminAuditComponent implements OnInit {
         error: () => {
           this.auditLogs = [];
           this.isLoadingAudit = false;
+          this.adminState.showMessage('Failed to load audit logs', 'error');
         }
       });
   }

@@ -103,7 +103,46 @@ export const routes: Routes = [
   { path: 'notifications', loadComponent: () => import('./components/notifications/notifications').then(m => m.NotificationsComponent), canActivate: [authGuard] },
 
   // Admin routes
-  { path: 'admin', loadComponent: () => import('./components/admin-dashboard/admin-dashboard').then(m => m.AdminDashboardComponent), canActivate: [adminGuard] },
+  {
+    path: 'admin',
+    loadComponent: () => import('./components/admin-dashboard/admin-dashboard').then(m => m.AdminDashboardComponent),
+    canActivate: [adminGuard],
+    children: [
+      { path: '', redirectTo: 'challenges', pathMatch: 'full' },
+      {
+        path: 'challenges',
+        loadComponent: () => import('./components/admin-dashboard/tabs/admin-challenges/admin-challenges').then(m => m.AdminChallengesComponent)
+      },
+      {
+        path: 'notifications',
+        loadComponent: () => import('./components/admin-dashboard/tabs/admin-notifications/admin-notifications').then(m => m.AdminNotificationsComponent)
+      },
+      {
+        path: 'contest',
+        loadComponent: () => import('./components/admin-dashboard/tabs/admin-contest/admin-contest').then(m => m.AdminContestComponent)
+      },
+      {
+        path: 'writeups',
+        loadComponent: () => import('./components/admin-dashboard/tabs/admin-writeups/admin-writeups').then(m => m.AdminWriteupsComponent)
+      },
+      {
+        path: 'audit',
+        loadComponent: () => import('./components/admin-dashboard/tabs/admin-audit/admin-audit').then(m => m.AdminAuditComponent)
+      },
+      {
+        path: 'analytics',
+        loadComponent: () => import('./components/admin-dashboard/tabs/admin-analytics/admin-analytics').then(m => m.AdminAnalyticsComponent)
+      },
+      {
+        path: 'users',
+        loadComponent: () => import('./components/admin-dashboard/tabs/admin-users/admin-users').then(m => m.AdminUsersComponent)
+      },
+      {
+        path: 'teams',
+        loadComponent: () => import('./components/admin-dashboard/tabs/admin-teams/admin-teams').then(m => m.AdminTeamsComponent)
+      },
+    ]
+  },
 
   // Default route - show landing page for guests, redirect authenticated users to home
   { path: '', loadComponent: () => import('./components/landing/landing').then(m => m.LandingComponent), canActivate: [landingGuard] },

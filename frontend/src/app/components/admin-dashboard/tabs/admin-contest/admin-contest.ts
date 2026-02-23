@@ -1,4 +1,4 @@
-import { Component, OnInit, Output, EventEmitter, inject, DestroyRef } from '@angular/core';
+import { Component, OnInit, inject, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -7,6 +7,7 @@ import { ContestService } from '../../../../services/contest';
 import { ContestAdminService, Contest, ContestRound } from '../../../../services/contest-admin';
 import { ChallengeService, ChallengeAdmin } from '../../../../services/challenge';
 import { ConfirmationModalService } from '../../../../services/confirmation-modal.service';
+import { AdminStateService } from '../../../../services/admin-state';
 import { DatetimePickerComponent } from '../../../datetime-picker/datetime-picker';
 
 @Component({
@@ -23,8 +24,7 @@ export class AdminContestComponent implements OnInit {
   private challengeService = inject(ChallengeService);
   private fb = inject(FormBuilder);
   private confirmationModalService = inject(ConfirmationModalService);
-
-  @Output() messageEmitted = new EventEmitter<{ msg: string; type: 'success' | 'error' }>();
+  adminState = inject(AdminStateService);
 
   // Contest state
   contestConfig: any = null;
@@ -176,14 +176,14 @@ export class AdminContestComponent implements OnInit {
       this.cancelContestForm();
       this.contestAdminService.updateContest(editingId, v.name, v.description || '', startTime, endTime, false).subscribe({
         next: (updated) => {
-          this.messageEmitted.emit({ msg: 'Contest updated', type: 'success' });
+          this.adminState.showMessage('Contest updated', 'success');
           const index = this.contests.findIndex(c => c.id === updated.id);
           if (index !== -1) { this.contests[index] = updated; } else { this.loadContests(); }
           if (this.selectedContest?.id === editingId) { this.selectedContest = updated; }
         },
         error: (err) => {
           if (contestIndex !== -1 && originalContest) { this.contests[contestIndex] = originalContest; if (this.selectedContest?.id === editingId) { this.selectedContest = { ...originalContest }; } }
-          this.messageEmitted.emit({ msg: err.error?.error || 'Error updating contest', type: 'error' });
+          this.adminState.showMessage(err.error?.error || 'Error updating contest', 'error');
         }
       });
     } else {
@@ -192,13 +192,13 @@ export class AdminContestComponent implements OnInit {
       this.cancelContestForm();
       this.contestAdminService.createContest(v.name, v.description || '', startTime, endTime).subscribe({
         next: (created) => {
-          this.messageEmitted.emit({ msg: 'Contest created', type: 'success' });
+          this.adminState.showMessage('Contest created', 'success');
           const tempIndex = this.contests.findIndex(c => c.id === tempContest.id);
           if (tempIndex !== -1) { this.contests[tempIndex] = created; } else { this.loadContests(); }
         },
         error: (err) => {
           this.contests = this.contests.filter(c => c.id !== tempContest.id);
-          this.messageEmitted.emit({ msg: err.error?.error || 'Error creating contest', type: 'error' });
+          this.adminState.showMessage(err.error?.error || 'Error creating contest', 'error');
         }
       });
     }
@@ -206,8 +206,8 @@ export class AdminContestComponent implements OnInit {
 
   setActiveContest(contestId: string): void {
     this.contestAdminService.setActiveContest(contestId).subscribe({
-      next: () => { this.messageEmitted.emit({ msg: 'Active contest updated', type: 'success' }); this.activeContestId = contestId; this.loadContestConfig(); },
-      error: (err) => this.messageEmitted.emit({ msg: err.error?.error || 'Error setting active contest', type: 'error' })
+      next: () => { this.adminState.showMessage('Active contest updated', 'success'); this.activeContestId = contestId; this.loadContestConfig(); },
+      error: (err) => this.adminState.showMessage(err.error?.error || 'Error setting active contest', 'error')
     });
   }
 
@@ -221,13 +221,13 @@ export class AdminContestComponent implements OnInit {
       if (wasSelected) { this.selectedContest = null; this.rounds = []; }
       if (wasActive) { this.activeContestId = null; }
       this.contestAdminService.deleteContest(contest.id).subscribe({
-        next: () => { this.messageEmitted.emit({ msg: 'Contest deleted', type: 'success' }); this.loadContests(); if (wasActive) { this.loadContestConfig(); } },
+        next: () => { this.adminState.showMessage('Contest deleted', 'success'); this.loadContests(); if (wasActive) { this.loadContestConfig(); } },
         error: (err) => {
           this.contests = [...this.contests, originalContest];
           if (wasSelected) { this.selectContest(originalContest); }
           if (wasActive) { this.activeContestId = contest.id; this.loadContestConfig(); }
           this.loadContests();
-          this.messageEmitted.emit({ msg: err.error?.error || 'Error deleting contest', type: 'error' });
+          this.adminState.showMessage(err.error?.error || 'Error deleting contest', 'error');
         }
       });
     });
@@ -281,13 +281,13 @@ export class AdminContestComponent implements OnInit {
       this.cancelRoundForm();
       this.contestAdminService.updateRound(this.selectedContest.id, editingId, v.name, v.description || '', v.order, visibleFrom, startTime, endTime).subscribe({
         next: (updated) => {
-          this.messageEmitted.emit({ msg: 'Round updated', type: 'success' });
+          this.adminState.showMessage('Round updated', 'success');
           const index = this.rounds.findIndex(r => r.id === updated.id);
           if (index !== -1) { this.rounds[index] = updated; this.rounds.sort((a, b) => a.order - b.order); } else { this.loadRounds(); }
         },
         error: (err) => {
           if (roundIndex !== -1 && originalRound) { this.rounds[roundIndex] = originalRound; this.rounds.sort((a, b) => a.order - b.order); if (this.selectedRound?.id === editingId) { this.selectedRound = { ...originalRound }; } }
-          this.messageEmitted.emit({ msg: err.error?.error || 'Error updating round', type: 'error' });
+          this.adminState.showMessage(err.error?.error || 'Error updating round', 'error');
         }
       });
     } else {
@@ -296,13 +296,13 @@ export class AdminContestComponent implements OnInit {
       this.cancelRoundForm();
       this.contestAdminService.createRound(this.selectedContest.id, v.name, v.description || '', v.order, visibleFrom, startTime, endTime).subscribe({
         next: (created) => {
-          this.messageEmitted.emit({ msg: 'Round created', type: 'success' });
+          this.adminState.showMessage('Round created', 'success');
           const tempIndex = this.rounds.findIndex(r => r.id === tempRound.id);
           if (tempIndex !== -1) { this.rounds[tempIndex] = created; this.rounds.sort((a, b) => a.order - b.order); } else { this.loadRounds(); }
         },
         error: (err) => {
           this.rounds = this.rounds.filter(r => r.id !== tempRound.id);
-          this.messageEmitted.emit({ msg: err.error?.error || 'Error creating round', type: 'error' });
+          this.adminState.showMessage(err.error?.error || 'Error creating round', 'error');
         }
       });
     }
@@ -318,11 +318,11 @@ export class AdminContestComponent implements OnInit {
       if (wasSelected) { this.selectedRound = null; this.roundChallengeIds = []; this.availableChallengesForRound = []; }
       this.cancelRoundForm();
       this.contestAdminService.deleteRound(this.selectedContest!.id, round.id).subscribe({
-        next: () => { this.messageEmitted.emit({ msg: 'Round deleted', type: 'success' }); this.loadRounds(); },
+        next: () => { this.adminState.showMessage('Round deleted', 'success'); this.loadRounds(); },
         error: (err) => {
           this.rounds = originalRounds;
           if (wasSelected) { this.selectedRound = round; this.loadRoundChallenges(); }
-          this.messageEmitted.emit({ msg: err.error?.error || 'Error deleting round', type: 'error' });
+          this.adminState.showMessage(err.error?.error || 'Error deleting round', 'error');
         }
       });
     });
@@ -379,8 +379,8 @@ export class AdminContestComponent implements OnInit {
     this.roundChallengeIds = [...this.roundChallengeIds, ...newIds];
     this.computeAvailableChallenges(); this.selectedAvailableChallenges.clear();
     this.contestAdminService.attachChallenges(this.selectedContest.id, this.selectedRound.id, challengeIds).subscribe({
-      next: () => { this.challengeService.invalidateChallengeCache(); this.messageEmitted.emit({ msg: challengeIds.length === 1 ? 'Challenge attached to round' : `${challengeIds.length} challenges attached to round`, type: 'success' }); this.loadRoundChallenges(); },
-      error: (err) => { this.roundChallengeIds = this.roundChallengeIds.filter(id => !newIds.includes(id)); this.computeAvailableChallenges(); this.messageEmitted.emit({ msg: err.error?.error || 'Error attaching challenges', type: 'error' }); }
+      next: () => { this.challengeService.invalidateChallengeCache(); this.adminState.showMessage(challengeIds.length === 1 ? 'Challenge attached to round' : `${challengeIds.length} challenges attached to round`, 'success'); this.loadRoundChallenges(); },
+      error: (err) => { this.roundChallengeIds = this.roundChallengeIds.filter(id => !newIds.includes(id)); this.computeAvailableChallenges(); this.adminState.showMessage(err.error?.error || 'Error attaching challenges', 'error'); }
     });
   }
 
@@ -394,8 +394,8 @@ export class AdminContestComponent implements OnInit {
       this.roundChallengeIds = this.roundChallengeIds.filter(id => !challengeIds.includes(id));
       this.computeAvailableChallenges(); this.selectedAttachedChallenges.clear();
       this.contestAdminService.detachChallenges(this.selectedContest!.id, this.selectedRound!.id, challengeIds).subscribe({
-        next: () => { this.challengeService.invalidateChallengeCache(); this.messageEmitted.emit({ msg: challengeIds.length === 1 ? 'Challenge detached from round' : `${challengeIds.length} challenges detached from round`, type: 'success' }); this.loadRoundChallenges(); },
-        error: (err) => { this.roundChallengeIds = [...this.roundChallengeIds, ...hadChallenges]; this.computeAvailableChallenges(); this.messageEmitted.emit({ msg: err.error?.error || 'Error detaching challenges', type: 'error' }); }
+        next: () => { this.challengeService.invalidateChallengeCache(); this.adminState.showMessage(challengeIds.length === 1 ? 'Challenge detached from round' : `${challengeIds.length} challenges detached from round`, 'success'); this.loadRoundChallenges(); },
+        error: (err) => { this.roundChallengeIds = [...this.roundChallengeIds, ...hadChallenges]; this.computeAvailableChallenges(); this.adminState.showMessage(err.error?.error || 'Error detaching challenges', 'error'); }
       });
     });
   }

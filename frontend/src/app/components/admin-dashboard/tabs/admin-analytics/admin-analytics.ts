@@ -1,10 +1,10 @@
 import { Component, OnInit, OnDestroy, effect, inject, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Output, EventEmitter } from '@angular/core';
 import Chart from 'chart.js/auto';
 import { AnalyticsService, AdminAnalytics } from '../../../../services/analytics';
 import { ThemeService } from '../../../../services/theme';
+import { AdminStateService } from '../../../../services/admin-state';
 
 @Component({
   selector: 'app-admin-analytics',
@@ -17,8 +17,7 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
   private destroyRef = inject(DestroyRef);
   private analyticsService = inject(AnalyticsService);
   private themeService = inject(ThemeService);
-
-  @Output() messageEmitted = new EventEmitter<{ msg: string; type: 'success' | 'error' }>();
+  adminState = inject(AdminStateService);
 
   analytics: AdminAnalytics | null = null;
   analyticsLoading = false;
@@ -58,7 +57,7 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
       },
       error: () => {
         this.analyticsLoading = false;
-        this.messageEmitted.emit({ msg: 'Failed to load analytics', type: 'error' });
+        this.adminState.showMessage('Failed to load analytics', 'error');
       }
     });
   }

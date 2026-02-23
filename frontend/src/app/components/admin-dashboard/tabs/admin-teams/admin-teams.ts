@@ -1,10 +1,11 @@
-import { Component, OnInit, Output, EventEmitter, inject, DestroyRef } from '@angular/core';
+import { Component, OnInit, inject, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { take } from 'rxjs/operators';
 import { AdminTeamService, AdminTeam } from '../../../../services/admin-team';
 import { ConfirmationModalService } from '../../../../services/confirmation-modal.service';
+import { AdminStateService } from '../../../../services/admin-state';
 
 @Component({
   selector: 'app-admin-teams',
@@ -17,9 +18,7 @@ export class AdminTeamsComponent implements OnInit {
   private destroyRef = inject(DestroyRef);
   private adminTeamService = inject(AdminTeamService);
   private confirmationModalService = inject(ConfirmationModalService);
-
-  @Output() countChanged = new EventEmitter<number>();
-  @Output() messageEmitted = new EventEmitter<{ msg: string; type: 'success' | 'error' }>();
+  adminState = inject(AdminStateService);
 
   teams: AdminTeam[] = [];
   teamsLoading = false;
@@ -37,11 +36,11 @@ export class AdminTeamsComponent implements OnInit {
       next: (data) => {
         this.teams = data || [];
         this.teamsLoading = false;
-        this.countChanged.emit(this.teams.length);
+        this.adminState.teamsCount.set(this.teams.length);
       },
       error: () => {
         this.teamsLoading = false;
-        this.messageEmitted.emit({ msg: 'Failed to load teams', type: 'error' });
+        this.adminState.showMessage('Failed to load teams', 'error');
       }
     });
   }
@@ -57,10 +56,10 @@ export class AdminTeamsComponent implements OnInit {
   updateTeam(teamId: string, name: string, description: string): void {
     this.adminTeamService.updateTeam(teamId, name, description).subscribe({
       next: () => {
-        this.messageEmitted.emit({ msg: 'Team updated successfully', type: 'success' });
+        this.adminState.showMessage('Team updated successfully', 'success');
         this.loadTeams();
       },
-      error: () => this.messageEmitted.emit({ msg: 'Failed to update team', type: 'error' })
+      error: () => this.adminState.showMessage('Failed to update team', 'error')
     });
   }
 
@@ -68,13 +67,13 @@ export class AdminTeamsComponent implements OnInit {
     if (!this.selectedTeam) return;
     const delta = Number(this.teamScoreDelta);
     if (!delta || isNaN(delta) || delta === 0) {
-      this.messageEmitted.emit({ msg: 'Please enter a non-zero score delta', type: 'error' });
+      this.adminState.showMessage('Please enter a non-zero score delta', 'error');
       return;
     }
 
     this.adminTeamService.adjustScore(this.selectedTeam.id, delta, this.teamScoreReason || '').subscribe({
       next: () => {
-        this.messageEmitted.emit({ msg: 'Team score adjusted', type: 'success' });
+        this.adminState.showMessage('Team score adjusted', 'success');
         this.selectedTeam!.score += delta;
         const idx = this.teams.findIndex(t => t.id === this.selectedTeam!.id);
         if (idx !== -1) {
@@ -83,18 +82,18 @@ export class AdminTeamsComponent implements OnInit {
         this.teamScoreDelta = 0;
         this.teamScoreReason = '';
       },
-      error: () => this.messageEmitted.emit({ msg: 'Failed to adjust team score', type: 'error' })
+      error: () => this.adminState.showMessage('Failed to adjust team score', 'error')
     });
   }
 
   changeTeamLeader(teamId: string, newLeaderId: string): void {
     this.adminTeamService.updateTeamLeader(teamId, newLeaderId).subscribe({
       next: () => {
-        this.messageEmitted.emit({ msg: 'Team leader updated successfully', type: 'success' });
+        this.adminState.showMessage('Team leader updated successfully', 'success');
         this.loadTeams();
         this.selectedTeam = null;
       },
-      error: () => this.messageEmitted.emit({ msg: 'Failed to update team leader', type: 'error' })
+      error: () => this.adminState.showMessage('Failed to update team leader', 'error')
     });
   }
 
@@ -108,11 +107,11 @@ export class AdminTeamsComponent implements OnInit {
       if (confirmed) {
         this.adminTeamService.removeMember(teamId, memberId).subscribe({
           next: () => {
-            this.messageEmitted.emit({ msg: 'Member removed from team', type: 'success' });
+            this.adminState.showMessage('Member removed from team', 'success');
             this.loadTeams();
             this.selectedTeam = null;
           },
-          error: () => this.messageEmitted.emit({ msg: 'Failed to remove member', type: 'error' })
+          error: () => this.adminState.showMessage('Failed to remove member', 'error')
         });
       }
     });
@@ -128,11 +127,11 @@ export class AdminTeamsComponent implements OnInit {
       if (confirmed) {
         this.adminTeamService.deleteTeam(teamId).subscribe({
           next: () => {
-            this.messageEmitted.emit({ msg: 'Team deleted successfully', type: 'success' });
+            this.adminState.showMessage('Team deleted successfully', 'success');
             this.loadTeams();
             this.selectedTeam = null;
           },
-          error: () => this.messageEmitted.emit({ msg: 'Failed to delete team', type: 'error' })
+          error: () => this.adminState.showMessage('Failed to delete team', 'error')
         });
       }
     });
