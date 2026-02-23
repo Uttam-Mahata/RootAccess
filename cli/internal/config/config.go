@@ -13,10 +13,13 @@ type Config struct {
 	BaseURL  string `json:"base_url"`
 }
 
-const (
+var (
 	DefaultBaseURL = "https://ctf.rootaccess.live/api"
-	ConfigDir      = ".config/rootaccess"
-	ConfigFile     = "config.json"
+)
+
+const (
+	ConfigDir  = ".config/rootaccess"
+	ConfigFile = "config.json"
 )
 
 func GetConfigPath() string {
