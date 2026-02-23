@@ -1,0 +1,119 @@
+<div class="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-4xl mx-auto">
+    <!-- Header -->
+    <div class="text-center mb-12">
+      <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-red-600 to-red-700 mb-6 shadow-lg rotate-3 group-hover:rotate-0 transition-transform duration-300">
+        <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+        </svg>
+      </div>
+      <h1 class="text-4xl font-extrabold text-slate-900 dark:text-white mb-4">RootAccess CLI</h1>
+      <p class="text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
+        Hack faster. Solve challenges directly from your terminal with our official command-line tool.
+      </p>
+    </div>
+
+    <!-- Quick Install -->
+    <div class="relative group mb-12">
+      <div class="absolute -inset-0.5 bg-gradient-to-r from-red-600 to-red-700 rounded-2xl blur opacity-20 transition duration-300"></div>
+      <div class="relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-red-600/20 p-8 shadow-md">
+        <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+          <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+          Quick Installation
+        </h2>
+        
+        <p class="text-slate-600 dark:text-slate-400 mb-4">Run this command in your terminal (Linux & macOS):</p>
+        
+        <div class="relative group/code">
+          <div class="bg-slate-900 rounded-xl p-4 font-mono text-sm sm:text-base text-red-400 overflow-x-auto border border-slate-800">
+            <code>curl -s https://ctf.rootaccess.live/install.sh | bash</code>
+          </div>
+          <button (click)="copyInstallCommand()" class="absolute top-3 right-3 p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-colors opacity-0 group-hover/code:opacity-100">
+            <svg *ngIf="!commandCopied" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+            </svg>
+            <svg *ngIf="commandCopied" class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+          </button>
+        </div>
+        
+        <div class="mt-6 flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
+          <span class="flex items-center gap-1">
+            <svg class="w-4 h-4 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+            Linux
+          </span>
+          <span class="flex items-center gap-1">
+            <svg class="w-4 h-4 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+            macOS
+          </span>
+          <span class="flex items-center gap-1">
+            <svg class="w-4 h-4 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+            Windows (via manual download)
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Manual Downloads -->
+    <div class="grid md:grid-cols-2 gap-8">
+      <div class="bg-white dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
+        <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-4">Direct Binaries</h3>
+        <div class="space-y-3">
+          <a *ngFor="let bin of binaries" 
+             [href]="'/bin/' + bin.file"
+             class="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-red-500 dark:hover:border-red-500 transition-all group">
+            <div class="flex items-center gap-3">
+              <div class="p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 group-hover:text-red-600 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                </svg>
+              </div>
+              <div>
+                <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ bin.name }}</p>
+                <p class="text-xs text-slate-500">{{ bin.arch }}</p>
+              </div>
+            </div>
+            <span class="text-xs font-mono text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">Download</span>
+          </a>
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
+        <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-4">Getting Started</h3>
+        <div class="space-y-4">
+          <div class="flex gap-3">
+            <div class="flex-shrink-0 w-6 h-6 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 flex items-center justify-center text-xs font-bold">1</div>
+            <div>
+              <p class="text-sm font-semibold text-slate-900 dark:text-white">Authenticate</p>
+              <p class="text-xs text-slate-600 dark:text-slate-400">Run <code>rootaccess login</code> to link your account.</p>
+            </div>
+          </div>
+          <div class="flex gap-3">
+            <div class="flex-shrink-0 w-6 h-6 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 flex items-center justify-center text-xs font-bold">2</div>
+            <div>
+              <p class="text-sm font-semibold text-slate-900 dark:text-white">List Challenges</p>
+              <p class="text-xs text-slate-600 dark:text-slate-400">Use <code>rootaccess challenges</code> to see available tasks.</p>
+            </div>
+          </div>
+          <div class="flex gap-3">
+            <div class="flex-shrink-0 w-6 h-6 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 flex items-center justify-center text-xs font-bold">3</div>
+            <div>
+              <p class="text-sm font-semibold text-slate-900 dark:text-white">Submit Flags</p>
+              <p class="text-xs text-slate-600 dark:text-slate-400">Submit with <code>rootaccess submit &lt;id&gt; &lt;flag&gt;</code>.</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
+          <a routerLink="/legal" class="text-sm text-red-600 dark:text-red-400 hover:underline flex items-center gap-1">
+            View full documentation
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
