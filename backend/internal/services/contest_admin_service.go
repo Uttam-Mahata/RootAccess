@@ -128,7 +128,20 @@ func (s *ContestAdminService) SetActiveContest(contestID string) error {
 	config.StartTime = contest.StartTime
 	config.EndTime = contest.EndTime
 
+	// Set the contest entity itself as active (required by GetScoreboardContests filter)
+	contest.IsActive = true
+	if err := s.contestEntityRepo.Update(contest); err != nil {
+		return err
+	}
+	// Ensure ContestConfig is marked active
+	config.IsActive = true
+
 	return s.contestRepo.UpsertContest(config)
+}
+
+// GetActiveContestConfig returns the active ContestConfig (used to resolve contest_id for submissions)
+func (s *ContestAdminService) GetActiveContestConfig() (*models.ContestConfig, error) {
+	return s.contestRepo.GetActiveContest()
 }
 
 // ListRounds returns all rounds for a contest

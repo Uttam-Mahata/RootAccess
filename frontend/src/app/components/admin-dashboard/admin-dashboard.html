@@ -61,6 +61,17 @@
         <span *ngIf="!sidebarOpen && challengeCount > 0" class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">{{ challengeCount }}</span>
       </button>
 
+      <!-- New Challenge sub-button (visible when sidebar open and challenges tab active) -->
+      <button *ngIf="sidebarOpen && activeTab === 'challenges'" (click)="showCreateChallenge()"
+        class="w-full flex items-center gap-2 px-3 py-1.5 ml-8 text-xs rounded-lg
+               text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400
+               hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-200">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+        New Challenge
+      </button>
+
       <!-- Notifications -->
       <button
         (click)="switchTab('notifications')"

@@ -93,7 +93,7 @@ type SubmitFlagResult struct {
 	Message       string `json:"message,omitempty"`
 }
 
-func (s *ChallengeService) SubmitFlag(userID primitive.ObjectID, challengeID string, flag string, clientIP string) (*SubmitFlagResult, error) {
+func (s *ChallengeService) SubmitFlag(userID primitive.ObjectID, challengeID string, flag string, clientIP string, contestID *primitive.ObjectID) (*SubmitFlagResult, error) {
 	challenge, err := s.challengeRepo.GetChallengeByID(challengeID)
 	if err != nil {
 		return nil, err
@@ -146,6 +146,7 @@ func (s *ChallengeService) SubmitFlag(userID primitive.ObjectID, challengeID str
 			UserID:      userID,
 			TeamID:      team.ID,
 			ChallengeID: cid,
+			ContestID:   contestID,
 			Flag:        flagHash,
 			IsCorrect:   isCorrect,
 			IPAddress:   clientIP,
@@ -196,6 +197,7 @@ func (s *ChallengeService) SubmitFlag(userID primitive.ObjectID, challengeID str
 	submission := &models.Submission{
 		UserID:      userID,
 		ChallengeID: cid,
+		ContestID:   contestID,
 		Flag:        flagHash,
 		IsCorrect:   isCorrect,
 		IPAddress:   clientIP,
