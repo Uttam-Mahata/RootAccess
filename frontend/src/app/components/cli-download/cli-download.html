@@ -9,61 +9,300 @@
       </div>
       <h1 class="text-4xl font-extrabold text-slate-900 dark:text-white mb-4">RootAccess CLI</h1>
       <p class="text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-        Hack faster. Solve challenges directly from your terminal with our official command-line tool.
+        <code class="text-red-600 dark:text-red-400 font-semibold">rootaccess</code> is the official command-line tool for the RootAccess CTF platform. Browse challenges, submit flags, and check the scoreboard from your terminal.
       </p>
     </div>
 
     <!-- Quick Install -->
-    <div class="relative group mb-12">
+    <section id="installation" class="relative group mb-12 scroll-mt-24">
       <div class="absolute -inset-0.5 bg-gradient-to-r from-red-600 to-red-700 rounded-2xl blur opacity-20 transition duration-300"></div>
       <div class="relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-red-600/20 p-8 shadow-md">
         <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
           <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
           </svg>
-          Quick Installation
+          Installation
         </h2>
-        
-        <p class="text-slate-600 dark:text-slate-400 mb-4">Run this command in your terminal (Linux & macOS):</p>
-        
-        <div class="relative group/code">
+
+        <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-2">One-line installer (Linux / macOS)</h3>
+        <div class="relative group/code mb-6">
           <div class="bg-slate-900 rounded-xl p-4 font-mono text-sm sm:text-base text-red-400 overflow-x-auto border border-slate-800">
-            <code>curl -s https://ctf.rootaccess.live/install.sh | bash</code>
+            <code>{{ installCommand }}</code>
           </div>
-          <button (click)="copyInstallCommand()" class="absolute top-3 right-3 p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-colors opacity-0 group-hover/code:opacity-100">
-            <svg *ngIf="!commandCopied" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <button (click)="copyToClipboard(installCommand)" type="button" class="absolute top-3 right-3 p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-colors opacity-0 group-hover/code:opacity-100">
+            <svg *ngIf="copiedValue !== installCommand" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
             </svg>
-            <svg *ngIf="commandCopied" class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg *ngIf="copiedValue === installCommand" class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
             </svg>
           </button>
         </div>
-        
-        <div class="mt-6 flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
-          <span class="flex items-center gap-1">
-            <svg class="w-4 h-4 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
-            Linux
-          </span>
-          <span class="flex items-center gap-1">
-            <svg class="w-4 h-4 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
-            macOS
-          </span>
-          <span class="flex items-center gap-1">
-            <svg class="w-4 h-4 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
-            Windows (via manual download)
-          </span>
+        <p class="text-slate-600 dark:text-slate-400 text-sm mb-6">The script downloads the right binary for your OS/architecture and places it in <code class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200">/usr/local/bin/rootaccess</code>.</p>
+
+        <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-2">Build from source</h3>
+        <div class="relative group/code mb-4">
+          <pre class="bg-slate-900 rounded-xl p-4 font-mono text-sm text-slate-300 overflow-x-auto border border-slate-800"><code>git clone https://github.com/Uttam-Mahata/RootAccess.git
+cd RootAccess/cli
+go build -o rootaccess main.go
+sudo mv rootaccess /usr/local/bin/</code></pre>
+          <button (click)="copyToClipboard(buildFromSource)" type="button" class="absolute top-3 right-3 p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-colors opacity-0 group-hover/code:opacity-100">
+            <svg *ngIf="copiedValue !== buildFromSource" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+            <svg *ngIf="copiedValue === buildFromSource" class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          </button>
+        </div>
+
+        <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-2">Cross-compile for other platforms</h3>
+        <div class="relative group/code">
+          <pre class="bg-slate-900 rounded-xl p-4 font-mono text-sm text-slate-300 overflow-x-auto border border-slate-800"><code>GOOS=linux   GOARCH=amd64 go build -o rootaccess-linux-amd64
+GOOS=linux   GOARCH=arm64 go build -o rootaccess-linux-arm64
+GOOS=darwin  GOARCH=amd64 go build -o rootaccess-darwin-amd64
+GOOS=darwin  GOARCH=arm64 go build -o rootaccess-darwin-arm64
+GOOS=windows GOARCH=amd64 go build -o rootaccess-windows-amd64.exe</code></pre>
+          <button (click)="copyToClipboard(crossCompile)" type="button" class="absolute top-3 right-3 p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-colors opacity-0 group-hover/code:opacity-100">
+            <svg *ngIf="copiedValue !== crossCompile" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+            <svg *ngIf="copiedValue === crossCompile" class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          </button>
         </div>
       </div>
-    </div>
+    </section>
 
-    <!-- Manual Downloads -->
-    <div class="grid md:grid-cols-2 gap-8">
+    <!-- Configuration -->
+    <section id="configuration" class="mb-12 scroll-mt-24">
+      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-8 shadow-sm">
+        <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-4">Configuration</h2>
+        <p class="text-slate-600 dark:text-slate-400 mb-4">The CLI stores its config (token, username, server URLs) at:</p>
+        <div class="relative group/code">
+          <pre class="bg-slate-900 rounded-xl p-4 font-mono text-sm text-slate-300 overflow-x-auto border border-slate-800"><code>~/.config/rootaccess/config.json</code></pre>
+          <button (click)="copyToClipboard('~/.config/rootaccess/config.json')" type="button" class="absolute top-3 right-3 p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-colors opacity-0 group-hover/code:opacity-100">
+            <svg *ngIf="copiedValue !== '~/.config/rootaccess/config.json'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+            <svg *ngIf="copiedValue === '~/.config/rootaccess/config.json'" class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          </button>
+        </div>
+        <p class="text-slate-600 dark:text-slate-400 mt-4 text-sm">You never need to edit this file directly — <code class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">login</code> and <code class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">logout</code> manage it automatically. Default API endpoint is <code class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200">{{ apiBaseUrl }}</code>.</p>
+      </div>
+    </section>
+
+    <!-- Commands -->
+    <section id="commands" class="mb-12 scroll-mt-24">
+      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-8 shadow-sm">
+        <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-6">Commands</h2>
+
+        <div class="space-y-8">
+          <!-- login -->
+          <div>
+            <h3 class="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2 mb-2">
+              <code class="text-red-600 dark:text-red-400 font-mono">login</code>
+              <span class="text-slate-600 dark:text-slate-400 font-normal text-base">— Authenticate via browser</span>
+            </h3>
+            <div class="relative group/code mb-3">
+              <pre class="bg-slate-900 rounded-xl p-4 font-mono text-sm text-slate-300 overflow-x-auto border border-slate-800"><code>rootaccess login</code></pre>
+              <button (click)="copyToClipboard('rootaccess login')" type="button" class="absolute top-3 right-3 p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg opacity-0 group-hover/code:opacity-100">
+                <svg *ngIf="copiedValue !== 'rootaccess login'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                <svg *ngIf="copiedValue === 'rootaccess login'" class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              </button>
+            </div>
+            <p class="text-slate-600 dark:text-slate-400 text-sm mb-2">Opens your browser to the platform's OAuth login page. After you authenticate, the browser sends the session token back to a short-lived local server started by the CLI. No copy-pasting required.</p>
+            <ul class="list-disc list-inside text-slate-600 dark:text-slate-400 text-sm space-y-1 ml-2">
+              <li>CLI starts a temporary HTTP server on a random local port.</li>
+              <li>Prints the auth URL and attempts to open your default browser.</li>
+              <li>You log in on the web page; the browser navigates to <code class="px-1 rounded bg-slate-100 dark:bg-slate-800">http://127.0.0.1:&lt;port&gt;/callback?token=&lt;JWT&gt;</code>.</li>
+              <li>CLI verifies the token, saves it, and prints success. Login times out after <strong>5 minutes</strong> if not completed.</li>
+            </ul>
+          </div>
+
+          <!-- whoami -->
+          <div>
+            <h3 class="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2 mb-2">
+              <code class="text-red-600 dark:text-red-400 font-mono">whoami</code>
+              <span class="text-slate-600 dark:text-slate-400 font-normal text-base">— Show current user</span>
+            </h3>
+            <div class="relative group/code mb-3">
+              <pre class="bg-slate-900 rounded-xl p-4 font-mono text-sm text-slate-300 overflow-x-auto border border-slate-800"><code>rootaccess whoami</code></pre>
+              <button (click)="copyToClipboard('rootaccess whoami')" type="button" class="absolute top-3 right-3 p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg opacity-0 group-hover/code:opacity-100">
+                <svg *ngIf="copiedValue !== 'rootaccess whoami'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                <svg *ngIf="copiedValue === 'rootaccess whoami'" class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              </button>
+            </div>
+            <p class="text-slate-600 dark:text-slate-400 text-sm">Verifies the stored token and prints your account details (username, email, role). If not logged in: <code class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">You are not logged in. Run 'rootaccess login' first.</code></p>
+          </div>
+
+          <!-- challenges -->
+          <div>
+            <h3 class="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2 mb-2">
+              <code class="text-red-600 dark:text-red-400 font-mono">challenges</code>
+              <span class="text-slate-600 dark:text-slate-400 font-normal text-base">— List all challenges</span>
+            </h3>
+            <div class="relative group/code mb-3">
+              <pre class="bg-slate-900 rounded-xl p-4 font-mono text-sm text-slate-300 overflow-x-auto border border-slate-800"><code>rootaccess challenges</code></pre>
+              <button (click)="copyToClipboard('rootaccess challenges')" type="button" class="absolute top-3 right-3 p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg opacity-0 group-hover/code:opacity-100">
+                <svg *ngIf="copiedValue !== 'rootaccess challenges'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                <svg *ngIf="copiedValue === 'rootaccess challenges'" class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              </button>
+            </div>
+            <p class="text-slate-600 dark:text-slate-400 text-sm">Fetches all available challenges as an aligned table. Solved challenges are marked with <strong>●</strong>. Points are <strong>dynamic</strong> (CTFd-style). Use <code class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">rootaccess open &lt;ID&gt;</code> to view details.</p>
+          </div>
+
+          <!-- open -->
+          <div>
+            <h3 class="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2 mb-2">
+              <code class="text-red-600 dark:text-red-400 font-mono">open</code>
+              <span class="text-slate-600 dark:text-slate-400 font-normal text-base">— View challenge details</span>
+            </h3>
+            <div class="relative group/code mb-3">
+              <pre class="bg-slate-900 rounded-xl p-4 font-mono text-sm text-slate-300 overflow-x-auto border border-slate-800"><code>rootaccess open &lt;ID&gt;</code></pre>
+              <button (click)="copyToClipboard('rootaccess open ')" type="button" class="absolute top-3 right-3 p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg opacity-0 group-hover/code:opacity-100">
+                <svg *ngIf="copiedValue !== 'rootaccess open '" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                <svg *ngIf="copiedValue === 'rootaccess open '" class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              </button>
+            </div>
+            <p class="text-slate-600 dark:text-slate-400 text-sm">Shows full challenge detail: description, tags, attached files, and current points. Example: <code class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">rootaccess open 64f1a2b3c4d5e6f7a8b9c0d1</code></p>
+          </div>
+
+          <!-- submit -->
+          <div>
+            <h3 class="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2 mb-2">
+              <code class="text-red-600 dark:text-red-400 font-mono">submit</code>
+              <span class="text-slate-600 dark:text-slate-400 font-normal text-base">— Submit a flag</span>
+            </h3>
+            <div class="relative group/code mb-3">
+              <pre class="bg-slate-900 rounded-xl p-4 font-mono text-sm text-slate-300 overflow-x-auto border border-slate-800"><code>rootaccess submit &lt;ID&gt; &lt;FLAG&gt;</code></pre>
+              <button (click)="copyToClipboard('rootaccess submit ')" type="button" class="absolute top-3 right-3 p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg opacity-0 group-hover/code:opacity-100">
+                <svg *ngIf="copiedValue !== 'rootaccess submit '" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                <svg *ngIf="copiedValue === 'rootaccess submit '" class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              </button>
+            </div>
+            <p class="text-slate-600 dark:text-slate-400 text-sm">Submits a flag for a challenge. Rate limit: <strong>5 attempts per minute</strong> per challenge. Wrap flags in single quotes to avoid shell interpretation: <code class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">'rootaccess&#123;...&#125;'</code></p>
+          </div>
+
+          <!-- scoreboard -->
+          <div>
+            <h3 class="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2 mb-2">
+              <code class="text-red-600 dark:text-red-400 font-mono">scoreboard</code>
+              <span class="text-slate-600 dark:text-slate-400 font-normal text-base">— View the live scoreboard</span>
+            </h3>
+            <div class="relative group/code mb-3">
+              <pre class="bg-slate-900 rounded-xl p-4 font-mono text-sm text-slate-300 overflow-x-auto border border-slate-800"><code>rootaccess scoreboard</code></pre>
+              <button (click)="copyToClipboard('rootaccess scoreboard')" type="button" class="absolute top-3 right-3 p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg opacity-0 group-hover/code:opacity-100">
+                <svg *ngIf="copiedValue !== 'rootaccess scoreboard'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                <svg *ngIf="copiedValue === 'rootaccess scoreboard'" class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              </button>
+            </div>
+            <p class="text-slate-600 dark:text-slate-400 text-sm">Fetches the scoreboard for the currently active contest (rank, username, team, points). <code class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">-</code> in the Team column means competing individually.</p>
+          </div>
+
+          <!-- logout -->
+          <div>
+            <h3 class="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2 mb-2">
+              <code class="text-red-600 dark:text-red-400 font-mono">logout</code>
+              <span class="text-slate-600 dark:text-slate-400 font-normal text-base">— Clear saved credentials</span>
+            </h3>
+            <div class="relative group/code mb-3">
+              <pre class="bg-slate-900 rounded-xl p-4 font-mono text-sm text-slate-300 overflow-x-auto border border-slate-800"><code>rootaccess logout</code></pre>
+              <button (click)="copyToClipboard('rootaccess logout')" type="button" class="absolute top-3 right-3 p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg opacity-0 group-hover/code:opacity-100">
+                <svg *ngIf="copiedValue !== 'rootaccess logout'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                <svg *ngIf="copiedValue === 'rootaccess logout'" class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              </button>
+            </div>
+            <p class="text-slate-600 dark:text-slate-400 text-sm">Clears the stored token and username from config. Does not invalidate the session server-side.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Typical workflow -->
+    <section class="mb-12">
+      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-8 shadow-sm">
+        <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-4">Typical workflow</h2>
+        <div class="relative group/code">
+          <pre class="bg-slate-900 rounded-xl p-4 font-mono text-sm text-slate-300 overflow-x-auto border border-slate-800"><code># 1. Authenticate
+rootaccess login
+
+# 2. Browse challenges
+rootaccess challenges
+
+# 3. Read a challenge
+rootaccess open 64f1a2b3c4d5e6f7a8b9c0d1
+
+# 4. Work the challenge... then submit your flag
+rootaccess submit 64f1a2b3c4d5e6f7a8b9c0d1 'rootaccess&#123;y0ur_fl4g_h3r3&#125;'
+
+# 5. Check your ranking
+rootaccess scoreboard
+
+# 6. Confirm your identity at any time
+rootaccess whoami
+
+# 7. Log out when done
+rootaccess logout</code></pre>
+          <button (click)="copyToClipboard(typicalWorkflow)" type="button" class="absolute top-3 right-3 p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg opacity-0 group-hover/code:opacity-100">
+            <svg *ngIf="copiedValue !== typicalWorkflow" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+            <svg *ngIf="copiedValue === typicalWorkflow" class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Troubleshooting -->
+    <section id="troubleshooting" class="mb-12 scroll-mt-24">
+      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-8 shadow-sm">
+        <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-6">Troubleshooting</h2>
+        <div class="overflow-x-auto border border-slate-200 dark:border-slate-700 rounded-xl">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+              <tr>
+                <th class="px-4 py-3 font-semibold text-slate-900 dark:text-white">Symptom</th>
+                <th class="px-4 py-3 font-semibold text-slate-900 dark:text-white">Likely cause</th>
+                <th class="px-4 py-3 font-semibold text-slate-900 dark:text-white">Fix</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
+              <tr class="bg-white dark:bg-slate-900">
+                <td class="px-4 py-3 text-slate-700 dark:text-slate-300"><code class="text-xs">You must be logged in</code> on any command</td>
+                <td class="px-4 py-3 text-slate-600 dark:text-slate-400">Token missing or expired</td>
+                <td class="px-4 py-3 text-slate-600 dark:text-slate-400">Run <code class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">rootaccess login</code></td>
+              </tr>
+              <tr class="bg-slate-50/50 dark:bg-slate-800/30">
+                <td class="px-4 py-3 text-slate-700 dark:text-slate-300">Browser doesn't open</td>
+                <td class="px-4 py-3 text-slate-600 dark:text-slate-400">No default browser configured</td>
+                <td class="px-4 py-3 text-slate-600 dark:text-slate-400">Copy the printed URL and open it manually</td>
+              </tr>
+              <tr class="bg-white dark:bg-slate-900">
+                <td class="px-4 py-3 text-slate-700 dark:text-slate-300">Login times out</td>
+                <td class="px-4 py-3 text-slate-600 dark:text-slate-400">Browser flow not completed within 5 min</td>
+                <td class="px-4 py-3 text-slate-600 dark:text-slate-400">Run <code class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">rootaccess login</code> again</td>
+              </tr>
+              <tr class="bg-slate-50/50 dark:bg-slate-800/30">
+                <td class="px-4 py-3 text-slate-700 dark:text-slate-300"><code class="text-xs">API error (401)</code></td>
+                <td class="px-4 py-3 text-slate-600 dark:text-slate-400">Token expired</td>
+                <td class="px-4 py-3 text-slate-600 dark:text-slate-400">Run <code class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">rootaccess login</code> again</td>
+              </tr>
+              <tr class="bg-white dark:bg-slate-900">
+                <td class="px-4 py-3 text-slate-700 dark:text-slate-300"><code class="text-xs">API error (429)</code> on submit</td>
+                <td class="px-4 py-3 text-slate-600 dark:text-slate-400">Rate limit (5/min per challenge)</td>
+                <td class="px-4 py-3 text-slate-600 dark:text-slate-400">Wait a minute and try again</td>
+              </tr>
+              <tr class="bg-slate-50/50 dark:bg-slate-800/30">
+                <td class="px-4 py-3 text-slate-700 dark:text-slate-300">Flag with special characters rejected by shell</td>
+                <td class="px-4 py-3 text-slate-600 dark:text-slate-400">Shell interpreting <code class="text-xs">&#123;</code> <code class="text-xs">&#125;</code></td>
+                <td class="px-4 py-3 text-slate-600 dark:text-slate-400">Wrap the flag in single quotes: <code class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">'rootaccess&#123;...&#125;'</code></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Direct downloads (optional) -->
+    <section class="mb-12">
       <div class="bg-white dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
-        <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-4">Direct Binaries</h3>
+        <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-4">Direct binaries</h3>
+        <p class="text-slate-600 dark:text-slate-400 text-sm mb-4">If the one-line installer is not suitable, download the binary for your platform:</p>
         <div class="space-y-3">
-          <a *ngFor="let bin of binaries" 
-             [href]="'/bin/' + bin.file"
+          <a *ngFor="let bin of binaries"
+             [href]="binUrl(bin.file)"
+             target="_blank"
+             rel="noopener noreferrer"
              class="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-red-500 dark:hover:border-red-500 transition-all group">
             <div class="flex items-center gap-3">
               <div class="p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 group-hover:text-red-600 transition-colors">
@@ -73,47 +312,13 @@
               </div>
               <div>
                 <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ bin.name }}</p>
-                <p class="text-xs text-slate-500">{{ bin.arch }}</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400">{{ bin.arch }}</p>
               </div>
             </div>
             <span class="text-xs font-mono text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">Download</span>
           </a>
         </div>
       </div>
-
-      <div class="bg-white dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
-        <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-4">Getting Started</h3>
-        <div class="space-y-4">
-          <div class="flex gap-3">
-            <div class="flex-shrink-0 w-6 h-6 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 flex items-center justify-center text-xs font-bold">1</div>
-            <div>
-              <p class="text-sm font-semibold text-slate-900 dark:text-white">Authenticate</p>
-              <p class="text-xs text-slate-600 dark:text-slate-400">Run <code>rootaccess login</code> to link your account.</p>
-            </div>
-          </div>
-          <div class="flex gap-3">
-            <div class="flex-shrink-0 w-6 h-6 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 flex items-center justify-center text-xs font-bold">2</div>
-            <div>
-              <p class="text-sm font-semibold text-slate-900 dark:text-white">List Challenges</p>
-              <p class="text-xs text-slate-600 dark:text-slate-400">Use <code>rootaccess challenges</code> to see available tasks.</p>
-            </div>
-          </div>
-          <div class="flex gap-3">
-            <div class="flex-shrink-0 w-6 h-6 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 flex items-center justify-center text-xs font-bold">3</div>
-            <div>
-              <p class="text-sm font-semibold text-slate-900 dark:text-white">Submit Flags</p>
-              <p class="text-xs text-slate-600 dark:text-slate-400">Submit with <code>rootaccess submit &lt;id&gt; &lt;flag&gt;</code>.</p>
-            </div>
-          </div>
-        </div>
-        
-        <div class="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
-          <a routerLink="/legal" class="text-sm text-red-600 dark:text-red-400 hover:underline flex items-center gap-1">
-            View full documentation
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
-          </a>
-        </div>
-      </div>
-    </div>
+    </section>
   </div>
 </div>
