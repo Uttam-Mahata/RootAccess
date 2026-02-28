@@ -121,10 +121,10 @@ func (h *AdminTeamHandler) AdjustTeamScore(c *gin.Context) {
 	}
 
 	// Clear relevant scoreboard caches to reflect changes quickly
-	if database.RDB != nil {
+	if database.Registry != nil && database.Registry.Scoreboard != nil {
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
-		_ = database.RDB.Del(ctx,
+		_ = database.Registry.Scoreboard.Del(ctx,
 			"team_scoreboard",
 			"team_scoreboard_frozen",
 		).Err()

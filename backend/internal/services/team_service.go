@@ -41,10 +41,10 @@ func NewTeamService(
 }
 
 func (s *TeamService) invalidateScoreboardCache() {
-	if database.RDB != nil {
+	if database.Registry != nil && database.Registry.Scoreboard != nil {
 		ctx := context.Background()
-		database.RDB.Del(ctx, "scoreboard")
-		database.RDB.Del(ctx, "team_scoreboard")
+		database.Registry.Scoreboard.Del(ctx, "scoreboard")
+		database.Registry.Scoreboard.Del(ctx, "team_scoreboard")
 	}
 }
 

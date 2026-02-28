@@ -44,7 +44,16 @@ func main() {
 
 	// Connect to Database
 	database.ConnectDB(cfg.MongoURI, cfg.DBName)
-	database.ConnectRedis(cfg.RedisAddr, cfg.RedisPassword, cfg.RedisDB)
+
+	// Connect to 6 Upstash Redis instances
+	database.ConnectRedisRegistry(map[string]string{
+		"auth":       cfg.RedisURLAuth,
+		"scoreboard": cfg.RedisURLScoreboard,
+		"challenge":  cfg.RedisURLChallenge,
+		"websocket":  cfg.RedisURLWebSocket,
+		"analytics":  cfg.RedisURLAnalytics,
+		"general":    cfg.RedisURLGeneral,
+	})
 
 	r := routes.SetupRouter(cfg)
 

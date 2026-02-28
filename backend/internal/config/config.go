@@ -26,9 +26,13 @@ type Config struct {
 	SMTPUser       string
 	SMTPPass       string
 	SMTPFrom       string
-	RedisAddr      string
-	RedisPassword  string
-	RedisDB        int
+	// Upstash Redis URLs (rediss://default:token@host:6379)
+	RedisURLAuth       string
+	RedisURLScoreboard string
+	RedisURLChallenge  string
+	RedisURLWebSocket  string
+	RedisURLAnalytics  string
+	RedisURLGeneral    string
 	GoogleClientID     string
 	GoogleClientSecret string
 	GoogleRedirectURL  string
@@ -61,7 +65,6 @@ func LoadConfig() *Config {
 	}
 
 	smtpPort, _ := strconv.Atoi(getEnv("SMTP_PORT", "587"))
-	redisDB, _ := strconv.Atoi(getEnv("REDIS_DB", "0"))
 
 	jwtSecret := getEnv("JWT_SECRET", "default_secret")
 	environment := getEnv("APP_ENV", "development")
@@ -83,9 +86,12 @@ func LoadConfig() *Config {
 		SMTPUser:     getEnv("SMTP_USER", ""),
 		SMTPPass:     getEnv("SMTP_PASS", ""),
 		SMTPFrom:     getEnv("SMTP_FROM", "noreply@rootaccess.live"),
-		RedisAddr:    getEnv("REDIS_ADDR", "localhost:6379"),
-		RedisPassword: getEnv("REDIS_PASSWORD", ""),
-		RedisDB:      redisDB,
+		RedisURLAuth:       getEnv("REDIS_URL_AUTH", ""),
+		RedisURLScoreboard: getEnv("REDIS_URL_SCOREBOARD", ""),
+		RedisURLChallenge:  getEnv("REDIS_URL_CHALLENGE", ""),
+		RedisURLWebSocket:  getEnv("REDIS_URL_WEBSOCKET", ""),
+		RedisURLAnalytics:  getEnv("REDIS_URL_ANALYTICS", ""),
+		RedisURLGeneral:    getEnv("REDIS_URL_GENERAL", ""),
 		GoogleClientID:     getEnv("GOOGLE_CLIENT_ID", ""),
 		GoogleClientSecret: getEnv("GOOGLE_CLIENT_SECRET", ""),
 		GoogleRedirectURL:  getEnv("GOOGLE_REDIRECT_URL", "https://rootaccess.live/auth/google/callback"),

@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: RootAccess CTF Backend - RESTORED (VPC, NAT, Redis Replicas)
+Description: RootAccess CTF Backend - Serverless (No VPC, Upstash Redis)
 
 Parameters:
   Environment:
@@ -11,10 +11,6 @@ Parameters:
     Type: String
     Description: Name of the secret in Secrets Manager containing environment variables
     Default: RootAccess/Backend/Secrets
-  RedisAuthToken:
-    Type: String
-    Description: "Auth token for Redis (16-128 characters)"
-    NoEcho: true
   LambdaMemorySize:
     Type: Number
     Description: "Memory size for the Lambda function"
@@ -22,172 +18,7 @@ Parameters:
 
 Resources:
   # ============================================================================
-  # Networking
-  # ============================================================================
-  VPC:
-    Type: AWS::EC2::VPC
-    Properties:
-      CidrBlock: 10.0.0.0/16
-      EnableDnsHostnames: true
-      EnableDnsSupport: true
-      Tags:
-        - Key: Name
-          Value: RootAccess-VPC
-
-  InternetGateway:
-    Type: AWS::EC2::InternetGateway
-
-  VPCGatewayAttachment:
-    Type: AWS::EC2::VPCGatewayAttachment
-    Properties:
-      VpcId: !Ref VPC
-      InternetGatewayId: !Ref InternetGateway
-
-  # Public Subnet (for NAT Gateway)
-  PublicSubnet:
-    Type: AWS::EC2::Subnet
-    Properties:
-      VpcId: !Ref VPC
-      AvailabilityZone: !Select [ 0, !GetAZs '' ]
-      CidrBlock: 10.0.1.0/24
-      MapPublicIpOnLaunch: true
-      Tags:
-        - Key: Name
-          Value: RootAccess-Public-Subnet
-
-  # Private Subnet 1 (for Lambda & Redis)
-  PrivateSubnet1:
-    Type: AWS::EC2::Subnet
-    Properties:
-      VpcId: !Ref VPC
-      AvailabilityZone: !Select [ 0, !GetAZs '' ]
-      CidrBlock: 10.0.2.0/24
-      MapPublicIpOnLaunch: false
-      Tags:
-        - Key: Name
-          Value: RootAccess-Private-Subnet-1
-
-  # Private Subnet 2 (for Redis Multi-AZ requirement)
-  # Using 10.0.4.0/24 to avoid any lingering conflicts with 10.0.3.0
-  PrivateSubnet2:
-    Type: AWS::EC2::Subnet
-    Properties:
-      VpcId: !Ref VPC
-      AvailabilityZone: !Select [ 1, !GetAZs '' ]
-      CidrBlock: 10.0.4.0/24
-      MapPublicIpOnLaunch: false
-      Tags:
-        - Key: Name
-          Value: RootAccess-Private-Subnet-2
-
-  # NAT Gateway (Elastic IP + NAT GW)
-  NatEIP:
-    Type: AWS::EC2::EIP
-    Properties:
-      Domain: vpc
-
-  NatGateway:
-    Type: AWS::EC2::NatGateway
-    Properties:
-      AllocationId: !GetAtt NatEIP.AllocationId
-      SubnetId: !Ref PublicSubnet
-
-  # Route Tables
-  PublicRouteTable:
-    Type: AWS::EC2::RouteTable
-    Properties:
-      VpcId: !Ref VPC
-
-  PublicRoute:
-    Type: AWS::EC2::Route
-    DependsOn: VPCGatewayAttachment
-    Properties:
-      RouteTableId: !Ref PublicRouteTable
-      DestinationCidrBlock: 0.0.0.0/0
-      GatewayId: !Ref InternetGateway
-
-  PublicSubnetRouteTableAssociation:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      SubnetId: !Ref PublicSubnet
-      RouteTableId: !Ref PublicRouteTable
-
-  PrivateRouteTable:
-    Type: AWS::EC2::RouteTable
-    Properties:
-      VpcId: !Ref VPC
-
-  PrivateRoute:
-    Type: AWS::EC2::Route
-    Properties:
-      RouteTableId: !Ref PrivateRouteTable
-      DestinationCidrBlock: 0.0.0.0/0
-      NatGatewayId: !Ref NatGateway
-
-  PrivateSubnet1RouteTableAssociation:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      SubnetId: !Ref PrivateSubnet1
-      RouteTableId: !Ref PrivateRouteTable
-
-  PrivateSubnet2RouteTableAssociation:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      SubnetId: !Ref PrivateSubnet2
-      RouteTableId: !Ref PrivateRouteTable
-
-  # ============================================================================
-  # Security Groups
-  # ============================================================================
-  LambdaSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: Security group for Lambda function
-      VpcId: !Ref VPC
-      SecurityGroupEgress:
-        - IpProtocol: "-1"
-          CidrIp: 0.0.0.0/0
-
-  RedisSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: Security group for Redis
-      VpcId: !Ref VPC
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 6379
-          ToPort: 6379
-          SourceSecurityGroupId: !Ref LambdaSecurityGroup
-
-  # ============================================================================
-  # Redis ElastiCache (Replication Group)
-  # ============================================================================
-  RedisSubnetGroup:
-    Type: AWS::ElastiCache::SubnetGroup
-    Properties:
-      Description: Subnet group for Redis
-      SubnetIds:
-        - !Ref PrivateSubnet1
-        - !Ref PrivateSubnet2
-
-  RedisReplicationGroup:
-    Type: AWS::ElastiCache::ReplicationGroup
-    Properties:
-      ReplicationGroupDescription: RootAccess Redis Cluster
-      Engine: redis
-      CacheNodeType: cache.t3.micro
-      NumCacheClusters: 2
-      AutomaticFailoverEnabled: true
-      CacheSubnetGroupName: !Ref RedisSubnetGroup
-      SecurityGroupIds:
-        - !Ref RedisSecurityGroup
-      AtRestEncryptionEnabled: true
-      TransitEncryptionEnabled: true
-      AuthToken: !Ref RedisAuthToken
-      Port: 6379
-
-  # ============================================================================
-  # Lambda Function
+  # Lambda Function (No VPC — all external services are public)
   # ============================================================================
   RootAccessApiFunction:
     Type: AWS::Serverless::Function
@@ -203,16 +34,9 @@ Resources:
         Variables:
           APP_ENV: !Ref Environment
           AWS_SECRET_NAME: !Ref SecretName
-      VpcConfig:
-        SecurityGroupIds:
-          - !Ref LambdaSecurityGroup
-        SubnetIds:
-          - !Ref PrivateSubnet1
-          - !Ref PrivateSubnet2
       Policies:
         - AWSSecretsManagerGetSecretValuePolicy:
             SecretArn: !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${SecretName}-*'
-        - VPCAccessPolicy: {}
         - Statement:
             - Effect: Allow
               Action:
@@ -305,9 +129,3 @@ Outputs:
   WebSocketCallbackUrl:
     Description: "WebSocket Callback URL (Set this as WS_CALLBACK_URL in Secrets)"
     Value: !Sub "https://${WebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/Prod"
-  RedisEndpoint:
-    Description: "Redis Primary Endpoint Address"
-    Value: !GetAtt RedisReplicationGroup.PrimaryEndPoint.Address
-  RedisPort:
-    Description: "Redis Primary Endpoint Port"
-    Value: !GetAtt RedisReplicationGroup.PrimaryEndPoint.Port
