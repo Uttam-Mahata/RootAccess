@@ -95,14 +95,15 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	achievementRepo := repositories.NewAchievementRepository(database.TursoDB)
 	scoreAdjustmentRepo := repositories.NewScoreAdjustmentRepository(database.TursoDB)
 	teamContestRegistrationRepo := repositories.NewTeamContestRegistrationRepository(database.TursoDB)
+	contestSolveRepo := repositories.NewContestSolveRepository(database.TursoDB)
 	// Indexes removed, Turso schema handles it
 
 	// Services
 	emailService := services.NewEmailService(cfg)
 	authService := services.NewAuthService(userRepo, emailService, cfg)
 	oauthService := services.NewOAuthService(userRepo, cfg)
-	challengeService := services.NewChallengeService(challengeRepo, submissionRepo, teamRepo)
-	scoreboardService := services.NewScoreboardService(userRepo, submissionRepo, challengeRepo, teamRepo, contestRepo, scoreAdjustmentRepo, contestEntityRepo, contestRoundRepo, roundChallengeRepo, teamContestRegistrationRepo)
+	challengeService := services.NewChallengeService(challengeRepo, submissionRepo, teamRepo, contestSolveRepo)
+	scoreboardService := services.NewScoreboardService(userRepo, submissionRepo, challengeRepo, teamRepo, contestRepo, scoreAdjustmentRepo, contestEntityRepo, contestRoundRepo, roundChallengeRepo, teamContestRegistrationRepo, contestSolveRepo)
 	teamService := services.NewTeamService(teamRepo, teamInvitationRepo, userRepo, emailService, submissionRepo, challengeRepo)
 	notificationService := services.NewNotificationService(notificationRepo)
 	hintService := services.NewHintService(hintRepo, challengeRepo, teamRepo)
@@ -145,7 +146,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 		authRedis = database.Registry.Auth
 	}
 	oauthHandler := handlers.NewOAuthHandler(oauthService, authRedis, cfg)
-	challengeHandler := handlers.NewChallengeHandlerWithRepos(challengeService, achievementService, contestService, contestAdminService, wsHub, submissionRepo, userRepo, teamRepo)
+	challengeHandler := handlers.NewChallengeHandlerWithRepos(challengeService, achievementService, contestService, contestAdminService, wsHub, submissionRepo, contestSolveRepo, userRepo, teamRepo)
 	scoreboardHandler := handlers.NewScoreboardHandler(scoreboardService, contestEntityRepo, contestRepo)
 	teamHandler := handlers.NewTeamHandler(teamService)
 	notificationHandler := handlers.NewNotificationHandler(notificationService, wsHub)

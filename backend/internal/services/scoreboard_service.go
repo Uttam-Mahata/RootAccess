@@ -23,6 +23,7 @@ type ScoreboardService struct {
 	contestRoundRepo   *repositories.ContestRoundRepository
 	roundChallengeRepo *repositories.RoundChallengeRepository
 	registrationRepo   *repositories.TeamContestRegistrationRepository
+	contestSolveRepo   *repositories.ContestSolveRepository
 }
 
 type UserScore struct {
@@ -53,6 +54,7 @@ func NewScoreboardService(
 	contestRoundRepo *repositories.ContestRoundRepository,
 	roundChallengeRepo *repositories.RoundChallengeRepository,
 	registrationRepo *repositories.TeamContestRegistrationRepository,
+	contestSolveRepo *repositories.ContestSolveRepository,
 ) *ScoreboardService {
 	return &ScoreboardService{
 		userRepo:           userRepo,
@@ -65,6 +67,7 @@ func NewScoreboardService(
 		contestRoundRepo:   contestRoundRepo,
 		roundChallengeRepo: roundChallengeRepo,
 		registrationRepo:   registrationRepo,
+		contestSolveRepo:   contestSolveRepo,
 	}
 }
 
@@ -131,12 +134,22 @@ func (s *ScoreboardService) getFreezeInfoForContest(contestID string) *time.Time
 	return nil
 }
 
-// getCorrectSubmissions returns correct submissions, respecting freeze time if set
+// getCorrectSubmissions returns correct submissions, respecting freeze time if set.
+// When contestID is provided, only returns submissions for that contest.
 func (s *ScoreboardService) getCorrectSubmissions(freezeTime *time.Time) ([]models.Submission, error) {
 	if freezeTime != nil {
 		return s.submissionRepo.GetCorrectSubmissionsBefore(*freezeTime)
 	}
 	return s.submissionRepo.GetAllCorrectSubmissions()
+}
+
+// getCorrectSubmissionsForContest returns correct submissions scoped to a specific contest,
+// respecting freeze time if set.
+func (s *ScoreboardService) getCorrectSubmissionsForContest(contestID string, freezeTime *time.Time) ([]models.Submission, error) {
+	if freezeTime != nil {
+		return s.submissionRepo.GetCorrectSubmissionsByContestBefore(contestID, *freezeTime)
+	}
+	return s.submissionRepo.GetCorrectSubmissionsByContest(contestID)
 }
 
 // GetScoreboard returns the individual scoreboard for a specific contest.
@@ -203,15 +216,25 @@ func (s *ScoreboardService) GetScoreboard(contestID string) ([]UserScore, error)
 		return nil, err
 	}
 
+	// Use contest-specific solve counts for dynamic scoring
+	var contestSolveCounts map[string]int
+	if s.contestSolveRepo != nil {
+		contestSolveCounts, _ = s.contestSolveRepo.GetContestSolveCounts(contestID)
+	}
+
 	challengePoints := make(map[string]int)
 	for _, c := range challenges {
 		if contestChallenges[c.ID] {
-			challengePoints[c.ID] = c.CurrentPoints()
+			if contestSolveCounts != nil {
+				challengePoints[c.ID] = c.PointsForSolveCount(contestSolveCounts[c.ID])
+			} else {
+				challengePoints[c.ID] = c.CurrentPoints()
+			}
 		}
 	}
 
-	// Get submissions
-	submissions, err := s.getCorrectSubmissions(freezeTime)
+	// Get submissions scoped to this contest
+	submissions, err := s.getCorrectSubmissionsForContest(contestID, freezeTime)
 	if err != nil {
 		return nil, err
 	}
@@ -340,15 +363,25 @@ func (s *ScoreboardService) GetTeamScoreboard(contestID string) ([]TeamScore, er
 		return nil, err
 	}
 
+	// Use contest-specific solve counts for dynamic scoring
+	var contestSolveCountsTeam map[string]int
+	if s.contestSolveRepo != nil {
+		contestSolveCountsTeam, _ = s.contestSolveRepo.GetContestSolveCounts(contestID)
+	}
+
 	challengePoints := make(map[string]int)
 	for _, c := range challenges {
 		if contestChallenges[c.ID] {
-			challengePoints[c.ID] = c.CurrentPoints()
+			if contestSolveCountsTeam != nil {
+				challengePoints[c.ID] = c.PointsForSolveCount(contestSolveCountsTeam[c.ID])
+			} else {
+				challengePoints[c.ID] = c.CurrentPoints()
+			}
 		}
 	}
 
-	// Get submissions
-	submissions, err := s.getCorrectSubmissions(freezeTime)
+	// Get submissions scoped to this contest
+	submissions, err := s.getCorrectSubmissionsForContest(contestID, freezeTime)
 	if err != nil {
 		return nil, err
 	}
@@ -503,15 +536,25 @@ func (s *ScoreboardService) GetTeamScoreProgression(days int, contestID string) 
 		return nil, err
 	}
 
+	// Use contest-specific solve counts for dynamic scoring
+	var contestSolveCountsProg map[string]int
+	if s.contestSolveRepo != nil {
+		contestSolveCountsProg, _ = s.contestSolveRepo.GetContestSolveCounts(contestID)
+	}
+
 	challengePoints := make(map[string]int)
 	for _, c := range challenges {
 		if contestChallenges[c.ID] {
-			challengePoints[c.ID] = c.CurrentPoints()
+			if contestSolveCountsProg != nil {
+				challengePoints[c.ID] = c.PointsForSolveCount(contestSolveCountsProg[c.ID])
+			} else {
+				challengePoints[c.ID] = c.CurrentPoints()
+			}
 		}
 	}
 
-	// Get all correct submissions
-	submissions, err := s.submissionRepo.GetAllCorrectSubmissions()
+	// Get correct submissions scoped to this contest
+	submissions, err := s.submissionRepo.GetCorrectSubmissionsByContest(contestID)
 	if err != nil {
 		return nil, err
 	}

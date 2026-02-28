@@ -78,9 +78,67 @@ func (r *SubmissionRepository) FindByChallengeAndTeam(challengeID, teamID string
 	return &subs[0], nil
 }
 
+func (r *SubmissionRepository) FindByChallengeAndUserInContest(challengeID, userID, contestID string) (*models.Submission, error) {
+	query := "SELECT id, user_id, team_id, challenge_id, contest_id, flag, is_correct, ip_address, timestamp FROM submissions WHERE challenge_id=? AND user_id=? AND contest_id=? AND is_correct=1 LIMIT 1"
+	rows, err := r.db.Query(query, challengeID, userID, contestID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	subs, err := r.scanSubmissions(rows)
+	if err != nil || len(subs) == 0 {
+		return nil, sql.ErrNoRows
+	}
+	return &subs[0], nil
+}
+
+func (r *SubmissionRepository) FindByChallengeAndTeamInContest(challengeID, teamID, contestID string) (*models.Submission, error) {
+	query := "SELECT id, user_id, team_id, challenge_id, contest_id, flag, is_correct, ip_address, timestamp FROM submissions WHERE challenge_id=? AND team_id=? AND contest_id=? AND is_correct=1 LIMIT 1"
+	rows, err := r.db.Query(query, challengeID, teamID, contestID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	subs, err := r.scanSubmissions(rows)
+	if err != nil || len(subs) == 0 {
+		return nil, sql.ErrNoRows
+	}
+	return &subs[0], nil
+}
+
+func (r *SubmissionRepository) GetCorrectSubmissionsByContestAndChallenge(contestID, challengeID string) ([]models.Submission, error) {
+	query := "SELECT id, user_id, team_id, challenge_id, contest_id, flag, is_correct, ip_address, timestamp FROM submissions WHERE contest_id=? AND challenge_id=? AND is_correct=1 ORDER BY timestamp ASC"
+	rows, err := r.db.Query(query, contestID, challengeID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	return r.scanSubmissions(rows)
+}
+
 func (r *SubmissionRepository) GetTeamSubmissions(teamID string) ([]models.Submission, error) {
 	query := "SELECT id, user_id, team_id, challenge_id, contest_id, flag, is_correct, ip_address, timestamp FROM submissions WHERE team_id=? AND is_correct=1"
 	rows, err := r.db.Query(query, teamID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	return r.scanSubmissions(rows)
+}
+
+func (r *SubmissionRepository) GetCorrectSubmissionsByContest(contestID string) ([]models.Submission, error) {
+	query := "SELECT id, user_id, team_id, challenge_id, contest_id, flag, is_correct, ip_address, timestamp FROM submissions WHERE contest_id=? AND is_correct=1"
+	rows, err := r.db.Query(query, contestID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	return r.scanSubmissions(rows)
+}
+
+func (r *SubmissionRepository) GetCorrectSubmissionsByContestBefore(contestID string, before time.Time) ([]models.Submission, error) {
+	query := "SELECT id, user_id, team_id, challenge_id, contest_id, flag, is_correct, ip_address, timestamp FROM submissions WHERE contest_id=? AND is_correct=1 AND timestamp <= ?"
+	rows, err := r.db.Query(query, contestID, before.Format(time.RFC3339))
 	if err != nil {
 		return nil, err
 	}

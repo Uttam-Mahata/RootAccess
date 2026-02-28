@@ -47,6 +47,16 @@ func (c *Challenge) CurrentPoints() int {
 	}
 }
 
+// PointsForSolveCount computes the current point value using a custom solve count
+// instead of the challenge's global SolveCount. Used for contest-specific scoring.
+func (c *Challenge) PointsForSolveCount(solveCount int) int {
+	orig := c.SolveCount
+	c.SolveCount = solveCount
+	pts := c.CurrentPoints()
+	c.SolveCount = orig
+	return pts
+}
+
 func (c *Challenge) dynamicPoints() int {
 	if c.SolveCount <= 0 {
 		return c.MaxPoints

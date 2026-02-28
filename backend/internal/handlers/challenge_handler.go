@@ -19,6 +19,7 @@ type ChallengeHandler struct {
 	contestService      *services.ContestService
 	contestAdminService *services.ContestAdminService
 	submissionRepo      *repositories.SubmissionRepository
+	contestSolveRepo    *repositories.ContestSolveRepository
 	userRepo            *repositories.UserRepository
 	teamRepo            *repositories.TeamRepository
 	wsHub               websocketPkg.Hub
@@ -33,13 +34,14 @@ func NewChallengeHandler(challengeService *services.ChallengeService, achievemen
 	}
 }
 
-func NewChallengeHandlerWithRepos(challengeService *services.ChallengeService, achievementService *services.AchievementService, contestService *services.ContestService, contestAdminService *services.ContestAdminService, wsHub websocketPkg.Hub, submissionRepo *repositories.SubmissionRepository, userRepo *repositories.UserRepository, teamRepo *repositories.TeamRepository) *ChallengeHandler {
+func NewChallengeHandlerWithRepos(challengeService *services.ChallengeService, achievementService *services.AchievementService, contestService *services.ContestService, contestAdminService *services.ContestAdminService, wsHub websocketPkg.Hub, submissionRepo *repositories.SubmissionRepository, contestSolveRepo *repositories.ContestSolveRepository, userRepo *repositories.UserRepository, teamRepo *repositories.TeamRepository) *ChallengeHandler {
 	return &ChallengeHandler{
 		challengeService:    challengeService,
 		achievementService:  achievementService,
 		contestService:      contestService,
 		contestAdminService: contestAdminService,
 		submissionRepo:      submissionRepo,
+		contestSolveRepo:    contestSolveRepo,
 		userRepo:            userRepo,
 		teamRepo:            teamRepo,
 		wsHub:               wsHub,
@@ -340,6 +342,14 @@ func (h *ChallengeHandler) GetAllChallenges(c *gin.Context) {
 		}
 	}
 
+	// Resolve active contest ID for contest-scoped queries
+	activeContestID := ""
+	if h.contestAdminService != nil {
+		if cfg, err := h.contestAdminService.GetActiveContestConfig(); err == nil && cfg != nil && cfg.ContestID != "" {
+			activeContestID = cfg.ContestID
+		}
+	}
+
 	var challenges []models.Challenge
 	var err error
 	if h.contestAdminService != nil {
@@ -348,7 +358,6 @@ func (h *ChallengeHandler) GetAllChallenges(c *gin.Context) {
 			utils.RespondWithError(c, http.StatusInternalServerError, err.Error(), err)
 			return
 		}
-		// nil from GetVisibleChallenges means no active contest; challenges is already empty
 	} else {
 		challenges, err = h.challengeService.GetAllChallenges()
 		if err != nil {
@@ -357,19 +366,47 @@ func (h *ChallengeHandler) GetAllChallenges(c *gin.Context) {
 		}
 	}
 
+	// Pre-fetch contest-specific solve counts for all challenges in one query
+	var contestSolveCounts map[string]int
+	if activeContestID != "" && h.contestSolveRepo != nil {
+		contestSolveCounts, _ = h.contestSolveRepo.GetContestSolveCounts(activeContestID)
+	}
+
 	var result []ChallengePublicResponse
 	for _, ch := range challenges {
 		isSolved := false
 		if h.submissionRepo != nil && userID != "" {
-			if sub, _ := h.submissionRepo.FindByChallengeAndUser(ch.ID, userID); sub != nil {
-				isSolved = true
-			}
-			if !isSolved && teamID != nil && *teamID != "" {
-				if teamSub, _ := h.submissionRepo.FindByChallengeAndTeam(ch.ID, *teamID); teamSub != nil {
+			// Use contest-scoped solved check when there's an active contest
+			if activeContestID != "" {
+				if sub, _ := h.submissionRepo.FindByChallengeAndUserInContest(ch.ID, userID, activeContestID); sub != nil {
 					isSolved = true
+				}
+				if !isSolved && teamID != nil && *teamID != "" {
+					if teamSub, _ := h.submissionRepo.FindByChallengeAndTeamInContest(ch.ID, *teamID, activeContestID); teamSub != nil {
+						isSolved = true
+					}
+				}
+			} else {
+				if sub, _ := h.submissionRepo.FindByChallengeAndUser(ch.ID, userID); sub != nil {
+					isSolved = true
+				}
+				if !isSolved && teamID != nil && *teamID != "" {
+					if teamSub, _ := h.submissionRepo.FindByChallengeAndTeam(ch.ID, *teamID); teamSub != nil {
+						isSolved = true
+					}
 				}
 			}
 		}
+
+		// Use contest-specific solve count and points when in a contest
+		currentPoints := ch.CurrentPoints()
+		solveCount := ch.SolveCount
+		if activeContestID != "" && contestSolveCounts != nil {
+			csc := contestSolveCounts[ch.ID]
+			currentPoints = ch.PointsForSolveCount(csc)
+			solveCount = csc
+		}
+
 		result = append(result, ChallengePublicResponse{
 			ID:                ch.ID,
 			Title:             ch.Title,
@@ -378,9 +415,9 @@ func (h *ChallengeHandler) GetAllChallenges(c *gin.Context) {
 			Category:          ch.Category,
 			Difficulty:        ch.Difficulty,
 			MaxPoints:         ch.MaxPoints,
-			CurrentPoints:     ch.CurrentPoints(),
+			CurrentPoints:     currentPoints,
 			ScoringType:       ch.ScoringType,
-			SolveCount:        ch.SolveCount,
+			SolveCount:        solveCount,
 			Files:             ch.Files,
 			Tags:              ch.Tags,
 			HintCount:         len(ch.Hints),
@@ -420,22 +457,52 @@ func (h *ChallengeHandler) GetChallengeByID(c *gin.Context) {
 		}
 	}
 
-	// Determine if the current user (or their team) has already solved this challenge
+	// Resolve active contest ID for contest-scoped queries
+	activeContestID := ""
+	if h.contestAdminService != nil {
+		if cfg, err := h.contestAdminService.GetActiveContestConfig(); err == nil && cfg != nil && cfg.ContestID != "" {
+			activeContestID = cfg.ContestID
+		}
+	}
+
+	// Determine if the current user (or their team) has already solved this challenge IN THIS CONTEST
 	isSolved := false
 	if userIDStr, exists := c.Get("user_id"); exists && h.submissionRepo != nil {
 		userID := userIDStr.(string)
 		if userID != "" {
-			if sub, _ := h.submissionRepo.FindByChallengeAndUser(challenge.ID, userID); sub != nil {
-				isSolved = true
-			}
-			if !isSolved && h.teamRepo != nil {
-				if team, err := h.teamRepo.FindTeamByMemberID(userID); err == nil && team != nil {
-					if teamSub, _ := h.submissionRepo.FindByChallengeAndTeam(challenge.ID, team.ID); teamSub != nil {
-						isSolved = true
+			if activeContestID != "" {
+				if sub, _ := h.submissionRepo.FindByChallengeAndUserInContest(challenge.ID, userID, activeContestID); sub != nil {
+					isSolved = true
+				}
+				if !isSolved && h.teamRepo != nil {
+					if team, err := h.teamRepo.FindTeamByMemberID(userID); err == nil && team != nil {
+						if teamSub, _ := h.submissionRepo.FindByChallengeAndTeamInContest(challenge.ID, team.ID, activeContestID); teamSub != nil {
+							isSolved = true
+						}
+					}
+				}
+			} else {
+				if sub, _ := h.submissionRepo.FindByChallengeAndUser(challenge.ID, userID); sub != nil {
+					isSolved = true
+				}
+				if !isSolved && h.teamRepo != nil {
+					if team, err := h.teamRepo.FindTeamByMemberID(userID); err == nil && team != nil {
+						if teamSub, _ := h.submissionRepo.FindByChallengeAndTeam(challenge.ID, team.ID); teamSub != nil {
+							isSolved = true
+						}
 					}
 				}
 			}
 		}
+	}
+
+	// Use contest-specific solve count and points when in a contest
+	currentPoints := challenge.CurrentPoints()
+	solveCount := challenge.SolveCount
+	if activeContestID != "" && h.contestSolveRepo != nil {
+		csc, _ := h.contestSolveRepo.GetContestSolveCount(activeContestID, challenge.ID)
+		currentPoints = challenge.PointsForSolveCount(csc)
+		solveCount = csc
 	}
 
 	// Build public response (no flag hash)
@@ -447,9 +514,9 @@ func (h *ChallengeHandler) GetChallengeByID(c *gin.Context) {
 		Category:          challenge.Category,
 		Difficulty:        challenge.Difficulty,
 		MaxPoints:         challenge.MaxPoints,
-		CurrentPoints:     challenge.CurrentPoints(),
+		CurrentPoints:     currentPoints,
 		ScoringType:       challenge.ScoringType,
-		SolveCount:        challenge.SolveCount,
+		SolveCount:        solveCount,
 		Files:             challenge.Files,
 		Tags:              challenge.Tags,
 		HintCount:         len(challenge.Hints),
@@ -651,11 +718,10 @@ type SolveEntryResponse struct {
 	SolvedAt time.Time `json:"solved_at"`
 }
 
-// GetChallengeSolves returns the list of users/teams that solved a challenge
+// GetChallengeSolves returns the list of users/teams that solved a challenge (in the active contest)
 func (h *ChallengeHandler) GetChallengeSolves(c *gin.Context) {
 	challengeID := c.Param("id")
-	cid := challengeID
-	if cid == "" {
+	if challengeID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid challenge ID"})
 		return
 	}
@@ -665,7 +731,21 @@ func (h *ChallengeHandler) GetChallengeSolves(c *gin.Context) {
 		return
 	}
 
-	submissions, err := h.submissionRepo.GetCorrectSubmissionsByChallenge(cid)
+	// Filter solves by active contest when one exists
+	activeContestID := ""
+	if h.contestAdminService != nil {
+		if cfg, err := h.contestAdminService.GetActiveContestConfig(); err == nil && cfg != nil && cfg.ContestID != "" {
+			activeContestID = cfg.ContestID
+		}
+	}
+
+	var submissions []models.Submission
+	var err error
+	if activeContestID != "" {
+		submissions, err = h.submissionRepo.GetCorrectSubmissionsByContestAndChallenge(activeContestID, challengeID)
+	} else {
+		submissions, err = h.submissionRepo.GetCorrectSubmissionsByChallenge(challengeID)
+	}
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to load solves"})
 		return
