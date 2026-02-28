@@ -1,6 +1,6 @@
 # RootAccess CTF Platform
 
-A high-performance, full-stack Capture The Flag (CTF) platform built with Go (Gin) for the backend and Angular (v21) for the frontend. Designed for scalability with Redis caching and optimized database pooling.
+A high-performance, full-stack Capture The Flag (CTF) platform built with Go (Gin) for the backend and Angular (v21) for the frontend. Designed for scalability with Redis caching and Turso DB (LibSQL) for high-performance data storage.
 
 ## 🚀 Features
 
@@ -15,7 +15,7 @@ A high-performance, full-stack Capture The Flag (CTF) platform built with Go (Gi
   - Role-based access control (RBAC).
 - **Performance Optimized**: 
   - **Redis Caching**: Frequently accessed data like the scoreboard is cached in-memory.
-  - **Connection Pooling**: Optimized MongoDB connection management for high concurrency.
+  - **Turso DB (LibSQL)**: Edge database integration ensuring fast global reads and high concurrency.
 
 ## 🏗️ Architecture Diagram
  [![Architecture Diagram](https://raw.githubusercontent.com/Uttam-Mahata/RootAccess/main/rootaccess-aws.png)](https://raw.githubusercontent.com/Uttam-Mahata/RootAccess/main/rootaccess-aws.png)
@@ -24,7 +24,7 @@ A high-performance, full-stack Capture The Flag (CTF) platform built with Go (Gi
 ### Backend
 - **Language**: Go 1.24
 - **Framework**: Gin (HTTP web framework)
-- **Primary Database**: MongoDB (with connection pooling)
+- **Primary Database**: Turso DB (LibSQL)
 - **Cache**: Redis 7.x
 - **Email**: SMTP integration for verification and resets.
 
@@ -38,7 +38,7 @@ A high-performance, full-stack Capture The Flag (CTF) platform built with Go (Gi
 - **Docker & Docker Compose** (Recommended for production)
 - **Go**: Version 1.24+ (For local development)
 - **Node.js**: Version 22+ (For local development)
-- **MongoDB**: Version 4.4+
+- **Turso CLI**: Optional (For DB management)
 - **Redis**: Version 6.0+
 
 ## 🛠️ Setup Instructions
@@ -64,7 +64,7 @@ A high-performance, full-stack Capture The Flag (CTF) platform built with Go (Gi
 
 #### Backend
 1. `cd backend`
-2. `cp .env.example .env` (Configure your local MongoDB/Redis/SMTP)
+2. `cp .env.example .env` (Configure your Turso DB/Redis/SMTP)
 3. `go mod download`
 4. `go run cmd/api/main.go`
 
@@ -104,7 +104,7 @@ RootAccess/
 │   ├── cmd/api/main.go          # API Entry point
 │   ├── cmd/admin/main.go        # Admin CLI tool
 │   ├── internal/
-│   │   ├── database/            # MongoDB & Redis logic
+│   │   ├── database/            # Turso DB & Redis logic
 │   │   ├── services/            # Business logic (Caching, Auth, etc.)
 │   │   └── handlers/            # HTTP Controllers
 ├── frontend/
