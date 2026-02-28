@@ -41,8 +41,8 @@ func (s *AnalyticsService) GetPlatformAnalytics() (*models.AdminAnalytics, error
 	// briefly in Redis so repeated admin tab visits are fast.
 	ctx := context.Background()
 	const cacheKey = "platform_analytics"
-	if database.RDB != nil {
-		if val, err := database.RDB.Get(ctx, cacheKey).Result(); err == nil {
+	if database.Registry != nil && database.Registry.Analytics != nil {
+		if val, err := database.Registry.Analytics.Get(ctx, cacheKey).Result(); err == nil {
 			var cached models.AdminAnalytics
 			if err := json.Unmarshal([]byte(val), &cached); err == nil {
 				return &cached, nil
@@ -416,9 +416,9 @@ func (s *AnalyticsService) GetPlatformAnalytics() (*models.AdminAnalytics, error
 	}
 
 	// Cache the assembled analytics object with a short TTL.
-	if database.RDB != nil {
+	if database.Registry != nil && database.Registry.Analytics != nil {
 		if data, err := json.Marshal(result); err == nil {
-			_ = database.RDB.Set(ctx, cacheKey, data, 1*time.Minute).Err()
+			_ = database.Registry.Analytics.Set(ctx, cacheKey, data, 1*time.Minute).Err()
 		}
 	}
 

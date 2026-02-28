@@ -154,8 +154,8 @@ func (s *ScoreboardService) GetScoreboard(contestID string) ([]UserScore, error)
 	}
 
 	// Try Redis cache
-	if database.RDB != nil {
-		val, err := database.RDB.Get(ctx, cacheKey).Result()
+	if database.Registry != nil && database.Registry.Scoreboard != nil {
+		val, err := database.Registry.Scoreboard.Get(ctx, cacheKey).Result()
 		if err == nil {
 			var scores []UserScore
 			if err := json.Unmarshal([]byte(val), &scores); err == nil {
@@ -280,10 +280,10 @@ func (s *ScoreboardService) GetScoreboard(contestID string) ([]UserScore, error)
 	})
 
 	// Cache in Redis
-	if database.RDB != nil {
+	if database.Registry != nil && database.Registry.Scoreboard != nil {
 		data, err := json.Marshal(scores)
 		if err == nil {
-			_ = database.RDB.Set(ctx, cacheKey, data, 1*time.Minute).Err()
+			_ = database.Registry.Scoreboard.Set(ctx, cacheKey, data, 1*time.Minute).Err()
 		}
 	}
 
@@ -305,8 +305,8 @@ func (s *ScoreboardService) GetTeamScoreboard(contestID string) ([]TeamScore, er
 	}
 
 	// Try Redis cache
-	if database.RDB != nil {
-		val, err := database.RDB.Get(ctx, cacheKey).Result()
+	if database.Registry != nil && database.Registry.Scoreboard != nil {
+		val, err := database.Registry.Scoreboard.Get(ctx, cacheKey).Result()
 		if err == nil {
 			var scores []TeamScore
 			if err := json.Unmarshal([]byte(val), &scores); err == nil {
@@ -429,10 +429,10 @@ func (s *ScoreboardService) GetTeamScoreboard(contestID string) ([]TeamScore, er
 	})
 
 	// Cache in Redis
-	if database.RDB != nil {
+	if database.Registry != nil && database.Registry.Scoreboard != nil {
 		data, err := json.Marshal(scores)
 		if err == nil {
-			_ = database.RDB.Set(ctx, cacheKey, data, 1*time.Minute).Err()
+			_ = database.Registry.Scoreboard.Set(ctx, cacheKey, data, 1*time.Minute).Err()
 		}
 	}
 
@@ -468,8 +468,8 @@ func (s *ScoreboardService) GetTeamScoreProgression(days int, contestID string) 
 
 	ctx := context.Background()
 	cacheKey := fmt.Sprintf("team_score_progression:%s:%d", contestID, days)
-	if database.RDB != nil {
-		if val, err := database.RDB.Get(ctx, cacheKey).Result(); err == nil {
+	if database.Registry != nil && database.Registry.Scoreboard != nil {
+		if val, err := database.Registry.Scoreboard.Get(ctx, cacheKey).Result(); err == nil {
 			var cached []TeamScoreProgression
 			if err := json.Unmarshal([]byte(val), &cached); err == nil {
 				return cached, nil
@@ -619,9 +619,9 @@ func (s *ScoreboardService) GetTeamScoreProgression(days int, contestID string) 
 		return iScore > jScore
 	})
 
-	if database.RDB != nil {
+	if database.Registry != nil && database.Registry.Scoreboard != nil {
 		if data, err := json.Marshal(progressions); err == nil {
-			_ = database.RDB.Set(ctx, cacheKey, data, 1*time.Minute).Err()
+			_ = database.Registry.Scoreboard.Set(ctx, cacheKey, data, 1*time.Minute).Err()
 		}
 	}
 

@@ -51,14 +51,14 @@ jobs:
         run: |
           sam build
 
-      - name: Deploy to AWS
+      - name: Deploy to AWS (No VPC)
         working-directory: backend
         run: |
           sam deploy --no-confirm-changeset --no-fail-on-empty-changeset \
             --stack-name rootaccess-backend \
             --region us-east-1 \
             --capabilities CAPABILITY_IAM \
-            --parameter-overrides "Environment=production SecretName=RootAccess/Backend/Secrets RedisAuthToken=${{ secrets.REDIS_AUTH_TOKEN }} LambdaMemorySize=512" \
+            --parameter-overrides "Environment=production SecretName=RootAccess/Backend/Secrets LambdaMemorySize=512" \
             --resolve-s3
 
       - name: Post-Deployment Sync (Update Secrets)
@@ -86,17 +86,11 @@ jobs:
                   if val:
                       print(f'::add-mask::{val}')
 
-              redis_endpoint = next((o['OutputValue'] for o in outputs if o['OutputKey'] == 'RedisEndpoint'), None)
-              redis_port = next((o['OutputValue'] for o in outputs if o['OutputKey'] == 'RedisPort'), None)
               ws_callback_url = next((o['OutputValue'] for o in outputs if o['OutputKey'] == 'WebSocketCallbackUrl'), None)
 
               secret_value = sm_client.get_secret_value(SecretId=secret_name)
               secrets = json.loads(secret_value['SecretString'])
               updated = False
-
-              if redis_endpoint and redis_port:
-                  secrets['REDIS_ADDR'] = f'{redis_endpoint}:{redis_port}'
-                  updated = True
 
               if ws_callback_url:
                   secrets['WS_CALLBACK_URL'] = ws_callback_url

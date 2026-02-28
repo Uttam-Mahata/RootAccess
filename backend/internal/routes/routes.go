@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/config"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/database"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/handlers"
@@ -116,6 +117,11 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	activityService := services.NewActivityService(userRepo, submissionRepo, challengeRepo, achievementRepo, teamRepo)
 
 	// WebSocket hub selection
+	var wsRedis *redis.Client
+	if database.Registry != nil {
+		wsRedis = database.Registry.WebSocket
+	}
+
 	var wsHub websocketPkg.Hub
 	if os.Getenv("AWS_LAMBDA_FUNCTION_NAME") != "" {
 		// Initialize AWS config for Lambda Hub
@@ -124,10 +130,10 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 			log.Printf("Warning: Failed to load AWS config for WebSocket: %v", err)
 			wsHub = websocketPkg.NewHub() // Fallback
 		} else {
-			wsHub = websocketPkg.NewAwsLambdaHub(database.RDB, awsCfg, cfg.WsCallbackURL)
+			wsHub = websocketPkg.NewAwsLambdaHub(wsRedis, awsCfg, cfg.WsCallbackURL)
 		}
-	} else if database.RDB != nil {
-		wsHub = websocketPkg.NewRedisHub(database.RDB)
+	} else if wsRedis != nil {
+		wsHub = websocketPkg.NewRedisHub(wsRedis)
 	} else {
 		wsHub = websocketPkg.NewHub()
 	}
@@ -135,7 +141,11 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 
 	// Handlers
 	authHandler := handlers.NewAuthHandler(authService)
-	oauthHandler := handlers.NewOAuthHandler(oauthService, database.RDB, cfg)
+	var authRedis *redis.Client
+	if database.Registry != nil {
+		authRedis = database.Registry.Auth
+	}
+	oauthHandler := handlers.NewOAuthHandler(oauthService, authRedis, cfg)
 	challengeHandler := handlers.NewChallengeHandlerWithRepos(challengeService, achievementService, contestService, contestAdminService, wsHub, submissionRepo, userRepo, teamRepo)
 	scoreboardHandler := handlers.NewScoreboardHandler(scoreboardService, contestEntityRepo, contestRepo)
 	teamHandler := handlers.NewTeamHandler(teamService)

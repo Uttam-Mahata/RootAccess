@@ -68,3 +68,4 @@ backend/deploy_aws.sh
 .cursor/
 gha-creds-*.json
 credentials/
+backend/migrate-to-upstash.sh
