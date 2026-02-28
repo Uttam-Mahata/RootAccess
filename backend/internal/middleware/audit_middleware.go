@@ -1,9 +1,8 @@
 package middleware
 
 import (
-	"github.com/gin-gonic/gin"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/services"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"github.com/gin-gonic/gin"
 )
 
 // AuditMiddleware creates middleware that logs admin actions
@@ -30,7 +29,7 @@ func AuditMiddleware(auditService *services.AuditLogService) gin.HandlerFunc {
 		}
 
 		username, _ := c.Get("username")
-		userID, _ := primitive.ObjectIDFromHex(userIDStr.(string))
+		userID := userIDStr.(string)
 		usernameStr, _ := username.(string)
 
 		action := method + " " + c.FullPath()

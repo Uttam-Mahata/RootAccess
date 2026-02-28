@@ -1,125 +1,95 @@
 package repositories
 
 import (
-	"context"
+	"database/sql"
+	"strings"
 	"time"
 
-	"github.com/Uttam-Mahata/RootAccess/backend/internal/database"
-	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
+	"github.com/google/uuid"
 )
 
 type RoundChallengeRepository struct {
-	collection *mongo.Collection
+	db *sql.DB
 }
 
-func NewRoundChallengeRepository() *RoundChallengeRepository {
-	return &RoundChallengeRepository{
-		collection: database.DB.Collection("round_challenges"),
-	}
+func NewRoundChallengeRepository(db *sql.DB) *RoundChallengeRepository {
+	return &RoundChallengeRepository{db: db}
 }
 
-func (r *RoundChallengeRepository) Attach(roundID, challengeID primitive.ObjectID) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	// Avoid duplicate
-	filter := bson.M{"round_id": roundID, "challenge_id": challengeID}
-	count, err := r.collection.CountDocuments(ctx, filter)
-	if err != nil {
-		return err
-	}
-	if count > 0 {
-		return nil // already attached
-	}
-
-	rc := &models.RoundChallenge{
-		RoundID:     roundID,
-		ChallengeID: challengeID,
-		CreatedAt:   time.Now(),
-	}
-	_, err = r.collection.InsertOne(ctx, rc)
+func (r *RoundChallengeRepository) Attach(roundID, challengeID string) error {
+	id := uuid.New().String()
+	_, err := r.db.Exec("INSERT OR IGNORE INTO round_challenges (id, round_id, challenge_id, created_at) VALUES (?, ?, ?, ?)",
+		id, roundID, challengeID, time.Now().Format(time.RFC3339))
 	return err
 }
 
-func (r *RoundChallengeRepository) Detach(roundID, challengeID primitive.ObjectID) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	_, err := r.collection.DeleteOne(ctx, bson.M{"round_id": roundID, "challenge_id": challengeID})
+func (r *RoundChallengeRepository) Detach(roundID, challengeID string) error {
+	_, err := r.db.Exec("DELETE FROM round_challenges WHERE round_id=? AND challenge_id=?", roundID, challengeID)
 	return err
 }
 
-func (r *RoundChallengeRepository) GetChallengeIDsForRounds(roundIDs []primitive.ObjectID) ([]primitive.ObjectID, error) {
+func (r *RoundChallengeRepository) GetChallengeIDsForRounds(roundIDs []string) ([]string, error) {
 	if len(roundIDs) == 0 {
 		return nil, nil
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+	placeholders := make([]string, len(roundIDs))
+	args := make([]interface{}, len(roundIDs))
+	for i, id := range roundIDs {
+		placeholders[i] = "?"
+		args[i] = id
+	}
 
-	cursor, err := r.collection.Find(ctx, bson.M{"round_id": bson.M{"$in": roundIDs}})
+	query := "SELECT DISTINCT challenge_id FROM round_challenges WHERE round_id IN (" + strings.Join(placeholders, ",") + ")"
+	rows, err := r.db.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close(ctx)
+	defer rows.Close()
 
-	seen := make(map[string]bool)
-	var ids []primitive.ObjectID
-	for cursor.Next(ctx) {
-		var rc models.RoundChallenge
-		if err := cursor.Decode(&rc); err != nil {
+	var ids []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
 			return nil, err
 		}
-		hex := rc.ChallengeID.Hex()
-		if !seen[hex] {
-			seen[hex] = true
-			ids = append(ids, rc.ChallengeID)
-		}
+		ids = append(ids, id)
 	}
-	return ids, cursor.Err()
+	return ids, nil
 }
 
-func (r *RoundChallengeRepository) GetRoundIDsForChallenge(challengeID primitive.ObjectID) ([]primitive.ObjectID, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	cursor, err := r.collection.Find(ctx, bson.M{"challenge_id": challengeID})
+func (r *RoundChallengeRepository) GetRoundIDsForChallenge(challengeID string) ([]string, error) {
+	rows, err := r.db.Query("SELECT round_id FROM round_challenges WHERE challenge_id=?", challengeID)
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close(ctx)
+	defer rows.Close()
 
-	var ids []primitive.ObjectID
-	for cursor.Next(ctx) {
-		var rc models.RoundChallenge
-		if err := cursor.Decode(&rc); err != nil {
+	var ids []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
 			return nil, err
 		}
-		ids = append(ids, rc.RoundID)
+		ids = append(ids, id)
 	}
-	return ids, cursor.Err()
+	return ids, nil
 }
 
-func (r *RoundChallengeRepository) GetChallengesByRound(roundID primitive.ObjectID) ([]primitive.ObjectID, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	cursor, err := r.collection.Find(ctx, bson.M{"round_id": roundID})
+func (r *RoundChallengeRepository) GetChallengesByRound(roundID string) ([]string, error) {
+	rows, err := r.db.Query("SELECT challenge_id FROM round_challenges WHERE round_id=?", roundID)
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close(ctx)
+	defer rows.Close()
 
-	var ids []primitive.ObjectID
-	for cursor.Next(ctx) {
-		var rc models.RoundChallenge
-		if err := cursor.Decode(&rc); err != nil {
+	var ids []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
 			return nil, err
 		}
-		ids = append(ids, rc.ChallengeID)
+		ids = append(ids, id)
 	}
-	return ids, cursor.Err()
+	return ids, nil
 }

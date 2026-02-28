@@ -1,235 +1,155 @@
 package repositories
 
 import (
-	"context"
+	"database/sql"
+	"fmt"
 	"time"
 
-	"github.com/Uttam-Mahata/RootAccess/backend/internal/database"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
+	"github.com/google/uuid"
 )
 
 type TeamInvitationRepository struct {
-	collection *mongo.Collection
+	db *sql.DB
 }
 
-func NewTeamInvitationRepository() *TeamInvitationRepository {
-	return &TeamInvitationRepository{
-		collection: database.DB.Collection("team_invitations"),
+func NewTeamInvitationRepository(db *sql.DB) *TeamInvitationRepository {
+	return &TeamInvitationRepository{db: db}
+}
+
+func (r *TeamInvitationRepository) CreateInvitation(inv *models.TeamInvitation) error {
+	if inv.ID == "" {
+		inv.ID = uuid.New().String()
 	}
+	inv.CreatedAt = time.Now()
+
+	query := `INSERT INTO team_invitations (id, team_id, team_name, inviter_id, inviter_name, invitee_email, invitee_user_id, token, status, expires_at, created_at)
+			  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	_, err := r.db.Exec(query, inv.ID, inv.TeamID, inv.TeamName, inv.InviterID, inv.InviterName, inv.InviteeEmail, inv.InviteeUserID, inv.Token, inv.Status, inv.ExpiresAt.Format(time.RFC3339), inv.CreatedAt.Format(time.RFC3339))
+	return err
 }
 
-func (r *TeamInvitationRepository) CreateInvitation(invitation *models.TeamInvitation) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	invitation.CreatedAt = time.Now()
-	result, err := r.collection.InsertOne(ctx, invitation)
-	if err != nil {
-		return err
+func (r *TeamInvitationRepository) scanInvitations(rows *sql.Rows) ([]models.TeamInvitation, error) {
+	var invs []models.TeamInvitation
+	for rows.Next() {
+		var inv models.TeamInvitation
+		var expiresAt, createdAt string
+		if err := rows.Scan(&inv.ID, &inv.TeamID, &inv.TeamName, &inv.InviterID, &inv.InviterName, &inv.InviteeEmail, &inv.InviteeUserID, &inv.Token, &inv.Status, &expiresAt, &createdAt); err != nil {
+			return nil, err
+		}
+		inv.ExpiresAt, _ = time.Parse(time.RFC3339, expiresAt)
+		inv.CreatedAt, _ = time.Parse(time.RFC3339, createdAt)
+		invs = append(invs, inv)
 	}
-	invitation.ID = result.InsertedID.(primitive.ObjectID)
-	return nil
+	return invs, nil
 }
 
-func (r *TeamInvitationRepository) FindInvitationByID(invitationID string) (*models.TeamInvitation, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+func (r *TeamInvitationRepository) selectFields() string {
+	return "id, team_id, team_name, inviter_id, inviter_name, invitee_email, invitee_user_id, token, status, expires_at, created_at"
+}
 
-	id, err := primitive.ObjectIDFromHex(invitationID)
+func (r *TeamInvitationRepository) FindInvitationByID(id string) (*models.TeamInvitation, error) {
+	query := fmt.Sprintf("SELECT %s FROM team_invitations WHERE id=?", r.selectFields())
+	rows, err := r.db.Query(query, id)
 	if err != nil {
 		return nil, err
 	}
-
-	var invitation models.TeamInvitation
-	err = r.collection.FindOne(ctx, bson.M{"_id": id}).Decode(&invitation)
-	if err != nil {
-		return nil, err
+	defer rows.Close()
+	invs, err := r.scanInvitations(rows)
+	if err != nil || len(invs) == 0 {
+		return nil, sql.ErrNoRows
 	}
-	return &invitation, nil
+	return &invs[0], nil
 }
 
 func (r *TeamInvitationRepository) FindInvitationByToken(token string) (*models.TeamInvitation, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	var invitation models.TeamInvitation
-	err := r.collection.FindOne(ctx, bson.M{"token": token}).Decode(&invitation)
+	query := fmt.Sprintf("SELECT %s FROM team_invitations WHERE token=?", r.selectFields())
+	rows, err := r.db.Query(query, token)
 	if err != nil {
 		return nil, err
 	}
-	return &invitation, nil
+	defer rows.Close()
+	invs, err := r.scanInvitations(rows)
+	if err != nil || len(invs) == 0 {
+		return nil, sql.ErrNoRows
+	}
+	return &invs[0], nil
 }
 
 func (r *TeamInvitationRepository) FindPendingInvitationsForUser(userID, email string) ([]models.TeamInvitation, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	var filter bson.M
-	if userID != "" {
-		userObjID, err := primitive.ObjectIDFromHex(userID)
+	if userID != "" && email != "" {
+		query := fmt.Sprintf("SELECT %s FROM team_invitations WHERE status=? AND (invitee_user_id=? OR invitee_email=?)", r.selectFields())
+		rows, err := r.db.Query(query, models.InvitationStatusPending, userID, email)
 		if err != nil {
 			return nil, err
 		}
-		if email != "" {
-			filter = bson.M{
-				"status": models.InvitationStatusPending,
-				"$or": []bson.M{
-					{"invitee_user_id": userObjID},
-					{"invitee_email": email},
-				},
-			}
-		} else {
-			filter = bson.M{
-				"status":          models.InvitationStatusPending,
-				"invitee_user_id": userObjID,
-			}
+		defer rows.Close()
+		return r.scanInvitations(rows)
+	} else if userID != "" {
+		query := fmt.Sprintf("SELECT %s FROM team_invitations WHERE status=? AND invitee_user_id=?", r.selectFields())
+		rows, err := r.db.Query(query, models.InvitationStatusPending, userID)
+		if err != nil {
+			return nil, err
 		}
+		defer rows.Close()
+		return r.scanInvitations(rows)
 	} else if email != "" {
-		filter = bson.M{
-			"status":        models.InvitationStatusPending,
-			"invitee_email": email,
+		query := fmt.Sprintf("SELECT %s FROM team_invitations WHERE status=? AND invitee_email=?", r.selectFields())
+		rows, err := r.db.Query(query, models.InvitationStatusPending, email)
+		if err != nil {
+			return nil, err
 		}
-	} else {
-		return []models.TeamInvitation{}, nil
+		defer rows.Close()
+		return r.scanInvitations(rows)
 	}
-
-	cursor, err := r.collection.Find(ctx, filter)
-	if err != nil {
-		return nil, err
-	}
-	defer cursor.Close(ctx)
-
-	var invitations []models.TeamInvitation
-	if err = cursor.All(ctx, &invitations); err != nil {
-		return nil, err
-	}
-	return invitations, nil
+	return []models.TeamInvitation{}, nil
 }
 
 func (r *TeamInvitationRepository) FindInvitationsByTeam(teamID string) ([]models.TeamInvitation, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	teamObjID, err := primitive.ObjectIDFromHex(teamID)
+	query := fmt.Sprintf("SELECT %s FROM team_invitations WHERE team_id=?", r.selectFields())
+	rows, err := r.db.Query(query, teamID)
 	if err != nil {
 		return nil, err
 	}
-
-	cursor, err := r.collection.Find(ctx, bson.M{"team_id": teamObjID})
-	if err != nil {
-		return nil, err
-	}
-	defer cursor.Close(ctx)
-
-	var invitations []models.TeamInvitation
-	if err = cursor.All(ctx, &invitations); err != nil {
-		return nil, err
-	}
-	return invitations, nil
+	defer rows.Close()
+	return r.scanInvitations(rows)
 }
 
 func (r *TeamInvitationRepository) FindPendingInvitationsByTeam(teamID string) ([]models.TeamInvitation, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	teamObjID, err := primitive.ObjectIDFromHex(teamID)
+	query := fmt.Sprintf("SELECT %s FROM team_invitations WHERE team_id=? AND status=?", r.selectFields())
+	rows, err := r.db.Query(query, teamID, models.InvitationStatusPending)
 	if err != nil {
 		return nil, err
 	}
-
-	cursor, err := r.collection.Find(ctx, bson.M{
-		"team_id": teamObjID,
-		"status":  models.InvitationStatusPending,
-	})
-	if err != nil {
-		return nil, err
-	}
-	defer cursor.Close(ctx)
-
-	var invitations []models.TeamInvitation
-	if err = cursor.All(ctx, &invitations); err != nil {
-		return nil, err
-	}
-	return invitations, nil
+	defer rows.Close()
+	return r.scanInvitations(rows)
 }
 
-func (r *TeamInvitationRepository) UpdateInvitationStatus(invitationID, status string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	id, err := primitive.ObjectIDFromHex(invitationID)
-	if err != nil {
-		return err
-	}
-
-	filter := bson.M{"_id": id}
-	update := bson.M{"$set": bson.M{"status": status}}
-	_, err = r.collection.UpdateOne(ctx, filter, update)
+func (r *TeamInvitationRepository) UpdateInvitationStatus(id, status string) error {
+	_, err := r.db.Exec("UPDATE team_invitations SET status=? WHERE id=?", status, id)
 	return err
 }
 
 func (r *TeamInvitationRepository) DeleteExpiredInvitations() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	filter := bson.M{
-		"status":     models.InvitationStatusPending,
-		"expires_at": bson.M{"$lt": time.Now()},
-	}
-	update := bson.M{"$set": bson.M{"status": models.InvitationStatusExpired}}
-	_, err := r.collection.UpdateMany(ctx, filter, update)
+	_, err := r.db.Exec("UPDATE team_invitations SET status=? WHERE status=? AND expires_at < ?",
+		models.InvitationStatusExpired, models.InvitationStatusPending, time.Now().Format(time.RFC3339))
 	return err
 }
 
 func (r *TeamInvitationRepository) DeleteInvitationsByTeam(teamID string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	teamObjID, err := primitive.ObjectIDFromHex(teamID)
-	if err != nil {
-		return err
-	}
-
-	_, err = r.collection.DeleteMany(ctx, bson.M{"team_id": teamObjID})
+	_, err := r.db.Exec("DELETE FROM team_invitations WHERE team_id=?", teamID)
 	return err
 }
 
 func (r *TeamInvitationRepository) HasPendingInvitation(teamID, userID, email string) (bool, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	teamObjID, err := primitive.ObjectIDFromHex(teamID)
-	if err != nil {
-		return false, err
-	}
-
-	var filter bson.M
+	var count int
+	var err error
 	if userID != "" {
-		userObjID, err := primitive.ObjectIDFromHex(userID)
-		if err != nil {
-			return false, err
-		}
-		filter = bson.M{
-			"team_id":         teamObjID,
-			"status":          models.InvitationStatusPending,
-			"invitee_user_id": userObjID,
-		}
+		err = r.db.QueryRow("SELECT COUNT(*) FROM team_invitations WHERE team_id=? AND status=? AND invitee_user_id=?", teamID, models.InvitationStatusPending, userID).Scan(&count)
 	} else if email != "" {
-		filter = bson.M{
-			"team_id":       teamObjID,
-			"status":        models.InvitationStatusPending,
-			"invitee_email": email,
-		}
+		err = r.db.QueryRow("SELECT COUNT(*) FROM team_invitations WHERE team_id=? AND status=? AND invitee_email=?", teamID, models.InvitationStatusPending, email).Scan(&count)
 	} else {
 		return false, nil
 	}
-
-	count, err := r.collection.CountDocuments(ctx, filter)
-	if err != nil {
-		return false, err
-	}
-	return count > 0, nil
+	return count > 0, err
 }

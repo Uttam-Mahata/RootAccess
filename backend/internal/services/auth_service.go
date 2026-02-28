@@ -9,7 +9,6 @@ import (
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
 	"github.com/golang-jwt/jwt/v5"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -83,7 +82,7 @@ func (s *AuthService) Register(username, email, password string) error {
 		Role:               "user",
 		EmailVerified:      false,
 		VerificationToken:  token,
-		VerificationExpiry: s.emailService.GetVerificationExpiry(),
+		VerificationExpiry: s.emailService.GetVerificationExpiry().Format(time.RFC3339),
 		CreatedAt:          time.Now(),
 		UpdatedAt:          time.Now(),
 	}
@@ -113,7 +112,8 @@ func (s *AuthService) VerifyEmail(token string) error {
 		return errors.New("email already verified")
 	}
 
-	if time.Now().After(user.VerificationExpiry) {
+	t, _ := time.Parse(time.RFC3339, user.VerificationExpiry)
+	if time.Now().After(t) {
 		return errors.New("verification token has expired")
 	}
 
@@ -143,7 +143,7 @@ func (s *AuthService) ResendVerificationEmail(email string) error {
 	}
 
 	user.VerificationToken = token
-	user.VerificationExpiry = s.emailService.GetVerificationExpiry()
+	user.VerificationExpiry = s.emailService.GetVerificationExpiry().Format(time.RFC3339)
 	user.UpdatedAt = time.Now()
 
 	if err := s.userRepo.UpdateUser(user); err != nil {
@@ -196,7 +196,7 @@ func (s *AuthService) Login(usernameOrEmail, password string) (string, *UserInfo
 func (s *AuthService) GenerateToken(user *models.User) (string, *UserInfo, error) {
 	// Generate JWT token
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"user_id":  user.ID.Hex(),
+		"user_id":  user.ID,
 		"username": user.Username,
 		"email":    user.Email,
 		"role":     user.Role,
@@ -210,7 +210,7 @@ func (s *AuthService) GenerateToken(user *models.User) (string, *UserInfo, error
 
 	// Create user info response
 	userInfo := &UserInfo{
-		ID:       user.ID.Hex(),
+		ID:       user.ID,
 		Username: user.Username,
 		Email:    user.Email,
 		Role:     user.Role,
@@ -226,11 +226,7 @@ func (s *AuthService) GetUserInfo(userID string) (*models.User, error) {
 
 // RecordUserLoginIP records the user's IP address after a successful login
 func (s *AuthService) RecordUserLoginIP(userID string, ip string) error {
-	objID, err := primitive.ObjectIDFromHex(userID)
-	if err != nil {
-		return err
-	}
-	return s.userRepo.RecordUserIP(objID, ip, "login")
+	return s.userRepo.RecordUserIP(userID, ip, "login")
 }
 
 // RequestPasswordReset sends a password reset email
@@ -248,7 +244,7 @@ func (s *AuthService) RequestPasswordReset(email string) error {
 	}
 
 	user.ResetPasswordToken = token
-	user.ResetPasswordExpiry = s.emailService.GetResetPasswordExpiry()
+	user.ResetPasswordExpiry = s.emailService.GetResetPasswordExpiry().Format(time.RFC3339)
 	user.UpdatedAt = time.Now()
 
 	if err := s.userRepo.UpdateUser(user); err != nil {
@@ -265,7 +261,8 @@ func (s *AuthService) ResetPassword(token, newPassword string) error {
 		return errors.New("invalid or expired reset token")
 	}
 
-	if time.Now().After(user.ResetPasswordExpiry) {
+	t, _ := time.Parse(time.RFC3339, user.ResetPasswordExpiry)
+	if time.Now().After(t) {
 		return errors.New("reset token has expired")
 	}
 
@@ -340,4 +337,3 @@ func (s *AuthService) UpdateUsername(userID, newUsername string) error {
 func (s *AuthService) GetEnvironment() string {
 	return s.config.Environment
 }
-

@@ -5,7 +5,6 @@ import (
 
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type HintService struct {
@@ -36,16 +35,16 @@ type HintResponse struct {
 }
 
 // GetHintsForChallenge returns hints for a challenge with reveal status
-func (s *HintService) GetHintsForChallenge(challengeID string, userID primitive.ObjectID) ([]HintResponse, error) {
+func (s *HintService) GetHintsForChallenge(challengeID string, userID string) ([]HintResponse, error) {
 	challenge, err := s.challengeRepo.GetChallengeByID(challengeID)
 	if err != nil {
 		return nil, err
 	}
 
-	cid, _ := primitive.ObjectIDFromHex(challengeID)
+	cid := challengeID
 
 	// Check if user is in a team
-	team, _ := s.teamRepo.FindTeamByMemberID(userID.Hex())
+	team, _ := s.teamRepo.FindTeamByMemberID(userID)
 
 	var reveals []models.HintReveal
 	if team != nil {
@@ -54,7 +53,7 @@ func (s *HintService) GetHintsForChallenge(challengeID string, userID primitive.
 		reveals, _ = s.hintRepo.GetRevealsByUserAndChallenge(userID, cid)
 	}
 
-	revealedHintIDs := make(map[primitive.ObjectID]bool)
+	revealedHintIDs := make(map[string]bool)
 	for _, r := range reveals {
 		revealedHintIDs[r.HintID] = true
 	}
@@ -62,7 +61,7 @@ func (s *HintService) GetHintsForChallenge(challengeID string, userID primitive.
 	var response []HintResponse
 	for _, hint := range challenge.Hints {
 		hr := HintResponse{
-			ID:       hint.ID.Hex(),
+			ID:       hint.ID,
 			Cost:     hint.Cost,
 			Order:    hint.Order,
 			Revealed: revealedHintIDs[hint.ID],
@@ -77,18 +76,18 @@ func (s *HintService) GetHintsForChallenge(challengeID string, userID primitive.
 }
 
 // RevealHint reveals a hint for a user, deducting points from their team
-func (s *HintService) RevealHint(challengeID string, hintID string, userID primitive.ObjectID) (*HintResponse, error) {
+func (s *HintService) RevealHint(challengeID string, hintID string, userID string) (*HintResponse, error) {
 	challenge, err := s.challengeRepo.GetChallengeByID(challengeID)
 	if err != nil {
 		return nil, err
 	}
 
-	hintOID, err := primitive.ObjectIDFromHex(hintID)
+	hintOID := hintID
 	if err != nil {
 		return nil, errors.New("invalid hint ID")
 	}
 
-	cid, _ := primitive.ObjectIDFromHex(challengeID)
+	cid := challengeID
 
 	// Find the hint in the challenge
 	var targetHint *models.Hint
@@ -103,14 +102,14 @@ func (s *HintService) RevealHint(challengeID string, hintID string, userID primi
 	}
 
 	// Check if user is in a team
-	team, _ := s.teamRepo.FindTeamByMemberID(userID.Hex())
+	team, _ := s.teamRepo.FindTeamByMemberID(userID)
 
 	// Check if already revealed (by team or user)
 	if team != nil {
 		existing, _ := s.hintRepo.FindRevealByTeam(hintOID, team.ID)
 		if existing != nil {
 			return &HintResponse{
-				ID:       targetHint.ID.Hex(),
+				ID:       targetHint.ID,
 				Cost:     targetHint.Cost,
 				Order:    targetHint.Order,
 				Content:  targetHint.Content,
@@ -121,7 +120,7 @@ func (s *HintService) RevealHint(challengeID string, hintID string, userID primi
 		existing, _ := s.hintRepo.FindReveal(hintOID, userID)
 		if existing != nil {
 			return &HintResponse{
-				ID:       targetHint.ID.Hex(),
+				ID:       targetHint.ID,
 				Cost:     targetHint.Cost,
 				Order:    targetHint.Order,
 				Content:  targetHint.Content,
@@ -140,7 +139,7 @@ func (s *HintService) RevealHint(challengeID string, hintID string, userID primi
 	if team != nil {
 		reveal.TeamID = team.ID
 		// Deduct points from team
-		s.teamRepo.UpdateTeamScore(team.ID.Hex(), -targetHint.Cost)
+		s.teamRepo.UpdateTeamScore(team.ID, -targetHint.Cost)
 	}
 
 	if err := s.hintRepo.CreateReveal(reveal); err != nil {
@@ -148,7 +147,7 @@ func (s *HintService) RevealHint(challengeID string, hintID string, userID primi
 	}
 
 	return &HintResponse{
-		ID:       targetHint.ID.Hex(),
+		ID:       targetHint.ID,
 		Cost:     targetHint.Cost,
 		Order:    targetHint.Order,
 		Content:  targetHint.Content,

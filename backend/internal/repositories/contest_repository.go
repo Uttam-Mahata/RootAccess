@@ -1,68 +1,65 @@
 package repositories
 
 import (
-	"context"
+	"database/sql"
 	"time"
 
-	"github.com/Uttam-Mahata/RootAccess/backend/internal/database"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"github.com/google/uuid"
 )
 
 type ContestRepository struct {
-	collection *mongo.Collection
+	db *sql.DB
 }
 
-func NewContestRepository() *ContestRepository {
-	return &ContestRepository{
-		collection: database.DB.Collection("contest_config"),
-	}
+func NewContestRepository(db *sql.DB) *ContestRepository {
+	return &ContestRepository{db: db}
 }
 
-// GetActiveContest returns the current active contest config
 func (r *ContestRepository) GetActiveContest() (*models.ContestConfig, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+	var c models.ContestConfig
+	var start, end, freeze, updated string
+	var isActive, isPaused int
 
-	var config models.ContestConfig
-	err := r.collection.FindOne(ctx, bson.M{}, options.FindOne().SetSort(bson.M{"updated_at": -1})).Decode(&config)
+	err := r.db.QueryRow("SELECT id, contest_id, start_time, end_time, freeze_time, title, is_active, is_paused, scoreboard_visibility, updated_at FROM contest_config ORDER BY updated_at DESC LIMIT 1").
+		Scan(&c.ID, &c.ContestID, &start, &end, &freeze, &c.Title, &isActive, &isPaused, &c.ScoreboardVisibility, &updated)
 	if err != nil {
 		return nil, err
 	}
-	return &config, nil
+
+	c.StartTime, _ = time.Parse(time.RFC3339, start)
+	c.EndTime, _ = time.Parse(time.RFC3339, end)
+	c.FreezeTime = freeze
+	c.UpdatedAt, _ = time.Parse(time.RFC3339, updated)
+	c.IsActive = isActive == 1
+	c.IsPaused = isPaused == 1
+
+	return &c, nil
 }
 
-// UpsertContest creates or updates the contest config
 func (r *ContestRepository) UpsertContest(config *models.ContestConfig) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
 	config.UpdatedAt = time.Now()
 
-	if config.ID.IsZero() {
-		config.ID = primitive.NewObjectID()
-		_, err := r.collection.InsertOne(ctx, config)
+	isActive := 0
+	if config.IsActive {
+		isActive = 1
+	}
+	isPaused := 0
+	if config.IsPaused {
+		isPaused = 1
+	}
+
+	if config.ID == "" {
+		config.ID = uuid.New().String()
+		_, err := r.db.Exec(`INSERT INTO contest_config (id, contest_id, start_time, end_time, freeze_time, title, is_active, is_paused, scoreboard_visibility, updated_at)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			config.ID, config.ContestID, config.StartTime.Format(time.RFC3339), config.EndTime.Format(time.RFC3339), config.FreezeTime,
+			config.Title, isActive, isPaused, config.ScoreboardVisibility, config.UpdatedAt.Format(time.RFC3339))
 		return err
 	}
 
-	setFields := bson.M{
-		"start_time":            config.StartTime,
-		"end_time":              config.EndTime,
-		"freeze_time":           config.FreezeTime,
-		"title":                 config.Title,
-		"is_active":             config.IsActive,
-		"is_paused":             config.IsPaused,
-		"scoreboard_visibility": config.ScoreboardVisibility,
-		"updated_at":            config.UpdatedAt,
-	}
-	if !config.ContestID.IsZero() {
-		setFields["contest_id"] = config.ContestID
-	}
-	update := bson.M{"$set": setFields}
-
-	_, err := r.collection.UpdateOne(ctx, bson.M{"_id": config.ID}, update)
+	_, err := r.db.Exec(`UPDATE contest_config SET contest_id=?, start_time=?, end_time=?, freeze_time=?, title=?, is_active=?, is_paused=?, scoreboard_visibility=?, updated_at=? WHERE id=?`,
+		config.ContestID, config.StartTime.Format(time.RFC3339), config.EndTime.Format(time.RFC3339), config.FreezeTime,
+		config.Title, isActive, isPaused, config.ScoreboardVisibility, config.UpdatedAt.Format(time.RFC3339), config.ID)
 	return err
 }

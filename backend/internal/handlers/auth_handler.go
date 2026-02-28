@@ -3,9 +3,9 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/services"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/utils"
+	"github.com/gin-gonic/gin"
 )
 
 type AuthHandler struct {
@@ -171,7 +171,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 	// Set HTTP-only cookie with JWT token
 	isProd := h.authService.GetEnvironment() == "production"
-	
+
 	c.SetSameSite(http.SameSiteLaxMode)
 	c.SetCookie(
 		"auth_token", // name
@@ -192,7 +192,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 // Logout clears the authentication cookie
 func (h *AuthHandler) Logout(c *gin.Context) {
 	isProd := h.authService.GetEnvironment() == "production"
-	
+
 	// Clear the cookie by setting maxAge to -1
 	c.SetSameSite(http.SameSiteLaxMode)
 	c.SetCookie(

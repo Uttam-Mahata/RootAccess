@@ -5,7 +5,6 @@ import (
 
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type NotificationService struct {
@@ -19,7 +18,7 @@ func NewNotificationService(notificationRepo *repositories.NotificationRepositor
 }
 
 // CreateNotification creates a new notification
-func (s *NotificationService) CreateNotification(title, content, notifType string, createdBy primitive.ObjectID) (*models.Notification, error) {
+func (s *NotificationService) CreateNotification(title, content, notifType string, createdBy string) (*models.Notification, error) {
 	// Validate notification type
 	if !models.IsValidNotificationType(notifType) {
 		return nil, errors.New("invalid notification type")

@@ -1,165 +1,95 @@
 package repositories
 
 import (
-	"context"
+	"database/sql"
 	"time"
 
-	"github.com/Uttam-Mahata/RootAccess/backend/internal/database"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"github.com/google/uuid"
 )
 
 type NotificationRepository struct {
-	collection *mongo.Collection
+	db *sql.DB
 }
 
-func NewNotificationRepository() *NotificationRepository {
-	return &NotificationRepository{
-		collection: database.DB.Collection("notifications"),
+func NewNotificationRepository(db *sql.DB) *NotificationRepository {
+	return &NotificationRepository{db: db}
+}
+
+func (r *NotificationRepository) CreateNotification(n *models.Notification) error {
+	if n.ID == "" {
+		n.ID = uuid.New().String()
 	}
+	n.CreatedAt = time.Now()
+	n.IsActive = true
+
+	query := `INSERT INTO notifications (id, title, content, type, created_by, created_at, is_active) VALUES (?, ?, ?, ?, ?, ?, ?)`
+	_, err := r.db.Exec(query, n.ID, n.Title, n.Content, n.Type, n.CreatedBy, n.CreatedAt.Format(time.RFC3339), 1)
+	return err
 }
 
-// CreateNotification creates a new notification
-func (r *NotificationRepository) CreateNotification(notification *models.Notification) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	notification.CreatedAt = time.Now()
-	notification.IsActive = true
-
-	result, err := r.collection.InsertOne(ctx, notification)
-	if err != nil {
-		return err
+func (r *NotificationRepository) scanNotifications(rows *sql.Rows) ([]models.Notification, error) {
+	var ns []models.Notification
+	for rows.Next() {
+		var n models.Notification
+		var ts string
+		var isActive int
+		if err := rows.Scan(&n.ID, &n.Title, &n.Content, &n.Type, &n.CreatedBy, &ts, &isActive); err != nil {
+			return nil, err
+		}
+		n.CreatedAt, _ = time.Parse(time.RFC3339, ts)
+		n.IsActive = isActive == 1
+		ns = append(ns, n)
 	}
-
-	notification.ID = result.InsertedID.(primitive.ObjectID)
-	return nil
+	return ns, nil
 }
 
-// GetAllNotifications returns all notifications (for admin)
 func (r *NotificationRepository) GetAllNotifications() ([]models.Notification, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	// Sort by created_at descending (newest first)
-	opts := options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}})
-	cursor, err := r.collection.Find(ctx, bson.M{}, opts)
+	rows, err := r.db.Query("SELECT id, title, content, type, created_by, created_at, is_active FROM notifications ORDER BY created_at DESC")
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close(ctx)
-
-	var notifications []models.Notification
-	if err = cursor.All(ctx, &notifications); err != nil {
-		return nil, err
-	}
-
-	return notifications, nil
+	defer rows.Close()
+	return r.scanNotifications(rows)
 }
 
-// GetActiveNotifications returns only active notifications (for users)
 func (r *NotificationRepository) GetActiveNotifications() ([]models.Notification, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	// Sort by created_at descending (newest first)
-	opts := options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}})
-	cursor, err := r.collection.Find(ctx, bson.M{"is_active": true}, opts)
+	rows, err := r.db.Query("SELECT id, title, content, type, created_by, created_at, is_active FROM notifications WHERE is_active=1 ORDER BY created_at DESC")
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close(ctx)
-
-	var notifications []models.Notification
-	if err = cursor.All(ctx, &notifications); err != nil {
-		return nil, err
-	}
-
-	return notifications, nil
+	defer rows.Close()
+	return r.scanNotifications(rows)
 }
 
-// GetNotificationByID returns a notification by ID
 func (r *NotificationRepository) GetNotificationByID(id string) (*models.Notification, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	oid, err := primitive.ObjectIDFromHex(id)
+	rows, err := r.db.Query("SELECT id, title, content, type, created_by, created_at, is_active FROM notifications WHERE id=?", id)
 	if err != nil {
 		return nil, err
 	}
-
-	var notification models.Notification
-	err = r.collection.FindOne(ctx, bson.M{"_id": oid}).Decode(&notification)
-	if err != nil {
-		return nil, err
+	defer rows.Close()
+	ns, err := r.scanNotifications(rows)
+	if err != nil || len(ns) == 0 {
+		return nil, sql.ErrNoRows
 	}
-
-	return &notification, nil
+	return &ns[0], nil
 }
 
-// UpdateNotification updates a notification
-func (r *NotificationRepository) UpdateNotification(id string, notification *models.Notification) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	oid, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return err
+func (r *NotificationRepository) UpdateNotification(id string, n *models.Notification) error {
+	isActive := 0
+	if n.IsActive {
+		isActive = 1
 	}
-
-	update := bson.M{
-		"$set": bson.M{
-			"title":     notification.Title,
-			"content":   notification.Content,
-			"type":      notification.Type,
-			"is_active": notification.IsActive,
-		},
-	}
-
-	_, err = r.collection.UpdateOne(ctx, bson.M{"_id": oid}, update)
+	_, err := r.db.Exec("UPDATE notifications SET title=?, content=?, type=?, is_active=? WHERE id=?", n.Title, n.Content, n.Type, isActive, id)
 	return err
 }
 
-// DeleteNotification deletes a notification by ID
 func (r *NotificationRepository) DeleteNotification(id string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	oid, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return err
-	}
-
-	_, err = r.collection.DeleteOne(ctx, bson.M{"_id": oid})
+	_, err := r.db.Exec("DELETE FROM notifications WHERE id=?", id)
 	return err
 }
 
-// ToggleNotificationActive toggles the is_active status of a notification
 func (r *NotificationRepository) ToggleNotificationActive(id string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	oid, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return err
-	}
-
-	// First, get current notification
-	notification, err := r.GetNotificationByID(id)
-	if err != nil {
-		return err
-	}
-
-	// Toggle the is_active status
-	update := bson.M{
-		"$set": bson.M{
-			"is_active": !notification.IsActive,
-		},
-	}
-
-	_, err = r.collection.UpdateOne(ctx, bson.M{"_id": oid}, update)
+	_, err := r.db.Exec("UPDATE notifications SET is_active = CASE WHEN is_active=1 THEN 0 ELSE 1 END WHERE id=?", id)
 	return err
 }

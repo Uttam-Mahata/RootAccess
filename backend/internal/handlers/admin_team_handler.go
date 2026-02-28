@@ -5,13 +5,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/database"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/utils"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"github.com/gin-gonic/gin"
 )
 
 type AdminTeamHandler struct {
@@ -40,19 +38,19 @@ func NewAdminTeamHandler(
 
 // AdminTeamResponse represents a team with additional admin info
 type AdminTeamResponse struct {
-	ID          string              `json:"id"`
-	Name        string              `json:"name"`
-	Description string              `json:"description"`
-	Avatar      string              `json:"avatar,omitempty"`
-	LeaderID    string              `json:"leader_id"`
-	LeaderName  string              `json:"leader_name"`
-	MemberCount int                 `json:"member_count"`
-	Members     []TeamMemberInfo    `json:"members"`
-	InviteCode  string              `json:"invite_code"`
-	Score       int                 `json:"score"`
+	ID          string           `json:"id"`
+	Name        string           `json:"name"`
+	Description string           `json:"description"`
+	Avatar      string           `json:"avatar,omitempty"`
+	LeaderID    string           `json:"leader_id"`
+	LeaderName  string           `json:"leader_name"`
+	MemberCount int              `json:"member_count"`
+	Members     []TeamMemberInfo `json:"members"`
+	InviteCode  string           `json:"invite_code"`
+	Score       int              `json:"score"`
 	// Future: we could expose effective_score including adjustments if needed
-	CreatedAt   string              `json:"created_at"`
-	UpdatedAt   string              `json:"updated_at"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
 }
 
 // AdjustTeamScoreRequest represents a manual team score adjustment
@@ -108,7 +106,7 @@ func (h *AdminTeamHandler) AdjustTeamScore(c *gin.Context) {
 	if h.adjustmentRepo != nil {
 		adminIDStr, _ := c.Get("user_id")
 		adminIDHex, _ := adminIDStr.(string)
-		adminID, _ := primitive.ObjectIDFromHex(adminIDHex)
+		adminID := adminIDHex
 
 		adj := &models.ScoreAdjustment{
 			TargetType: models.ScoreAdjustmentTargetTeam,
@@ -160,18 +158,19 @@ func (h *AdminTeamHandler) ListTeams(c *gin.Context) {
 	for _, team := range teams {
 		// Get leader info
 		leaderName := ""
-		leader, err := h.userRepo.FindByID(team.LeaderID.Hex())
+		leader, err := h.userRepo.FindByID(team.LeaderID)
 		if err == nil {
 			leaderName = leader.Username
 		}
 
 		// Get member info
-		members := make([]TeamMemberInfo, 0, len(team.MemberIDs))
-		for _, memberID := range team.MemberIDs {
-			user, err := h.userRepo.FindByID(memberID.Hex())
+		memberIDs, _ := h.teamRepo.GetTeamMembers(team.ID)
+		members := make([]TeamMemberInfo, 0, len(memberIDs))
+		for _, memberID := range memberIDs {
+			user, err := h.userRepo.FindByID(memberID)
 			if err == nil {
 				members = append(members, TeamMemberInfo{
-					ID:       user.ID.Hex(),
+					ID:       user.ID,
 					Username: user.Username,
 					Email:    user.Email,
 					IsLeader: memberID == team.LeaderID,
@@ -180,13 +179,13 @@ func (h *AdminTeamHandler) ListTeams(c *gin.Context) {
 		}
 
 		result = append(result, AdminTeamResponse{
-			ID:          team.ID.Hex(),
+			ID:          team.ID,
 			Name:        team.Name,
 			Description: team.Description,
 			Avatar:      team.Avatar,
-			LeaderID:    team.LeaderID.Hex(),
+			LeaderID:    team.LeaderID,
 			LeaderName:  leaderName,
-			MemberCount: len(team.MemberIDs),
+			MemberCount: len(memberIDs),
 			Members:     members,
 			InviteCode:  team.InviteCode,
 			Score:       team.Score,
@@ -210,7 +209,7 @@ func (h *AdminTeamHandler) ListTeams(c *gin.Context) {
 // @Router /admin/teams/{id} [get]
 func (h *AdminTeamHandler) GetTeam(c *gin.Context) {
 	teamID := c.Param("id")
-	
+
 	team, err := h.teamRepo.FindTeamByID(teamID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Team not found"})
@@ -219,18 +218,19 @@ func (h *AdminTeamHandler) GetTeam(c *gin.Context) {
 
 	// Get leader info
 	leaderName := ""
-	leader, err := h.userRepo.FindByID(team.LeaderID.Hex())
+	leader, err := h.userRepo.FindByID(team.LeaderID)
 	if err == nil {
 		leaderName = leader.Username
 	}
 
 	// Get member info
-	members := make([]TeamMemberInfo, 0, len(team.MemberIDs))
-	for _, memberID := range team.MemberIDs {
-		user, err := h.userRepo.FindByID(memberID.Hex())
+	memberIDs, _ := h.teamRepo.GetTeamMembers(team.ID)
+	members := make([]TeamMemberInfo, 0, len(memberIDs))
+	for _, memberID := range memberIDs {
+		user, err := h.userRepo.FindByID(memberID)
 		if err == nil {
 			members = append(members, TeamMemberInfo{
-				ID:       user.ID.Hex(),
+				ID:       user.ID,
 				Username: user.Username,
 				Email:    user.Email,
 				IsLeader: memberID == team.LeaderID,
@@ -239,13 +239,13 @@ func (h *AdminTeamHandler) GetTeam(c *gin.Context) {
 	}
 
 	result := AdminTeamResponse{
-		ID:          team.ID.Hex(),
+		ID:          team.ID,
 		Name:        team.Name,
 		Description: team.Description,
 		Avatar:      team.Avatar,
-		LeaderID:    team.LeaderID.Hex(),
+		LeaderID:    team.LeaderID,
 		LeaderName:  leaderName,
-		MemberCount: len(team.MemberIDs),
+		MemberCount: len(memberIDs),
 		Members:     members,
 		InviteCode:  team.InviteCode,
 		Score:       team.Score,
@@ -277,8 +277,8 @@ type AdminUpdateTeamRequest struct {
 // @Router /admin/teams/{id} [put]
 func (h *AdminTeamHandler) UpdateTeam(c *gin.Context) {
 	teamID := c.Param("id")
-	objID, err := primitive.ObjectIDFromHex(teamID)
-	if err != nil {
+	objID := teamID
+	if objID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid team ID"})
 		return
 	}
@@ -290,13 +290,13 @@ func (h *AdminTeamHandler) UpdateTeam(c *gin.Context) {
 	}
 
 	// Check if team exists
-	_, err = h.teamRepo.FindTeamByID(teamID)
+	_, err := h.teamRepo.FindTeamByID(teamID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Team not found"})
 		return
 	}
 
-	update := bson.M{}
+	update := map[string]interface{}{}
 	if req.Name != "" {
 		update["name"] = req.Name
 	}
@@ -334,8 +334,8 @@ type UpdateTeamLeaderRequest struct {
 // @Router /admin/teams/{id}/leader [put]
 func (h *AdminTeamHandler) UpdateTeamLeader(c *gin.Context) {
 	teamID := c.Param("id")
-	objID, err := primitive.ObjectIDFromHex(teamID)
-	if err != nil {
+	objID := teamID
+	if objID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid team ID"})
 		return
 	}
@@ -346,8 +346,8 @@ func (h *AdminTeamHandler) UpdateTeamLeader(c *gin.Context) {
 		return
 	}
 
-	newLeaderID, err := primitive.ObjectIDFromHex(req.NewLeaderID)
-	if err != nil {
+	newLeaderID := req.NewLeaderID
+	if newLeaderID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid new leader ID"})
 		return
 	}
@@ -361,7 +361,8 @@ func (h *AdminTeamHandler) UpdateTeamLeader(c *gin.Context) {
 
 	// Verify new leader is a member of the team
 	isMember := false
-	for _, memberID := range team.MemberIDs {
+	memberIDs, _ := h.teamRepo.GetTeamMembers(team.ID)
+	for _, memberID := range memberIDs {
 		if memberID == newLeaderID {
 			isMember = true
 			break
@@ -404,8 +405,8 @@ func (h *AdminTeamHandler) RemoveMember(c *gin.Context) {
 		return
 	}
 
-	memberObjID, err := primitive.ObjectIDFromHex(memberID)
-	if err != nil {
+	memberObjID := memberID
+	if memberObjID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid member ID"})
 		return
 	}
@@ -418,7 +419,8 @@ func (h *AdminTeamHandler) RemoveMember(c *gin.Context) {
 
 	// Check if member is in the team
 	isMember := false
-	for _, id := range team.MemberIDs {
+	memberIDs, _ := h.teamRepo.GetTeamMembers(team.ID)
+	for _, id := range memberIDs {
 		if id == memberObjID {
 			isMember = true
 			break
@@ -451,14 +453,14 @@ func (h *AdminTeamHandler) RemoveMember(c *gin.Context) {
 // @Router /admin/teams/{id} [delete]
 func (h *AdminTeamHandler) DeleteTeam(c *gin.Context) {
 	teamID := c.Param("id")
-	objID, err := primitive.ObjectIDFromHex(teamID)
-	if err != nil {
+	objID := teamID
+	if objID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid team ID"})
 		return
 	}
 
 	// Check if team exists
-	_, err = h.teamRepo.FindTeamByID(teamID)
+	_, err := h.teamRepo.FindTeamByID(teamID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Team not found"})
 		return

@@ -1,256 +1,183 @@
 package repositories
 
 import (
-	"context"
+	"database/sql"
+	"fmt"
 	"time"
 
-	"github.com/Uttam-Mahata/RootAccess/backend/internal/database"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"github.com/google/uuid"
 )
 
 type WriteupRepository struct {
-	collection *mongo.Collection
+	db *sql.DB
 }
 
-func NewWriteupRepository() *WriteupRepository {
-	return &WriteupRepository{
-		collection: database.DB.Collection("writeups"),
-	}
+func NewWriteupRepository(db *sql.DB) *WriteupRepository {
+	return &WriteupRepository{db: db}
 }
 
 func (r *WriteupRepository) CreateWriteup(writeup *models.Writeup) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
+	if writeup.ID == "" {
+		writeup.ID = uuid.New().String()
+	}
 	writeup.CreatedAt = time.Now()
 	writeup.UpdatedAt = time.Now()
-	// Only set status to pending if not already set (allows auto-approval)
 	if writeup.Status == "" {
 		writeup.Status = models.WriteupStatusPending
 	}
 
-	_, err := r.collection.InsertOne(ctx, writeup)
+	query := `INSERT INTO writeups (id, challenge_id, user_id, username, content, content_format, status, upvotes, created_at, updated_at)
+			  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	_, err := r.db.Exec(query, writeup.ID, writeup.ChallengeID, writeup.UserID, writeup.Username, writeup.Content, writeup.ContentFormat, writeup.Status, writeup.Upvotes, writeup.CreatedAt.Format(time.RFC3339), writeup.UpdatedAt.Format(time.RFC3339))
 	return err
 }
 
+func (r *WriteupRepository) scanWriteups(rows *sql.Rows) ([]models.Writeup, error) {
+	var writeups []models.Writeup
+	for rows.Next() {
+		var w models.Writeup
+		var createdAt, updatedAt string
+		if err := rows.Scan(&w.ID, &w.ChallengeID, &w.UserID, &w.Username, &w.Content, &w.ContentFormat, &w.Status, &w.Upvotes, &createdAt, &updatedAt); err != nil {
+			return nil, err
+		}
+		w.CreatedAt, _ = time.Parse(time.RFC3339, createdAt)
+		w.UpdatedAt, _ = time.Parse(time.RFC3339, updatedAt)
+		writeups = append(writeups, w)
+	}
+	return writeups, nil
+}
+
+func (r *WriteupRepository) selectWriteupFields() string {
+	return "id, challenge_id, user_id, username, content, content_format, status, upvotes, created_at, updated_at"
+}
+
 func (r *WriteupRepository) GetWriteupByID(id string) (*models.Writeup, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	oid, err := primitive.ObjectIDFromHex(id)
+	query := fmt.Sprintf("SELECT %s FROM writeups WHERE id=?", r.selectWriteupFields())
+	rows, err := r.db.Query(query, id)
 	if err != nil {
 		return nil, err
 	}
-
-	var writeup models.Writeup
-	err = r.collection.FindOne(ctx, bson.M{"_id": oid}).Decode(&writeup)
-	if err != nil {
-		return nil, err
+	defer rows.Close()
+	writeups, err := r.scanWriteups(rows)
+	if err != nil || len(writeups) == 0 {
+		return nil, sql.ErrNoRows
 	}
-	return &writeup, nil
+	return &writeups[0], nil
 }
 
-func (r *WriteupRepository) GetWriteupsByChallenge(challengeID primitive.ObjectID, onlyApproved bool) ([]models.Writeup, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	filter := bson.M{"challenge_id": challengeID}
+func (r *WriteupRepository) GetWriteupsByChallenge(challengeID string, onlyApproved bool) ([]models.Writeup, error) {
+	query := fmt.Sprintf("SELECT %s FROM writeups WHERE challenge_id=?", r.selectWriteupFields())
 	if onlyApproved {
-		filter["status"] = models.WriteupStatusApproved
+		query += " AND status='" + models.WriteupStatusApproved + "'"
 	}
+	query += " ORDER BY created_at DESC"
 
-	opts := options.Find().SetSort(bson.M{"created_at": -1})
-	cursor, err := r.collection.Find(ctx, filter, opts)
+	rows, err := r.db.Query(query, challengeID)
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close(ctx)
-
-	var writeups []models.Writeup
-	if err = cursor.All(ctx, &writeups); err != nil {
-		return nil, err
-	}
-	return writeups, nil
+	defer rows.Close()
+	return r.scanWriteups(rows)
 }
 
-func (r *WriteupRepository) GetWriteupsByUser(userID primitive.ObjectID) ([]models.Writeup, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	opts := options.Find().SetSort(bson.M{"created_at": -1})
-	cursor, err := r.collection.Find(ctx, bson.M{"user_id": userID}, opts)
+func (r *WriteupRepository) GetWriteupsByUser(userID string) ([]models.Writeup, error) {
+	query := fmt.Sprintf("SELECT %s FROM writeups WHERE user_id=? ORDER BY created_at DESC", r.selectWriteupFields())
+	rows, err := r.db.Query(query, userID)
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close(ctx)
-
-	var writeups []models.Writeup
-	if err = cursor.All(ctx, &writeups); err != nil {
-		return nil, err
-	}
-	return writeups, nil
+	defer rows.Close()
+	return r.scanWriteups(rows)
 }
 
 func (r *WriteupRepository) GetAllWriteups() ([]models.Writeup, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	opts := options.Find().SetSort(bson.M{"created_at": -1})
-	cursor, err := r.collection.Find(ctx, bson.M{}, opts)
+	query := fmt.Sprintf("SELECT %s FROM writeups ORDER BY created_at DESC", r.selectWriteupFields())
+	rows, err := r.db.Query(query)
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close(ctx)
-
-	var writeups []models.Writeup
-	if err = cursor.All(ctx, &writeups); err != nil {
-		return nil, err
-	}
-	return writeups, nil
+	defer rows.Close()
+	return r.scanWriteups(rows)
 }
 
 func (r *WriteupRepository) UpdateWriteupStatus(id string, status string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	oid, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return err
-	}
-
-	update := bson.M{
-		"$set": bson.M{
-			"status":     status,
-			"updated_at": time.Now(),
-		},
-	}
-
-	_, err = r.collection.UpdateOne(ctx, bson.M{"_id": oid}, update)
+	_, err := r.db.Exec("UPDATE writeups SET status=?, updated_at=? WHERE id=?", status, time.Now().Format(time.RFC3339), id)
 	return err
 }
 
 func (r *WriteupRepository) DeleteWriteup(id string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	oid, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return err
-	}
-
-	_, err = r.collection.DeleteOne(ctx, bson.M{"_id": oid})
+	_, err := r.db.Exec("DELETE FROM writeups WHERE id=?", id)
 	return err
 }
 
-// FindByUserAndChallenge checks if a user already submitted a writeup for a challenge
-func (r *WriteupRepository) FindByUserAndChallenge(userID, challengeID primitive.ObjectID) (*models.Writeup, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	var writeup models.Writeup
-	err := r.collection.FindOne(ctx, bson.M{
-		"user_id":      userID,
-		"challenge_id": challengeID,
-	}).Decode(&writeup)
+func (r *WriteupRepository) FindByUserAndChallenge(userID, challengeID string) (*models.Writeup, error) {
+	query := fmt.Sprintf("SELECT %s FROM writeups WHERE user_id=? AND challenge_id=?", r.selectWriteupFields())
+	rows, err := r.db.Query(query, userID, challengeID)
 	if err != nil {
 		return nil, err
 	}
-	return &writeup, nil
+	defer rows.Close()
+	writeups, err := r.scanWriteups(rows)
+	if err != nil || len(writeups) == 0 {
+		return nil, sql.ErrNoRows
+	}
+	return &writeups[0], nil
 }
 
-// UpdateWriteupContent updates the content and format of a writeup
 func (r *WriteupRepository) UpdateWriteupContent(id string, content string, contentFormat string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	oid, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return err
-	}
-
-	update := bson.M{
-		"$set": bson.M{
-			"content":        content,
-			"content_format": contentFormat,
-			"updated_at":     time.Now(),
-		},
-	}
-	_, err = r.collection.UpdateOne(ctx, bson.M{"_id": oid}, update)
+	_, err := r.db.Exec("UPDATE writeups SET content=?, content_format=?, updated_at=? WHERE id=?", content, contentFormat, time.Now().Format(time.RFC3339), id)
 	return err
 }
 
-// GetWriteupsByTeam returns all writeups for a specific team
 func (r *WriteupRepository) GetWriteupsByTeam(teamID string) ([]models.Writeup, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	tid, err := primitive.ObjectIDFromHex(teamID)
+	query := fmt.Sprintf(`
+		SELECT w.id, w.challenge_id, w.user_id, w.username, w.content, w.content_format, w.status, w.upvotes, w.created_at, w.updated_at 
+		FROM writeups w
+		JOIN team_members tm ON w.user_id = tm.user_id
+		WHERE tm.team_id = ? ORDER BY w.created_at DESC
+	`)
+	rows, err := r.db.Query(query, teamID)
 	if err != nil {
 		return nil, err
 	}
-
-	// Get all users in the team first
-	teamCollection := database.DB.Collection("teams")
-	var team models.Team
-	err = teamCollection.FindOne(ctx, bson.M{"_id": tid}).Decode(&team)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get writeups for all team members
-	filter := bson.M{"user_id": bson.M{"$in": team.MemberIDs}}
-	opts := options.Find().SetSort(bson.M{"created_at": -1})
-	cursor, err := r.collection.Find(ctx, filter, opts)
-	if err != nil {
-		return nil, err
-	}
-	defer cursor.Close(ctx)
-
-	var writeups []models.Writeup
-	if err = cursor.All(ctx, &writeups); err != nil {
-		return nil, err
-	}
-	return writeups, nil
+	defer rows.Close()
+	return r.scanWriteups(rows)
 }
 
-// ToggleUpvote adds or removes a user's upvote on a writeup
-func (r *WriteupRepository) ToggleUpvote(id string, userID primitive.ObjectID) (bool, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	oid, err := primitive.ObjectIDFromHex(id)
+func (r *WriteupRepository) ToggleUpvote(writeupID string, userID string) (bool, error) {
+	tx, err := r.db.Begin()
 	if err != nil {
 		return false, err
 	}
+	defer tx.Rollback()
 
-	// Try to add the upvote atomically using $addToSet (prevents duplicates)
-	addResult, err := r.collection.UpdateOne(ctx, bson.M{
-		"_id":        oid,
-		"upvoted_by": bson.M{"$ne": userID},
-	}, bson.M{
-		"$addToSet": bson.M{"upvoted_by": userID},
-		"$inc":      bson.M{"upvotes": 1},
-	})
-	if err != nil {
+	var exists int
+	err = tx.QueryRow("SELECT 1 FROM writeup_upvotes WHERE writeup_id=? AND user_id=?", writeupID, userID).Scan(&exists)
+
+	if err == sql.ErrNoRows {
+		// Not upvoted yet, add upvote
+		_, err = tx.Exec("INSERT INTO writeup_upvotes (writeup_id, user_id) VALUES (?, ?)", writeupID, userID)
+		if err != nil {
+			return false, err
+		}
+		_, err = tx.Exec("UPDATE writeups SET upvotes = upvotes + 1 WHERE id=?", writeupID)
+		if err != nil {
+			return false, err
+		}
+		return true, tx.Commit()
+	} else if err != nil {
 		return false, err
 	}
 
-	// If the add succeeded, user was not previously in the list
-	if addResult.ModifiedCount > 0 {
-		return true, nil
+	// Already upvoted, remove upvote
+	_, err = tx.Exec("DELETE FROM writeup_upvotes WHERE writeup_id=? AND user_id=?", writeupID, userID)
+	if err != nil {
+		return false, err
 	}
-
-	// User already upvoted, so remove the upvote
-	_, err = r.collection.UpdateOne(ctx, bson.M{
-		"_id":        oid,
-		"upvoted_by": userID,
-	}, bson.M{
-		"$pull": bson.M{"upvoted_by": userID},
-		"$inc":  bson.M{"upvotes": -1},
-	})
-	return false, err
+	_, err = tx.Exec("UPDATE writeups SET upvotes = upvotes - 1 WHERE id=?", writeupID)
+	if err != nil {
+		return false, err
+	}
+	return false, tx.Commit()
 }

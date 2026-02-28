@@ -3,9 +3,9 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/services"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/utils"
+	"github.com/gin-gonic/gin"
 )
 
 type TeamHandler struct {
@@ -72,7 +72,7 @@ func (h *TeamHandler) CreateTeam(c *gin.Context) {
 	}
 
 	// Get team members immediately after creation
-	members, err := h.teamService.GetTeamMembers(team.ID.Hex())
+	members, err := h.teamService.GetTeamMembers(team.ID)
 	if err != nil {
 		// If we can't get members, still return success with just the team
 		c.JSON(http.StatusCreated, gin.H{
@@ -113,7 +113,7 @@ func (h *TeamHandler) GetMyTeam(c *gin.Context) {
 	}
 
 	// Get team members with details
-	members, err := h.teamService.GetTeamMembers(team.ID.Hex())
+	members, err := h.teamService.GetTeamMembers(team.ID)
 	if err != nil {
 		utils.RespondWithError(c, http.StatusInternalServerError, "failed to get team members", err)
 		return
@@ -187,7 +187,7 @@ func (h *TeamHandler) UpdateTeam(c *gin.Context) {
 	}
 
 	// Get team members after update
-	members, err := h.teamService.GetTeamMembers(team.ID.Hex())
+	members, err := h.teamService.GetTeamMembers(team.ID)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"message": "Team updated successfully!",
@@ -347,7 +347,7 @@ func (h *TeamHandler) JoinByCode(c *gin.Context) {
 	}
 
 	// Get team members immediately after joining
-	members, err := h.teamService.GetTeamMembers(team.ID.Hex())
+	members, err := h.teamService.GetTeamMembers(team.ID)
 	if err != nil {
 		// If we can't get members, still return success with just the team
 		c.JSON(http.StatusOK, gin.H{
@@ -420,7 +420,7 @@ func (h *TeamHandler) AcceptInvitation(c *gin.Context) {
 	}
 
 	// Get team members immediately after accepting invitation
-	members, err := h.teamService.GetTeamMembers(team.ID.Hex())
+	members, err := h.teamService.GetTeamMembers(team.ID)
 	if err != nil {
 		// If we can't get members, still return success with just the team
 		c.JSON(http.StatusOK, gin.H{

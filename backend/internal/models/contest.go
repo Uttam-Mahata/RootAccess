@@ -1,26 +1,20 @@
 package models
 
-import (
-	"time"
+import "time"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
-)
-
-// ContestConfig represents the CTF competition time configuration (global active contest selector)
 type ContestConfig struct {
-	ID                   primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	ContestID            primitive.ObjectID `bson:"contest_id,omitempty" json:"contest_id,omitempty"` // Points to Contest entity when using multi-contest
-	StartTime            time.Time          `bson:"start_time" json:"start_time"`
-	EndTime              time.Time          `bson:"end_time" json:"end_time"`
-	FreezeTime           *time.Time         `bson:"freeze_time,omitempty" json:"freeze_time,omitempty"` // Scoreboard freeze time
-	Title                string             `bson:"title" json:"title"`
-	IsActive             bool               `bson:"is_active" json:"is_active"`
-	IsPaused             bool               `bson:"is_paused" json:"is_paused"`                           // Pause submissions
-	ScoreboardVisibility string             `bson:"scoreboard_visibility" json:"scoreboard_visibility"` // "public", "private", "hidden"
-	UpdatedAt            time.Time          `bson:"updated_at" json:"updated_at"`
+	ID                   string    `json:"id"`
+	ContestID            string    `json:"contest_id,omitempty"`
+	StartTime            time.Time `json:"start_time"`
+	EndTime              time.Time `json:"end_time"`
+	FreezeTime           string    `json:"freeze_time,omitempty"`
+	Title                string    `json:"title"`
+	IsActive             bool      `json:"is_active"`
+	IsPaused             bool      `json:"is_paused"`
+	ScoreboardVisibility string    `json:"scoreboard_visibility"`
+	UpdatedAt            time.Time `json:"updated_at"`
 }
 
-// ContestStatus represents the current state of the contest
 type ContestStatus string
 
 const (
@@ -30,7 +24,6 @@ const (
 	ContestStatusEnded      ContestStatus = "ended"
 )
 
-// GetStatus returns the current status of the contest
 func (c *ContestConfig) GetStatus() ContestStatus {
 	now := time.Now()
 	if !c.IsActive {
@@ -48,10 +41,10 @@ func (c *ContestConfig) GetStatus() ContestStatus {
 	return ContestStatusRunning
 }
 
-// IsScoreboardFrozen returns true if the scoreboard is currently frozen
 func (c *ContestConfig) IsScoreboardFrozen() bool {
-	if c.FreezeTime == nil {
+	if c.FreezeTime == "" {
 		return false
 	}
-	return time.Now().After(*c.FreezeTime)
+	t, _ := time.Parse(time.RFC3339, c.FreezeTime)
+	return time.Now().After(t)
 }

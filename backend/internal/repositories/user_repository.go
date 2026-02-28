@@ -1,271 +1,271 @@
 package repositories
 
 import (
-	"context"
+	"database/sql"
+	"errors"
+	"fmt"
+	"strings"
 	"time"
 
-	"github.com/Uttam-Mahata/RootAccess/backend/internal/database"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"github.com/google/uuid"
 )
 
 type UserRepository struct {
-	collection *mongo.Collection
+	db *sql.DB
 }
 
-func NewUserRepository() *UserRepository {
-	return &UserRepository{
-		collection: database.DB.Collection("users"),
-	}
+func NewUserRepository(db *sql.DB) *UserRepository {
+	return &UserRepository{db: db}
 }
 
 func (r *UserRepository) CreateUser(user *models.User) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
+	if user.ID == "" {
+		user.ID = uuid.New().String()
+	}
 	user.CreatedAt = time.Now()
 	user.UpdatedAt = time.Now()
-	result, err := r.collection.InsertOne(ctx, user)
-	if err != nil {
-		return err
-	}
-	// Populate the generated ID back to the user struct
-	if oid, ok := result.InsertedID.(primitive.ObjectID); ok {
-		user.ID = oid
-	}
-	return nil
+
+	query := `
+		INSERT INTO users (
+			id, username, email, password_hash, role, email_verified,
+			verification_token, verification_expiry, reset_password_token,
+			reset_password_expiry, oauth_provider, oauth_provider_id,
+			oauth_access_token, oauth_refresh_token, oauth_expires_at,
+			status, ban_reason, suspended_until, last_ip, last_login_at,
+			created_at, updated_at
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`
+
+	_, err := r.db.Exec(query,
+		user.ID, user.Username, user.Email, user.PasswordHash, user.Role, user.EmailVerified,
+		user.VerificationToken, user.VerificationExpiry, user.ResetPasswordToken,
+		user.ResetPasswordExpiry, user.OAuthProvider, user.OAuthProviderID,
+		user.OAuthAccessToken, user.OAuthRefreshToken, user.OAuthExpiresAt,
+		user.Status, user.BanReason, user.SuspendedUntil, user.LastIP, user.LastLoginAt,
+		user.CreatedAt.Format(time.RFC3339), user.UpdatedAt.Format(time.RFC3339),
+	)
+	return err
 }
 
 func (r *UserRepository) UpdateUser(user *models.User) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
 	user.UpdatedAt = time.Now()
-	filter := bson.M{"_id": user.ID}
-	_, err := r.collection.ReplaceOne(ctx, filter, user)
+
+	query := `
+		UPDATE users SET
+			username=?, email=?, password_hash=?, role=?, email_verified=?,
+			verification_token=?, verification_expiry=?, reset_password_token=?,
+			reset_password_expiry=?, oauth_provider=?, oauth_provider_id=?,
+			oauth_access_token=?, oauth_refresh_token=?, oauth_expires_at=?,
+			status=?, ban_reason=?, suspended_until=?, last_ip=?, last_login_at=?,
+			updated_at=?
+		WHERE id=?
+	`
+
+	_, err := r.db.Exec(query,
+		user.Username, user.Email, user.PasswordHash, user.Role, user.EmailVerified,
+		user.VerificationToken, user.VerificationExpiry, user.ResetPasswordToken,
+		user.ResetPasswordExpiry, user.OAuthProvider, user.OAuthProviderID,
+		user.OAuthAccessToken, user.OAuthRefreshToken, user.OAuthExpiresAt,
+		user.Status, user.BanReason, user.SuspendedUntil, user.LastIP, user.LastLoginAt,
+		user.UpdatedAt.Format(time.RFC3339), user.ID,
+	)
 	return err
+}
+
+func (r *UserRepository) scanUser(row *sql.Row) (*models.User, error) {
+	var user models.User
+	var createdAt, updatedAt string
+	err := row.Scan(
+		&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.Role, &user.EmailVerified,
+		&user.VerificationToken, &user.VerificationExpiry, &user.ResetPasswordToken,
+		&user.ResetPasswordExpiry, &user.OAuthProvider, &user.OAuthProviderID,
+		&user.OAuthAccessToken, &user.OAuthRefreshToken, &user.OAuthExpiresAt,
+		&user.Status, &user.BanReason, &user.SuspendedUntil, &user.LastIP, &user.LastLoginAt,
+		&createdAt, &updatedAt,
+	)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, errors.New("user not found")
+		}
+		return nil, err
+	}
+	user.CreatedAt, _ = time.Parse(time.RFC3339, createdAt)
+	user.UpdatedAt, _ = time.Parse(time.RFC3339, updatedAt)
+	return &user, nil
+}
+
+func (r *UserRepository) scanUsers(rows *sql.Rows) ([]models.User, error) {
+	var users []models.User
+	for rows.Next() {
+		var user models.User
+		var createdAt, updatedAt string
+		if err := rows.Scan(
+			&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.Role, &user.EmailVerified,
+			&user.VerificationToken, &user.VerificationExpiry, &user.ResetPasswordToken,
+			&user.ResetPasswordExpiry, &user.OAuthProvider, &user.OAuthProviderID,
+			&user.OAuthAccessToken, &user.OAuthRefreshToken, &user.OAuthExpiresAt,
+			&user.Status, &user.BanReason, &user.SuspendedUntil, &user.LastIP, &user.LastLoginAt,
+			&createdAt, &updatedAt,
+		); err != nil {
+			return nil, err
+		}
+		user.CreatedAt, _ = time.Parse(time.RFC3339, createdAt)
+		user.UpdatedAt, _ = time.Parse(time.RFC3339, updatedAt)
+		users = append(users, user)
+	}
+	return users, nil
+}
+
+func (r *UserRepository) selectUserFields() string {
+	return `id, username, email, password_hash, role, email_verified,
+			verification_token, verification_expiry, reset_password_token,
+			reset_password_expiry, oauth_provider, oauth_provider_id,
+			oauth_access_token, oauth_refresh_token, oauth_expires_at,
+			status, ban_reason, suspended_until, last_ip, last_login_at,
+			created_at, updated_at`
 }
 
 func (r *UserRepository) FindByID(userID string) (*models.User, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	id, err := primitive.ObjectIDFromHex(userID)
-	if err != nil {
-		return nil, err
-	}
-
-	var user models.User
-	err = r.collection.FindOne(ctx, bson.M{"_id": id}).Decode(&user)
-	if err != nil {
-		return nil, err
-	}
-	return &user, nil
+	query := fmt.Sprintf("SELECT %s FROM users WHERE id=?", r.selectUserFields())
+	return r.scanUser(r.db.QueryRow(query, userID))
 }
 
 func (r *UserRepository) FindByUsername(username string) (*models.User, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	var user models.User
-	err := r.collection.FindOne(ctx, bson.M{"username": username}).Decode(&user)
-	if err != nil {
-		return nil, err
-	}
-	return &user, nil
+	query := fmt.Sprintf("SELECT %s FROM users WHERE username=?", r.selectUserFields())
+	return r.scanUser(r.db.QueryRow(query, username))
 }
 
 func (r *UserRepository) FindByEmail(email string) (*models.User, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	var user models.User
-	err := r.collection.FindOne(ctx, bson.M{"email": email}).Decode(&user)
-	if err != nil {
-		return nil, err
-	}
-	return &user, nil
+	query := fmt.Sprintf("SELECT %s FROM users WHERE email=?", r.selectUserFields())
+	return r.scanUser(r.db.QueryRow(query, email))
 }
 
 func (r *UserRepository) FindByVerificationToken(token string) (*models.User, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	var user models.User
-	err := r.collection.FindOne(ctx, bson.M{"verification_token": token}).Decode(&user)
-	if err != nil {
-		return nil, err
-	}
-	return &user, nil
+	query := fmt.Sprintf("SELECT %s FROM users WHERE verification_token=?", r.selectUserFields())
+	return r.scanUser(r.db.QueryRow(query, token))
 }
 
 func (r *UserRepository) FindByResetToken(token string) (*models.User, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	var user models.User
-	err := r.collection.FindOne(ctx, bson.M{"reset_password_token": token}).Decode(&user)
-	if err != nil {
-		return nil, err
-	}
-	return &user, nil
+	query := fmt.Sprintf("SELECT %s FROM users WHERE reset_password_token=?", r.selectUserFields())
+	return r.scanUser(r.db.QueryRow(query, token))
 }
 
 func (r *UserRepository) FindByProviderID(provider, providerID string) (*models.User, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	var user models.User
-	err := r.collection.FindOne(ctx, bson.M{
-		"oauth.provider":    provider,
-		"oauth.provider_id": providerID,
-	}).Decode(&user)
-	if err != nil {
-		return nil, err
-	}
-	return &user, nil
+	query := fmt.Sprintf("SELECT %s FROM users WHERE oauth_provider=? AND oauth_provider_id=?", r.selectUserFields())
+	return r.scanUser(r.db.QueryRow(query, provider, providerID))
 }
 
 func (r *UserRepository) GetAllUsers() ([]models.User, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	cursor, err := r.collection.Find(ctx, bson.M{})
+	query := fmt.Sprintf("SELECT %s FROM users", r.selectUserFields())
+	rows, err := r.db.Query(query)
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close(ctx)
-
-	var users []models.User
-	if err = cursor.All(ctx, &users); err != nil {
-		return nil, err
-	}
-	return users, nil
+	defer rows.Close()
+	return r.scanUsers(rows)
 }
 
-func (r *UserRepository) UpdateFields(userID primitive.ObjectID, fields bson.M) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+func (r *UserRepository) UpdateFields(userID string, fields map[string]interface{}) error {
+	if len(fields) == 0 {
+		return nil
+	}
+	fields["updated_at"] = time.Now().Format(time.RFC3339)
 
-	_, err := r.collection.UpdateByID(ctx, userID, bson.M{"$set": fields})
+	var setClauses []string
+	var args []interface{}
+
+	for k, v := range fields {
+		setClauses = append(setClauses, fmt.Sprintf("%s=?", k))
+		if b, ok := v.(bool); ok {
+			if b {
+				args = append(args, 1)
+			} else {
+				args = append(args, 0)
+			}
+		} else {
+			args = append(args, v)
+		}
+	}
+	args = append(args, userID)
+
+	query := fmt.Sprintf("UPDATE users SET %s WHERE id=?", strings.Join(setClauses, ", "))
+	_, err := r.db.Exec(query, args...)
 	return err
 }
 
-// MaxIPHistoryRecords defines the maximum number of IP records to keep per user
-const MaxIPHistoryRecords = 50
+func (r *UserRepository) RecordUserIP(userID string, ip string, action string) error {
+	now := time.Now().Format(time.RFC3339)
 
-// CountUsers returns the total number of users
-func (r *UserRepository) CountUsers() (int64, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	return r.collection.CountDocuments(ctx, bson.M{})
-}
-
-// RecordUserIP records the user's IP address with timestamp and action
-func (r *UserRepository) RecordUserIP(userID primitive.ObjectID, ip string, action string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	ipRecord := models.IPRecord{
-		IP:        ip,
-		Timestamp: time.Now(),
-		Action:    action,
+	updateQuery := `UPDATE users SET last_ip=?, last_login_at=?, updated_at=? WHERE id=?`
+	if _, err := r.db.Exec(updateQuery, ip, now, now, userID); err != nil {
+		return err
 	}
 
-	update := bson.M{
-		"$set": bson.M{
-			"last_ip":       ip,
-			"last_login_at": time.Now(),
-			"updated_at":    time.Now(),
-		},
-		"$push": bson.M{
-			"ip_history": bson.M{
-				"$each":  []models.IPRecord{ipRecord},
-				"$slice": -MaxIPHistoryRecords,
-			},
-		},
+	insertHist := `INSERT INTO user_ip_history (user_id, ip, action, timestamp) VALUES (?, ?, ?, ?)`
+	if _, err := r.db.Exec(insertHist, userID, ip, action, now); err != nil {
+		return err
 	}
 
-	_, err := r.collection.UpdateByID(ctx, userID, update)
+	deleteHist := `
+		DELETE FROM user_ip_history 
+		WHERE user_id = ? AND timestamp NOT IN (
+			SELECT timestamp FROM user_ip_history 
+			WHERE user_id = ? 
+			ORDER BY timestamp DESC 
+			LIMIT 50
+		)
+	`
+	_, err := r.db.Exec(deleteHist, userID, userID)
 	return err
 }
 
-// GetUsersWithDetails returns all users with detailed information for admin
 func (r *UserRepository) GetUsersWithDetails() ([]models.User, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	opts := options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}})
-	cursor, err := r.collection.Find(ctx, bson.M{}, opts)
+	query := fmt.Sprintf("SELECT %s FROM users ORDER BY created_at DESC", r.selectUserFields())
+	rows, err := r.db.Query(query)
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close(ctx)
+	defer rows.Close()
 
-	var users []models.User
-	if err = cursor.All(ctx, &users); err != nil {
-		return nil, err
-	}
-	return users, nil
+	return r.scanUsers(rows)
 }
 
-// CountUsersByStatus returns the count of users by status
+func (r *UserRepository) CountUsers() (int64, error) {
+	var count int64
+	err := r.db.QueryRow("SELECT COUNT(*) FROM users").Scan(&count)
+	return count, err
+}
+
 func (r *UserRepository) CountUsersByStatus(status string) (int64, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	filter := bson.M{}
+	var count int64
+	var err error
 	if status == "active" || status == "" {
-		// Count users where status is "active" or not set
-		filter = bson.M{"$or": []bson.M{
-			{"status": "active"},
-			{"status": bson.M{"$exists": false}},
-			{"status": ""},
-		}}
+		err = r.db.QueryRow("SELECT COUNT(*) FROM users WHERE status='active' OR status IS NULL OR status=''").Scan(&count)
 	} else {
-		filter = bson.M{"status": status}
+		err = r.db.QueryRow("SELECT COUNT(*) FROM users WHERE status=?", status).Scan(&count)
 	}
-
-	return r.collection.CountDocuments(ctx, filter)
+	return count, err
 }
 
-// CountVerifiedUsers returns the count of email-verified users
 func (r *UserRepository) CountVerifiedUsers() (int64, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	return r.collection.CountDocuments(ctx, bson.M{"email_verified": true})
+	var count int64
+	err := r.db.QueryRow("SELECT COUNT(*) FROM users WHERE email_verified=1").Scan(&count)
+	return count, err
 }
 
-// CountAdmins returns the count of admin users
 func (r *UserRepository) CountAdmins() (int64, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	return r.collection.CountDocuments(ctx, bson.M{"role": "admin"})
+	var count int64
+	err := r.db.QueryRow("SELECT COUNT(*) FROM users WHERE role='admin'").Scan(&count)
+	return count, err
 }
 
-// GetRecentUsers returns users created within the specified duration
 func (r *UserRepository) GetRecentUsers(since time.Time) ([]models.User, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	filter := bson.M{"created_at": bson.M{"$gte": since}}
-	opts := options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}})
-
-	cursor, err := r.collection.Find(ctx, filter, opts)
+	query := fmt.Sprintf("SELECT %s FROM users WHERE created_at >= ? ORDER BY created_at DESC", r.selectUserFields())
+	rows, err := r.db.Query(query, since.Format(time.RFC3339))
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close(ctx)
-
-	var users []models.User
-	if err = cursor.All(ctx, &users); err != nil {
-		return nil, err
-	}
-	return users, nil
+	defer rows.Close()
+	return r.scanUsers(rows)
 }

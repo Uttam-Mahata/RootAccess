@@ -1,105 +1,81 @@
 package repositories
 
 import (
-	"context"
-	"time"
+	"database/sql"
 
-	"github.com/Uttam-Mahata/RootAccess/backend/internal/database"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
+	"github.com/google/uuid"
 )
 
 type HintRepository struct {
-	revealCollection *mongo.Collection
+	db *sql.DB
 }
 
-func NewHintRepository() *HintRepository {
-	return &HintRepository{
-		revealCollection: database.DB.Collection("hint_reveals"),
-	}
+func NewHintRepository(db *sql.DB) *HintRepository {
+	return &HintRepository{db: db}
 }
 
-// FindReveal checks if a user/team has already revealed a hint
-func (r *HintRepository) FindReveal(hintID, userID primitive.ObjectID) (*models.HintReveal, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	var reveal models.HintReveal
-	err := r.revealCollection.FindOne(ctx, bson.M{
-		"hint_id": hintID,
-		"user_id": userID,
-	}).Decode(&reveal)
+func (r *HintRepository) FindReveal(hintID, userID string) (*models.HintReveal, error) {
+	var h models.HintReveal
+	err := r.db.QueryRow("SELECT id, hint_id, challenge_id, user_id, team_id, cost FROM hint_reveals WHERE hint_id=? AND user_id=?", hintID, userID).
+		Scan(&h.ID, &h.HintID, &h.ChallengeID, &h.UserID, &h.TeamID, &h.Cost)
 	if err != nil {
 		return nil, err
 	}
-	return &reveal, nil
+	return &h, nil
 }
 
-// FindRevealByTeam checks if a team member has already revealed a hint
-func (r *HintRepository) FindRevealByTeam(hintID, teamID primitive.ObjectID) (*models.HintReveal, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	var reveal models.HintReveal
-	err := r.revealCollection.FindOne(ctx, bson.M{
-		"hint_id": hintID,
-		"team_id": teamID,
-	}).Decode(&reveal)
+func (r *HintRepository) FindRevealByTeam(hintID, teamID string) (*models.HintReveal, error) {
+	var h models.HintReveal
+	err := r.db.QueryRow("SELECT id, hint_id, challenge_id, user_id, team_id, cost FROM hint_reveals WHERE hint_id=? AND team_id=?", hintID, teamID).
+		Scan(&h.ID, &h.HintID, &h.ChallengeID, &h.UserID, &h.TeamID, &h.Cost)
 	if err != nil {
 		return nil, err
 	}
-	return &reveal, nil
+	return &h, nil
 }
 
-// CreateReveal records that a hint was revealed
 func (r *HintRepository) CreateReveal(reveal *models.HintReveal) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	_, err := r.revealCollection.InsertOne(ctx, reveal)
+	if reveal.ID == "" {
+		reveal.ID = uuid.New().String()
+	}
+	_, err := r.db.Exec("INSERT INTO hint_reveals (id, hint_id, challenge_id, user_id, team_id, cost) VALUES (?, ?, ?, ?, ?, ?)",
+		reveal.ID, reveal.HintID, reveal.ChallengeID, reveal.UserID, reveal.TeamID, reveal.Cost)
 	return err
 }
 
-// GetRevealsByUserAndChallenge gets all reveals for a user on a challenge
-func (r *HintRepository) GetRevealsByUserAndChallenge(userID, challengeID primitive.ObjectID) ([]models.HintReveal, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	cursor, err := r.revealCollection.Find(ctx, bson.M{
-		"user_id":      userID,
-		"challenge_id": challengeID,
-	})
+func (r *HintRepository) GetRevealsByUserAndChallenge(userID, challengeID string) ([]models.HintReveal, error) {
+	rows, err := r.db.Query("SELECT id, hint_id, challenge_id, user_id, team_id, cost FROM hint_reveals WHERE user_id=? AND challenge_id=?", userID, challengeID)
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close(ctx)
+	defer rows.Close()
 
 	var reveals []models.HintReveal
-	if err = cursor.All(ctx, &reveals); err != nil {
-		return nil, err
+	for rows.Next() {
+		var h models.HintReveal
+		if err := rows.Scan(&h.ID, &h.HintID, &h.ChallengeID, &h.UserID, &h.TeamID, &h.Cost); err != nil {
+			return nil, err
+		}
+		reveals = append(reveals, h)
 	}
 	return reveals, nil
 }
 
-// GetRevealsByTeamAndChallenge gets all reveals for a team on a challenge
-func (r *HintRepository) GetRevealsByTeamAndChallenge(teamID, challengeID primitive.ObjectID) ([]models.HintReveal, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	cursor, err := r.revealCollection.Find(ctx, bson.M{
-		"team_id":      teamID,
-		"challenge_id": challengeID,
-	})
+func (r *HintRepository) GetRevealsByTeamAndChallenge(teamID, challengeID string) ([]models.HintReveal, error) {
+	rows, err := r.db.Query("SELECT id, hint_id, challenge_id, user_id, team_id, cost FROM hint_reveals WHERE team_id=? AND challenge_id=?", teamID, challengeID)
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close(ctx)
+	defer rows.Close()
 
 	var reveals []models.HintReveal
-	if err = cursor.All(ctx, &reveals); err != nil {
-		return nil, err
+	for rows.Next() {
+		var h models.HintReveal
+		if err := rows.Scan(&h.ID, &h.HintID, &h.ChallengeID, &h.UserID, &h.TeamID, &h.Cost); err != nil {
+			return nil, err
+		}
+		reveals = append(reveals, h)
 	}
 	return reveals, nil
 }

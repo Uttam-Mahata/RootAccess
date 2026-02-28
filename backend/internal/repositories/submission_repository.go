@@ -1,291 +1,193 @@
 package repositories
 
 import (
-	"context"
+	"database/sql"
 	"time"
 
-	"github.com/Uttam-Mahata/RootAccess/backend/internal/database"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"github.com/google/uuid"
 )
 
 type SubmissionRepository struct {
-	collection *mongo.Collection
+	db *sql.DB
 }
 
-func NewSubmissionRepository() *SubmissionRepository {
-	return &SubmissionRepository{
-		collection: database.DB.Collection("submissions"),
-	}
+func NewSubmissionRepository(db *sql.DB) *SubmissionRepository {
+	return &SubmissionRepository{db: db}
 }
 
-func (r *SubmissionRepository) CreateSubmission(submission *models.Submission) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+func (r *SubmissionRepository) CreateSubmission(sub *models.Submission) error {
+	if sub.ID == "" {
+		sub.ID = uuid.New().String()
+	}
+	sub.Timestamp = time.Now()
 
-	submission.Timestamp = time.Now()
-	result, err := r.collection.InsertOne(ctx, submission)
-	if err != nil {
-		return err
+	isCorrect := 0
+	if sub.IsCorrect {
+		isCorrect = 1
 	}
-	// Populate the generated ID back to the submission struct
-	if oid, ok := result.InsertedID.(primitive.ObjectID); ok {
-		submission.ID = oid
-	}
-	return nil
+
+	query := `INSERT INTO submissions (id, user_id, team_id, challenge_id, contest_id, flag, is_correct, ip_address, timestamp)
+			  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+
+	_, err := r.db.Exec(query, sub.ID, sub.UserID, sub.TeamID, sub.ChallengeID, sub.ContestID, sub.Flag, isCorrect, sub.IPAddress, sub.Timestamp.Format(time.RFC3339))
+	return err
 }
 
-func (r *SubmissionRepository) FindByChallengeAndUser(challengeID, userID primitive.ObjectID) (*models.Submission, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	var submission models.Submission
-	err := r.collection.FindOne(ctx, bson.M{
-		"challenge_id": challengeID,
-		"user_id":      userID,
-		"is_correct":   true,
-	}).Decode(&submission)
-	if err != nil {
-		return nil, err
+func (r *SubmissionRepository) scanSubmissions(rows *sql.Rows) ([]models.Submission, error) {
+	var subs []models.Submission
+	for rows.Next() {
+		var s models.Submission
+		var isCorrect int
+		var ts string
+		if err := rows.Scan(&s.ID, &s.UserID, &s.TeamID, &s.ChallengeID, &s.ContestID, &s.Flag, &isCorrect, &s.IPAddress, &ts); err != nil {
+			return nil, err
+		}
+		s.IsCorrect = isCorrect == 1
+		s.Timestamp, _ = time.Parse(time.RFC3339, ts)
+		subs = append(subs, s)
 	}
-	return &submission, nil
+	return subs, nil
 }
 
-func (r *SubmissionRepository) FindByChallengeAndTeam(challengeID, teamID primitive.ObjectID) (*models.Submission, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	var submission models.Submission
-	err := r.collection.FindOne(ctx, bson.M{
-		"challenge_id": challengeID,
-		"team_id":      teamID,
-		"is_correct":   true,
-	}).Decode(&submission)
+func (r *SubmissionRepository) FindByChallengeAndUser(challengeID, userID string) (*models.Submission, error) {
+	query := "SELECT id, user_id, team_id, challenge_id, contest_id, flag, is_correct, ip_address, timestamp FROM submissions WHERE challenge_id=? AND user_id=? AND is_correct=1 LIMIT 1"
+	rows, err := r.db.Query(query, challengeID, userID)
 	if err != nil {
 		return nil, err
 	}
-	return &submission, nil
+	defer rows.Close()
+	subs, err := r.scanSubmissions(rows)
+	if err != nil || len(subs) == 0 {
+		return nil, sql.ErrNoRows
+	}
+	return &subs[0], nil
 }
 
-func (r *SubmissionRepository) GetTeamSubmissions(teamID primitive.ObjectID) ([]models.Submission, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	cursor, err := r.collection.Find(ctx, bson.M{
-		"team_id":    teamID,
-		"is_correct": true,
-	})
+func (r *SubmissionRepository) FindByChallengeAndTeam(challengeID, teamID string) (*models.Submission, error) {
+	query := "SELECT id, user_id, team_id, challenge_id, contest_id, flag, is_correct, ip_address, timestamp FROM submissions WHERE challenge_id=? AND team_id=? AND is_correct=1 LIMIT 1"
+	rows, err := r.db.Query(query, challengeID, teamID)
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close(ctx)
+	defer rows.Close()
+	subs, err := r.scanSubmissions(rows)
+	if err != nil || len(subs) == 0 {
+		return nil, sql.ErrNoRows
+	}
+	return &subs[0], nil
+}
 
-	var submissions []models.Submission
-	if err = cursor.All(ctx, &submissions); err != nil {
+func (r *SubmissionRepository) GetTeamSubmissions(teamID string) ([]models.Submission, error) {
+	query := "SELECT id, user_id, team_id, challenge_id, contest_id, flag, is_correct, ip_address, timestamp FROM submissions WHERE team_id=? AND is_correct=1"
+	rows, err := r.db.Query(query, teamID)
+	if err != nil {
 		return nil, err
 	}
-	return submissions, nil
+	defer rows.Close()
+	return r.scanSubmissions(rows)
 }
 
 func (r *SubmissionRepository) GetAllCorrectSubmissions() ([]models.Submission, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	cursor, err := r.collection.Find(ctx, bson.M{"is_correct": true})
+	query := "SELECT id, user_id, team_id, challenge_id, contest_id, flag, is_correct, ip_address, timestamp FROM submissions WHERE is_correct=1"
+	rows, err := r.db.Query(query)
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close(ctx)
-
-	var submissions []models.Submission
-	if err = cursor.All(ctx, &submissions); err != nil {
-		return nil, err
-	}
-	return submissions, nil
+	defer rows.Close()
+	return r.scanSubmissions(rows)
 }
 
-// GetUserCorrectSubmissions returns all correct submissions by a specific user
-func (r *SubmissionRepository) GetUserCorrectSubmissions(userID primitive.ObjectID) ([]models.Submission, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	cursor, err := r.collection.Find(ctx, bson.M{
-		"user_id":    userID,
-		"is_correct": true,
-	})
+func (r *SubmissionRepository) GetUserCorrectSubmissions(userID string) ([]models.Submission, error) {
+	query := "SELECT id, user_id, team_id, challenge_id, contest_id, flag, is_correct, ip_address, timestamp FROM submissions WHERE user_id=? AND is_correct=1"
+	rows, err := r.db.Query(query, userID)
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close(ctx)
-
-	var submissions []models.Submission
-	if err = cursor.All(ctx, &submissions); err != nil {
-		return nil, err
-	}
-	return submissions, nil
+	defer rows.Close()
+	return r.scanSubmissions(rows)
 }
 
-// GetUserSubmissionCount returns the total number of submissions by a user
-func (r *SubmissionRepository) GetUserSubmissionCount(userID primitive.ObjectID) (int64, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	return r.collection.CountDocuments(ctx, bson.M{"user_id": userID})
+func (r *SubmissionRepository) GetUserSubmissionCount(userID string) (int64, error) {
+	var count int64
+	err := r.db.QueryRow("SELECT COUNT(*) FROM submissions WHERE user_id=?", userID).Scan(&count)
+	return count, err
 }
 
-// GetUserCorrectSubmissionCount returns the number of correct submissions by a user
-func (r *SubmissionRepository) GetUserCorrectSubmissionCount(userID primitive.ObjectID) (int64, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	return r.collection.CountDocuments(ctx, bson.M{"user_id": userID, "is_correct": true})
+func (r *SubmissionRepository) GetUserCorrectSubmissionCount(userID string) (int64, error) {
+	var count int64
+	err := r.db.QueryRow("SELECT COUNT(*) FROM submissions WHERE user_id=? AND is_correct=1", userID).Scan(&count)
+	return count, err
 }
 
-// CountSubmissions returns the total number of submissions
 func (r *SubmissionRepository) CountSubmissions() (int64, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	return r.collection.CountDocuments(ctx, bson.M{})
+	var count int64
+	err := r.db.QueryRow("SELECT COUNT(*) FROM submissions").Scan(&count)
+	return count, err
 }
 
-// CountCorrectSubmissions returns the total number of correct submissions
 func (r *SubmissionRepository) CountCorrectSubmissions() (int64, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	return r.collection.CountDocuments(ctx, bson.M{"is_correct": true})
+	var count int64
+	err := r.db.QueryRow("SELECT COUNT(*) FROM submissions WHERE is_correct=1").Scan(&count)
+	return count, err
 }
 
-// GetAllSubmissions returns all submissions
 func (r *SubmissionRepository) GetAllSubmissions() ([]models.Submission, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	cursor, err := r.collection.Find(ctx, bson.M{})
+	query := "SELECT id, user_id, team_id, challenge_id, contest_id, flag, is_correct, ip_address, timestamp FROM submissions"
+	rows, err := r.db.Query(query)
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close(ctx)
-
-	var submissions []models.Submission
-	if err = cursor.All(ctx, &submissions); err != nil {
-		return nil, err
-	}
-	return submissions, nil
+	defer rows.Close()
+	return r.scanSubmissions(rows)
 }
 
-// GetRecentSubmissions returns the most recent submissions, limited by count
 func (r *SubmissionRepository) GetRecentSubmissions(limit int64) ([]models.Submission, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	opts := options.Find().
-		SetSort(bson.D{{Key: "timestamp", Value: -1}}).
-		SetLimit(limit)
-
-	cursor, err := r.collection.Find(ctx, bson.M{}, opts)
+	query := "SELECT id, user_id, team_id, challenge_id, contest_id, flag, is_correct, ip_address, timestamp FROM submissions ORDER BY timestamp DESC LIMIT ?"
+	rows, err := r.db.Query(query, limit)
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close(ctx)
-
-	var submissions []models.Submission
-	if err = cursor.All(ctx, &submissions); err != nil {
-		return nil, err
-	}
-	return submissions, nil
+	defer rows.Close()
+	return r.scanSubmissions(rows)
 }
 
-// GetCorrectSubmissionsSince returns correct submissions since a given time
 func (r *SubmissionRepository) GetCorrectSubmissionsSince(since time.Time) ([]models.Submission, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	filter := bson.M{
-		"is_correct": true,
-		"timestamp":  bson.M{"$gte": since},
-	}
-
-	cursor, err := r.collection.Find(ctx, filter)
+	query := "SELECT id, user_id, team_id, challenge_id, contest_id, flag, is_correct, ip_address, timestamp FROM submissions WHERE is_correct=1 AND timestamp >= ?"
+	rows, err := r.db.Query(query, since.Format(time.RFC3339))
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close(ctx)
-
-	var submissions []models.Submission
-	if err = cursor.All(ctx, &submissions); err != nil {
-		return nil, err
-	}
-	return submissions, nil
+	defer rows.Close()
+	return r.scanSubmissions(rows)
 }
 
-// GetSubmissionsSince returns all submissions since a given time
 func (r *SubmissionRepository) GetSubmissionsSince(since time.Time) ([]models.Submission, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	filter := bson.M{
-		"timestamp": bson.M{"$gte": since},
-	}
-
-	cursor, err := r.collection.Find(ctx, filter)
+	query := "SELECT id, user_id, team_id, challenge_id, contest_id, flag, is_correct, ip_address, timestamp FROM submissions WHERE timestamp >= ?"
+	rows, err := r.db.Query(query, since.Format(time.RFC3339))
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close(ctx)
-
-	var submissions []models.Submission
-	if err = cursor.All(ctx, &submissions); err != nil {
-		return nil, err
-	}
-	return submissions, nil
+	defer rows.Close()
+	return r.scanSubmissions(rows)
 }
 
-// GetCorrectSubmissionsByChallenge returns all correct submissions for a specific challenge
-func (r *SubmissionRepository) GetCorrectSubmissionsByChallenge(challengeID primitive.ObjectID) ([]models.Submission, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	opts := options.Find().SetSort(bson.D{{Key: "timestamp", Value: 1}})
-	cursor, err := r.collection.Find(ctx, bson.M{
-		"challenge_id": challengeID,
-		"is_correct":   true,
-	}, opts)
+func (r *SubmissionRepository) GetCorrectSubmissionsByChallenge(challengeID string) ([]models.Submission, error) {
+	query := "SELECT id, user_id, team_id, challenge_id, contest_id, flag, is_correct, ip_address, timestamp FROM submissions WHERE challenge_id=? AND is_correct=1 ORDER BY timestamp ASC"
+	rows, err := r.db.Query(query, challengeID)
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close(ctx)
-
-	var submissions []models.Submission
-	if err = cursor.All(ctx, &submissions); err != nil {
-		return nil, err
-	}
-	return submissions, nil
+	defer rows.Close()
+	return r.scanSubmissions(rows)
 }
 
-// GetCorrectSubmissionsBefore returns correct submissions before a given time (for scoreboard freeze)
 func (r *SubmissionRepository) GetCorrectSubmissionsBefore(before time.Time) ([]models.Submission, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	filter := bson.M{
-		"is_correct": true,
-		"timestamp":  bson.M{"$lte": before},
-	}
-
-	cursor, err := r.collection.Find(ctx, filter)
+	query := "SELECT id, user_id, team_id, challenge_id, contest_id, flag, is_correct, ip_address, timestamp FROM submissions WHERE is_correct=1 AND timestamp <= ?"
+	rows, err := r.db.Query(query, before.Format(time.RFC3339))
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close(ctx)
-
-	var submissions []models.Submission
-	if err = cursor.All(ctx, &submissions); err != nil {
-		return nil, err
-	}
-	return submissions, nil
+	defer rows.Close()
+	return r.scanSubmissions(rows)
 }

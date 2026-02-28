@@ -3,10 +3,9 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/services"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/utils"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"github.com/gin-gonic/gin"
 )
 
 type HintHandler struct {
@@ -37,7 +36,7 @@ func (h *HintHandler) GetHints(c *gin.Context) {
 		return
 	}
 
-	userID, _ := primitive.ObjectIDFromHex(userIDStr.(string))
+	userID := userIDStr.(string)
 
 	hints, err := h.hintService.GetHintsForChallenge(challengeID, userID)
 	if err != nil {
@@ -73,7 +72,7 @@ func (h *HintHandler) RevealHint(c *gin.Context) {
 		return
 	}
 
-	userID, _ := primitive.ObjectIDFromHex(userIDStr.(string))
+	userID := userIDStr.(string)
 
 	hint, err := h.hintService.RevealHint(challengeID, hintID, userID)
 	if err != nil {

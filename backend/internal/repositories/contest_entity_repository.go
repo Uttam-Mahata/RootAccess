@@ -1,114 +1,104 @@
 package repositories
 
 import (
-	"context"
+	"database/sql"
 	"time"
 
-	"github.com/Uttam-Mahata/RootAccess/backend/internal/database"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"github.com/google/uuid"
 )
 
 type ContestEntityRepository struct {
-	collection *mongo.Collection
+	db *sql.DB
 }
 
-func NewContestEntityRepository() *ContestEntityRepository {
-	return &ContestEntityRepository{
-		collection: database.DB.Collection("contests"),
-	}
+func NewContestEntityRepository(db *sql.DB) *ContestEntityRepository {
+	return &ContestEntityRepository{db: db}
 }
 
-func (r *ContestEntityRepository) Create(contest *models.Contest) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	contest.CreatedAt = time.Now()
-	contest.UpdatedAt = time.Now()
-	res, err := r.collection.InsertOne(ctx, contest)
-	if err != nil {
-		return err
+func (r *ContestEntityRepository) Create(c *models.Contest) error {
+	if c.ID == "" {
+		c.ID = uuid.New().String()
 	}
-	if oid, ok := res.InsertedID.(primitive.ObjectID); ok {
-		contest.ID = oid
+	c.CreatedAt = time.Now()
+	c.UpdatedAt = time.Now()
+
+	isActive := 0
+	if c.IsActive {
+		isActive = 1
 	}
-	return nil
-}
 
-func (r *ContestEntityRepository) Update(contest *models.Contest) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	contest.UpdatedAt = time.Now()
-	_, err := r.collection.ReplaceOne(ctx, bson.M{"_id": contest.ID}, contest)
+	_, err := r.db.Exec(`INSERT INTO contests (id, name, description, start_time, end_time, freeze_time, scoreboard_visibility, is_active, created_at, updated_at) 
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		c.ID, c.Name, c.Description, c.StartTime.Format(time.RFC3339), c.EndTime.Format(time.RFC3339), c.FreezeTime, c.ScoreboardVisibility, isActive, c.CreatedAt.Format(time.RFC3339), c.UpdatedAt.Format(time.RFC3339))
 	return err
 }
 
+func (r *ContestEntityRepository) Update(c *models.Contest) error {
+	c.UpdatedAt = time.Now()
+	isActive := 0
+	if c.IsActive {
+		isActive = 1
+	}
+
+	_, err := r.db.Exec(`UPDATE contests SET name=?, description=?, start_time=?, end_time=?, freeze_time=?, scoreboard_visibility=?, is_active=?, updated_at=? WHERE id=?`,
+		c.Name, c.Description, c.StartTime.Format(time.RFC3339), c.EndTime.Format(time.RFC3339), c.FreezeTime, c.ScoreboardVisibility, isActive, c.UpdatedAt.Format(time.RFC3339), c.ID)
+	return err
+}
+
+func (r *ContestEntityRepository) scanContests(rows *sql.Rows) ([]models.Contest, error) {
+	var cs []models.Contest
+	for rows.Next() {
+		var c models.Contest
+		var start, end, created, updated string
+		var isActive int
+		if err := rows.Scan(&c.ID, &c.Name, &c.Description, &start, &end, &c.FreezeTime, &c.ScoreboardVisibility, &isActive, &created, &updated); err != nil {
+			return nil, err
+		}
+		c.StartTime, _ = time.Parse(time.RFC3339, start)
+		c.EndTime, _ = time.Parse(time.RFC3339, end)
+		c.CreatedAt, _ = time.Parse(time.RFC3339, created)
+		c.UpdatedAt, _ = time.Parse(time.RFC3339, updated)
+		c.IsActive = isActive == 1
+		cs = append(cs, c)
+	}
+	return cs, nil
+}
+
 func (r *ContestEntityRepository) FindByID(id string) (*models.Contest, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	oid, err := primitive.ObjectIDFromHex(id)
+	rows, err := r.db.Query("SELECT id, name, description, start_time, end_time, freeze_time, scoreboard_visibility, is_active, created_at, updated_at FROM contests WHERE id=?", id)
 	if err != nil {
 		return nil, err
 	}
-
-	var contest models.Contest
-	err = r.collection.FindOne(ctx, bson.M{"_id": oid}).Decode(&contest)
-	if err != nil {
-		return nil, err
+	defer rows.Close()
+	cs, err := r.scanContests(rows)
+	if err != nil || len(cs) == 0 {
+		return nil, sql.ErrNoRows
 	}
-	return &contest, nil
+	return &cs[0], nil
 }
 
 func (r *ContestEntityRepository) ListAll() ([]models.Contest, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	opts := options.Find().SetSort(bson.D{{Key: "start_time", Value: -1}})
-	cursor, err := r.collection.Find(ctx, bson.M{}, opts)
+	rows, err := r.db.Query("SELECT id, name, description, start_time, end_time, freeze_time, scoreboard_visibility, is_active, created_at, updated_at FROM contests ORDER BY start_time DESC")
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close(ctx)
-
-	var contests []models.Contest
-	if err = cursor.All(ctx, &contests); err != nil {
-		return nil, err
-	}
-	return contests, nil
+	defer rows.Close()
+	return r.scanContests(rows)
 }
 
-// GetScoreboardContests returns contests that should appear on the scoreboard.
-// This includes contests where is_active=true AND start_time <= now (running + ended).
-// Running contests are listed first, then ended contests sorted by end_time DESC.
 func (r *ContestEntityRepository) GetScoreboardContests() ([]models.Contest, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	now := time.Now()
-	filter := bson.M{
-		"is_active":  true,
-		"start_time": bson.M{"$lte": now},
-	}
-
-	// Sort by end_time descending so we can partition running vs ended in code
-	opts := options.Find().SetSort(bson.D{{Key: "end_time", Value: -1}})
-	cursor, err := r.collection.Find(ctx, filter, opts)
+	rows, err := r.db.Query("SELECT id, name, description, start_time, end_time, freeze_time, scoreboard_visibility, is_active, created_at, updated_at FROM contests WHERE is_active=1 AND start_time <= ? ORDER BY end_time DESC", time.Now().Format(time.RFC3339))
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close(ctx)
-
-	var all []models.Contest
-	if err = cursor.All(ctx, &all); err != nil {
+	defer rows.Close()
+	all, err := r.scanContests(rows)
+	if err != nil {
 		return nil, err
 	}
 
-	// Partition: running contests first, then ended
+	now := time.Now()
 	var running, ended []models.Contest
 	for _, c := range all {
 		if c.IsRunning(now) {
@@ -125,14 +115,6 @@ func (r *ContestEntityRepository) GetScoreboardContests() ([]models.Contest, err
 }
 
 func (r *ContestEntityRepository) Delete(id string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	oid, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return err
-	}
-
-	_, err = r.collection.DeleteOne(ctx, bson.M{"_id": oid})
+	_, err := r.db.Exec("DELETE FROM contests WHERE id=?", id)
 	return err
 }

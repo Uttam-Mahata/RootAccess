@@ -3,9 +3,9 @@ package middleware
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/services"
+	"github.com/gin-gonic/gin"
 )
 
 // ContestTimeMiddleware validates that the contest is running before allowing submissions

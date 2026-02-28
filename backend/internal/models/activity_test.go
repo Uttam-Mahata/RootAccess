@@ -2,13 +2,12 @@ package models
 
 import (
 	"testing"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"github.com/google/uuid"
 )
 
 func TestUserActivity(t *testing.T) {
 	activity := UserActivity{
-		UserID:      primitive.NewObjectID(),
+		UserID:      uuid.New().String(),
 		Username:    "testuser",
 		TotalSolves: 5,
 		TotalPoints: 500,

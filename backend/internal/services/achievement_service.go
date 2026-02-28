@@ -5,7 +5,6 @@ import (
 
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type AchievementService struct {
@@ -27,8 +26,8 @@ func NewAchievementService(
 }
 
 // CheckAndAwardAchievements checks after a solve if any new achievements should be awarded
-func (s *AchievementService) CheckAndAwardAchievements(userID, teamID primitive.ObjectID, challengeID primitive.ObjectID) {
-	challenge, err := s.challengeRepo.GetChallengeByID(challengeID.Hex())
+func (s *AchievementService) CheckAndAwardAchievements(userID, teamID string, challengeID string) {
+	challenge, err := s.challengeRepo.GetChallengeByID(challengeID)
 	if err != nil {
 		return
 	}
@@ -42,17 +41,17 @@ func (s *AchievementService) CheckAndAwardAchievements(userID, teamID primitive.
 }
 
 // GetUserAchievements returns all achievements for a user
-func (s *AchievementService) GetUserAchievements(userID primitive.ObjectID) ([]models.Achievement, error) {
+func (s *AchievementService) GetUserAchievements(userID string) ([]models.Achievement, error) {
 	return s.achievementRepo.GetByUserID(userID)
 }
 
 // GetTeamAchievements returns all achievements for a team
-func (s *AchievementService) GetTeamAchievements(teamID primitive.ObjectID) ([]models.Achievement, error) {
+func (s *AchievementService) GetTeamAchievements(teamID string) ([]models.Achievement, error) {
 	return s.achievementRepo.GetByTeamID(teamID)
 }
 
 // checkFirstBlood awards the First Blood achievement if this solve was the first for the challenge
-func (s *AchievementService) checkFirstBlood(userID, teamID primitive.ObjectID, challenge *models.Challenge) {
+func (s *AchievementService) checkFirstBlood(userID, teamID string, challenge *models.Challenge) {
 	if challenge.SolveCount != 1 {
 		return
 	}
@@ -75,7 +74,7 @@ func (s *AchievementService) checkFirstBlood(userID, teamID primitive.ObjectID, 
 }
 
 // checkCategoryMaster awards the Category Master achievement if user has solved all challenges in a category
-func (s *AchievementService) checkCategoryMaster(userID, teamID primitive.ObjectID, category string) {
+func (s *AchievementService) checkCategoryMaster(userID, teamID string, category string) {
 	exists, err := s.achievementRepo.ExistsForCategory(userID, models.AchievementCategoryMaster, category)
 	if err != nil || exists {
 		return
@@ -102,7 +101,7 @@ func (s *AchievementService) checkCategoryMaster(userID, teamID primitive.Object
 		return
 	}
 
-	solvedSet := make(map[primitive.ObjectID]bool)
+	solvedSet := make(map[string]bool)
 	for _, sub := range submissions {
 		solvedSet[sub.ChallengeID] = true
 	}
@@ -126,7 +125,7 @@ func (s *AchievementService) checkCategoryMaster(userID, teamID primitive.Object
 }
 
 // checkNightOwl awards the Night Owl achievement if the solve happened between midnight and 5 AM
-func (s *AchievementService) checkNightOwl(userID, teamID primitive.ObjectID, challengeID primitive.ObjectID, solveTime time.Time) {
+func (s *AchievementService) checkNightOwl(userID, teamID string, challengeID string, solveTime time.Time) {
 	hour := solveTime.Hour()
 	if hour >= 5 {
 		return
@@ -150,7 +149,7 @@ func (s *AchievementService) checkNightOwl(userID, teamID primitive.ObjectID, ch
 }
 
 // checkSpeedDemon awards the Speed Demon achievement if the user solved 5+ challenges in a single day
-func (s *AchievementService) checkSpeedDemon(userID, teamID primitive.ObjectID, solveTime time.Time) {
+func (s *AchievementService) checkSpeedDemon(userID, teamID string, solveTime time.Time) {
 	exists, err := s.achievementRepo.Exists(userID, models.AchievementSpeedDemon)
 	if err != nil || exists {
 		return

@@ -1,24 +1,18 @@
 package models
 
-import (
-	"go.mongodb.org/mongo-driver/bson/primitive"
-)
-
-// Hint represents a hint for a challenge that costs points to reveal
 type Hint struct {
-	ID          primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	ChallengeID primitive.ObjectID `bson:"challenge_id" json:"challenge_id"`
-	Content     string             `bson:"content" json:"content"`
-	Cost        int                `bson:"cost" json:"cost"` // Points deducted when revealed
-	Order       int                `bson:"order" json:"order"` // Display order (1, 2, 3...)
+	ID          string `json:"id"`
+	ChallengeID string `json:"challenge_id"`
+	Content     string `json:"content"`
+	Cost        int    `json:"cost"`
+	Order       int    `json:"order"`
 }
 
-// HintReveal tracks which hints have been revealed by which users/teams
 type HintReveal struct {
-	ID          primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	HintID      primitive.ObjectID `bson:"hint_id" json:"hint_id"`
-	ChallengeID primitive.ObjectID `bson:"challenge_id" json:"challenge_id"`
-	UserID      primitive.ObjectID `bson:"user_id" json:"user_id"`
-	TeamID      primitive.ObjectID `bson:"team_id,omitempty" json:"team_id,omitempty"`
-	Cost        int                `bson:"cost" json:"cost"`
+	ID          string `json:"id"`
+	HintID      string `json:"hint_id"`
+	ChallengeID string `json:"challenge_id"`
+	UserID      string `json:"user_id"`
+	TeamID      string `json:"team_id,omitempty"`
+	Cost        int    `json:"cost"`
 }

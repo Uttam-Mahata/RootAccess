@@ -6,7 +6,6 @@ import (
 
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type solveInfo struct {
@@ -38,8 +37,8 @@ func NewActivityService(
 	}
 }
 
-func (s *ActivityService) GetUserActivity(userID primitive.ObjectID) (*models.UserActivity, error) {
-	user, err := s.userRepo.FindByID(userID.Hex())
+func (s *ActivityService) GetUserActivity(userID string) (*models.UserActivity, error) {
+	user, err := s.userRepo.FindByID(userID)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +55,7 @@ func (s *ActivityService) GetUserActivity(userID primitive.ObjectID) (*models.Us
 
 	challengeMap := make(map[string]*models.Challenge)
 	for i := range challenges {
-		challengeMap[challenges[i].ID.Hex()] = &challenges[i]
+		challengeMap[challenges[i].ID] = &challenges[i]
 	}
 
 	// Calculate total points and build recent solves
@@ -67,7 +66,7 @@ func (s *ActivityService) GetUserActivity(userID primitive.ObjectID) (*models.Us
 	solves := make([]solveInfo, 0, len(correctSubs))
 
 	for _, sub := range correctSubs {
-		c, ok := challengeMap[sub.ChallengeID.Hex()]
+		c, ok := challengeMap[sub.ChallengeID]
 		if !ok {
 			continue
 		}

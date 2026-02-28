@@ -7,7 +7,6 @@ import (
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/utils"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type ChallengeService struct {
@@ -93,13 +92,17 @@ type SubmitFlagResult struct {
 	Message       string `json:"message,omitempty"`
 }
 
-func (s *ChallengeService) SubmitFlag(userID primitive.ObjectID, challengeID string, flag string, clientIP string, contestID *primitive.ObjectID) (*SubmitFlagResult, error) {
+func (s *ChallengeService) SubmitFlag(userID string, challengeID string, flag string, clientIP string, contestID *string) (*SubmitFlagResult, error) {
+	cID := ""
+	if contestID != nil {
+		cID = *contestID
+	}
 	challenge, err := s.challengeRepo.GetChallengeByID(challengeID)
 	if err != nil {
 		return nil, err
 	}
 
-	cid, _ := primitive.ObjectIDFromHex(challengeID)
+	cid := challengeID
 
 	result := &SubmitFlagResult{}
 
@@ -110,14 +113,14 @@ func (s *ChallengeService) SubmitFlag(userID primitive.ObjectID, challengeID str
 		result.AlreadySolved = true
 		result.Points = challenge.CurrentPoints()
 		result.SolveCount = challenge.SolveCount
-		
+
 		// Still return team info if they are in one
-		team, _ := s.teamRepo.FindTeamByMemberID(userID.Hex())
+		team, _ := s.teamRepo.FindTeamByMemberID(userID)
 		if team != nil {
-			result.TeamID = team.ID.Hex()
+			result.TeamID = team.ID
 			result.TeamName = team.Name
 		}
-		
+
 		return result, nil
 	}
 
@@ -126,10 +129,10 @@ func (s *ChallengeService) SubmitFlag(userID primitive.ObjectID, challengeID str
 	result.IsCorrect = isCorrect
 
 	// Check if user is in a team
-	team, _ := s.teamRepo.FindTeamByMemberID(userID.Hex())
+	team, _ := s.teamRepo.FindTeamByMemberID(userID)
 
 	if team != nil {
-		result.TeamID = team.ID.Hex()
+		result.TeamID = team.ID
 		result.TeamName = team.Name
 
 		// 2. Check if TEAM already solved it
@@ -146,7 +149,7 @@ func (s *ChallengeService) SubmitFlag(userID primitive.ObjectID, challengeID str
 			UserID:      userID,
 			TeamID:      team.ID,
 			ChallengeID: cid,
-			ContestID:   contestID,
+			ContestID:   cID,
 			Flag:        flagHash,
 			IsCorrect:   isCorrect,
 			IPAddress:   clientIP,
@@ -165,18 +168,18 @@ func (s *ChallengeService) SubmitFlag(userID primitive.ObjectID, challengeID str
 			if !teamAlreadySolved {
 				// Increment global solve count (unique teams/individuals)
 				s.challengeRepo.IncrementSolveCount(challengeID)
-				
+
 				// Refresh challenge to get updated solve count
 				challenge, _ = s.challengeRepo.GetChallengeByID(challengeID)
-				
+
 				// Calculate dynamic points
 				points := challenge.CurrentPoints()
 				result.Points = points
 				result.SolveCount = challenge.SolveCount
-				
+
 				// Award points to team
-				s.teamRepo.UpdateTeamScore(team.ID.Hex(), points)
-				
+				s.teamRepo.UpdateTeamScore(team.ID, points)
+
 				result.Message = "Flag correct! Points awarded to team " + team.Name
 			} else {
 				// Team already solved, but this user just solved it
@@ -197,7 +200,7 @@ func (s *ChallengeService) SubmitFlag(userID primitive.ObjectID, challengeID str
 	submission := &models.Submission{
 		UserID:      userID,
 		ChallengeID: cid,
-		ContestID:   contestID,
+		ContestID:   cID,
 		Flag:        flagHash,
 		IsCorrect:   isCorrect,
 		IPAddress:   clientIP,
@@ -211,10 +214,10 @@ func (s *ChallengeService) SubmitFlag(userID primitive.ObjectID, challengeID str
 	if isCorrect {
 		// Increment solve count
 		s.challengeRepo.IncrementSolveCount(challengeID)
-		
+
 		// Refresh challenge to get updated solve count
 		challenge, _ = s.challengeRepo.GetChallengeByID(challengeID)
-		
+
 		result.Points = challenge.CurrentPoints()
 		result.SolveCount = challenge.SolveCount
 		s.invalidateScoreboardCache()

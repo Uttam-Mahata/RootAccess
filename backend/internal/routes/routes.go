@@ -7,8 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gin-gonic/gin"
-	"github.com/redis/go-redis/v9"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/config"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/database"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/handlers"
@@ -17,7 +15,9 @@ import (
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/services"
 	websocketPkg "github.com/Uttam-Mahata/RootAccess/backend/internal/websocket"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/redis/go-redis/v9"
 )
 
 func SetupRouter(cfg *config.Config) *gin.Engine {
@@ -42,11 +42,11 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 
 	// CORS
 	allowedOrigins := map[string]bool{
-		cfg.FrontendURL:                true,
-		"https://rootaccessctf.web.app": true,
-		"https://dev.rootaccess.live":   true,
-		"https://rootaccess.live":       true,
-		"https://ctf.rootaccess.live":   true,
+		cfg.FrontendURL:                   true,
+		"https://rootaccessctf.web.app":   true,
+		"https://dev.rootaccess.live":     true,
+		"https://rootaccess.live":         true,
+		"https://ctf.rootaccess.live":     true,
 		"https://ctfapis.rootaccess.live": true,
 	}
 
@@ -79,25 +79,23 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	})
 
 	// Repositories
-	userRepo := repositories.NewUserRepository()
-	challengeRepo := repositories.NewChallengeRepository()
-	submissionRepo := repositories.NewSubmissionRepository()
-	teamRepo := repositories.NewTeamRepository()
-	teamInvitationRepo := repositories.NewTeamInvitationRepository()
-	notificationRepo := repositories.NewNotificationRepository()
-	hintRepo := repositories.NewHintRepository()
-	contestRepo := repositories.NewContestRepository()
-	contestEntityRepo := repositories.NewContestEntityRepository()
-	contestRoundRepo := repositories.NewContestRoundRepository()
-	roundChallengeRepo := repositories.NewRoundChallengeRepository()
-	writeupRepo := repositories.NewWriteupRepository()
-	auditLogRepo := repositories.NewAuditLogRepository()
-	achievementRepo := repositories.NewAchievementRepository()
-	scoreAdjustmentRepo := repositories.NewScoreAdjustmentRepository()
-	teamContestRegistrationRepo := repositories.NewTeamContestRegistrationRepository()
-	if err := teamContestRegistrationRepo.CreateIndexes(); err != nil {
-		log.Printf("warning: could not create team_contest_registrations indexes: %v", err)
-	}
+	userRepo := repositories.NewUserRepository(database.TursoDB)
+	challengeRepo := repositories.NewChallengeRepository(database.TursoDB)
+	submissionRepo := repositories.NewSubmissionRepository(database.TursoDB)
+	teamRepo := repositories.NewTeamRepository(database.TursoDB)
+	teamInvitationRepo := repositories.NewTeamInvitationRepository(database.TursoDB)
+	notificationRepo := repositories.NewNotificationRepository(database.TursoDB)
+	hintRepo := repositories.NewHintRepository(database.TursoDB)
+	contestRepo := repositories.NewContestRepository(database.TursoDB)
+	contestEntityRepo := repositories.NewContestEntityRepository(database.TursoDB)
+	contestRoundRepo := repositories.NewContestRoundRepository(database.TursoDB)
+	roundChallengeRepo := repositories.NewRoundChallengeRepository(database.TursoDB)
+	writeupRepo := repositories.NewWriteupRepository(database.TursoDB)
+	auditLogRepo := repositories.NewAuditLogRepository(database.TursoDB)
+	achievementRepo := repositories.NewAchievementRepository(database.TursoDB)
+	scoreAdjustmentRepo := repositories.NewScoreAdjustmentRepository(database.TursoDB)
+	teamContestRegistrationRepo := repositories.NewTeamContestRegistrationRepository(database.TursoDB)
+	// Indexes removed, Turso schema handles it
 
 	// Services
 	emailService := services.NewEmailService(cfg)
@@ -257,12 +255,12 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 		protected := rg.Group("/")
 		protected.Use(middleware.AuthMiddleware(cfg))
 		{
-					protected.GET("/ws", wsHandler.HandleWebSocket)
-					protected.POST("/auth/change-password", authHandler.ChangePassword)
-					protected.POST("/auth/update-username", authHandler.UpdateUsername)
-					protected.GET("/auth/token", authHandler.GetToken)
-					protected.GET("/challenges", challengeHandler.GetAllChallenges)
-			
+			protected.GET("/ws", wsHandler.HandleWebSocket)
+			protected.POST("/auth/change-password", authHandler.ChangePassword)
+			protected.POST("/auth/update-username", authHandler.UpdateUsername)
+			protected.GET("/auth/token", authHandler.GetToken)
+			protected.GET("/challenges", challengeHandler.GetAllChallenges)
+
 			protected.GET("/challenges/:id", challengeHandler.GetChallengeByID)
 			protected.GET("/challenges/:id/solves", challengeHandler.GetChallengeSolves)
 			protected.POST("/challenges/:id/submit", middleware.RateLimitMiddleware(5, time.Minute), challengeHandler.SubmitFlag)

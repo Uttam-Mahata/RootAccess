@@ -1,44 +1,34 @@
 package models
 
-import (
-	"time"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
-)
+import "time"
 
 type User struct {
-	ID                  primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	Username            string             `bson:"username" json:"username"`
-	Email               string             `bson:"email" json:"email"`
-	PasswordHash        string             `bson:"password_hash" json:"-"`
-	Role                string             `bson:"role" json:"role"` // "admin" or "user"
-	EmailVerified       bool               `bson:"email_verified" json:"email_verified"`
-	VerificationToken   string             `bson:"verification_token,omitempty" json:"-"`
-	VerificationExpiry  time.Time          `bson:"verification_expiry,omitempty" json:"-"`
-	ResetPasswordToken  string             `bson:"reset_password_token,omitempty" json:"-"`
-	ResetPasswordExpiry time.Time          `bson:"reset_password_expiry,omitempty" json:"-"`
-	OAuth               *OAuth             `bson:"oauth,omitempty" json:"oauth,omitempty"`
-	Status              string             `bson:"status" json:"status"` // "active", "banned", "suspended"
-	BanReason           string             `bson:"ban_reason,omitempty" json:"ban_reason,omitempty"`
-	SuspendedUntil      *time.Time         `bson:"suspended_until,omitempty" json:"suspended_until,omitempty"`
-	LastIP              string             `bson:"last_ip,omitempty" json:"last_ip,omitempty"`
-	IPHistory           []IPRecord         `bson:"ip_history,omitempty" json:"ip_history,omitempty"`
-	LastLoginAt         *time.Time         `bson:"last_login_at,omitempty" json:"last_login_at,omitempty"`
-	CreatedAt           time.Time          `bson:"created_at" json:"created_at"`
-	UpdatedAt           time.Time          `bson:"updated_at" json:"updated_at"`
+	ID                  string    `json:"id"`
+	Username            string    `json:"username"`
+	Email               string    `json:"email"`
+	PasswordHash        string    `json:"-"`
+	Role                string    `json:"role"`
+	EmailVerified       bool      `json:"email_verified"`
+	VerificationToken   string    `json:"-"`
+	VerificationExpiry  string    `json:"-"`
+	ResetPasswordToken  string    `json:"-"`
+	ResetPasswordExpiry string    `json:"-"`
+	OAuthProvider       string    `json:"oauth_provider,omitempty"`
+	OAuthProviderID     string    `json:"oauth_provider_id,omitempty"`
+	OAuthAccessToken    string    `json:"-"`
+	OAuthRefreshToken   string    `json:"-"`
+	OAuthExpiresAt      string    `json:"-"`
+	Status              string    `json:"status"`
+	BanReason           string    `json:"ban_reason,omitempty"`
+	SuspendedUntil      string    `json:"suspended_until,omitempty"`
+	LastIP              string    `json:"last_ip,omitempty"`
+	LastLoginAt         string    `json:"last_login_at,omitempty"`
+	CreatedAt           time.Time `json:"created_at"`
+	UpdatedAt           time.Time `json:"updated_at"`
 }
 
-// IPRecord represents a single IP address record with timestamp
 type IPRecord struct {
-	IP        string    `bson:"ip" json:"ip"`
-	Timestamp time.Time `bson:"timestamp" json:"timestamp"`
-	Action    string    `bson:"action,omitempty" json:"action,omitempty"` // "login", "submission", etc.
-}
-
-type OAuth struct {
-	Provider     string    `bson:"provider" json:"provider"` // "google", "github", etc.
-	ProviderID   string    `bson:"provider_id" json:"provider_id"`
-	AccessToken  string    `bson:"access_token,omitempty" json:"-"`
-	RefreshToken string    `bson:"refresh_token,omitempty" json:"-"`
-	ExpiresAt    time.Time `bson:"expires_at,omitempty" json:"-"`
+	IP        string    `json:"ip"`
+	Timestamp time.Time `json:"timestamp"`
+	Action    string    `json:"action,omitempty"`
 }
