@@ -10,20 +10,23 @@ import (
 )
 
 type ChallengeService struct {
-	challengeRepo  *repositories.ChallengeRepository
-	submissionRepo *repositories.SubmissionRepository
-	teamRepo       *repositories.TeamRepository
+	challengeRepo    *repositories.ChallengeRepository
+	submissionRepo   *repositories.SubmissionRepository
+	teamRepo         *repositories.TeamRepository
+	contestSolveRepo *repositories.ContestSolveRepository
 }
 
 func NewChallengeService(
 	challengeRepo *repositories.ChallengeRepository,
 	submissionRepo *repositories.SubmissionRepository,
 	teamRepo *repositories.TeamRepository,
+	contestSolveRepo *repositories.ContestSolveRepository,
 ) *ChallengeService {
 	return &ChallengeService{
-		challengeRepo:  challengeRepo,
-		submissionRepo: submissionRepo,
-		teamRepo:       teamRepo,
+		challengeRepo:    challengeRepo,
+		submissionRepo:   submissionRepo,
+		teamRepo:         teamRepo,
+		contestSolveRepo: contestSolveRepo,
 	}
 }
 
@@ -102,19 +105,28 @@ func (s *ChallengeService) SubmitFlag(userID string, challengeID string, flag st
 		return nil, err
 	}
 
-	cid := challengeID
-
 	result := &SubmitFlagResult{}
 
-	// 1. Check if CURRENT user already solved it
-	existingUserSolve, _ := s.submissionRepo.FindByChallengeAndUser(cid, userID)
+	// 1. Check if CURRENT user already solved it IN THIS CONTEST
+	var existingUserSolve *models.Submission
+	if cID != "" {
+		existingUserSolve, _ = s.submissionRepo.FindByChallengeAndUserInContest(challengeID, userID, cID)
+	} else {
+		existingUserSolve, _ = s.submissionRepo.FindByChallengeAndUser(challengeID, userID)
+	}
 	if existingUserSolve != nil {
 		result.IsCorrect = true
 		result.AlreadySolved = true
-		result.Points = challenge.CurrentPoints()
-		result.SolveCount = challenge.SolveCount
+		// Return contest-specific points if in a contest
+		if cID != "" && s.contestSolveRepo != nil {
+			contestSolves, _ := s.contestSolveRepo.GetContestSolveCount(cID, challengeID)
+			result.Points = challenge.PointsForSolveCount(contestSolves)
+			result.SolveCount = contestSolves
+		} else {
+			result.Points = challenge.CurrentPoints()
+			result.SolveCount = challenge.SolveCount
+		}
 
-		// Still return team info if they are in one
 		team, _ := s.teamRepo.FindTeamByMemberID(userID)
 		if team != nil {
 			result.TeamID = team.ID
@@ -135,11 +147,18 @@ func (s *ChallengeService) SubmitFlag(userID string, challengeID string, flag st
 		result.TeamID = team.ID
 		result.TeamName = team.Name
 
-		// 2. Check if TEAM already solved it
+		// 2. Check if TEAM already solved it IN THIS CONTEST
 		teamAlreadySolved := false
-		existingTeamSolve, _ := s.submissionRepo.FindByChallengeAndTeam(cid, team.ID)
-		if existingTeamSolve != nil {
-			teamAlreadySolved = true
+		if cID != "" {
+			existingTeamSolve, _ := s.submissionRepo.FindByChallengeAndTeamInContest(challengeID, team.ID, cID)
+			if existingTeamSolve != nil {
+				teamAlreadySolved = true
+			}
+		} else {
+			existingTeamSolve, _ := s.submissionRepo.FindByChallengeAndTeam(challengeID, team.ID)
+			if existingTeamSolve != nil {
+				teamAlreadySolved = true
+			}
 		}
 
 		// Hash the submitted flag for storage
@@ -148,7 +167,7 @@ func (s *ChallengeService) SubmitFlag(userID string, challengeID string, flag st
 		submission := &models.Submission{
 			UserID:      userID,
 			TeamID:      team.ID,
-			ChallengeID: cid,
+			ChallengeID: challengeID,
 			ContestID:   cID,
 			Flag:        flagHash,
 			IsCorrect:   isCorrect,
@@ -161,31 +180,43 @@ func (s *ChallengeService) SubmitFlag(userID string, challengeID string, flag st
 		}
 
 		if isCorrect {
-			// Invalidate cache since scoreboard will change (at least individual)
 			s.invalidateScoreboardCache()
 
-			// If team hasn't solved it before, increment solve count and award points
 			if !teamAlreadySolved {
-				// Increment global solve count (unique teams/individuals)
+				// Increment global solve count
 				s.challengeRepo.IncrementSolveCount(challengeID)
 
-				// Refresh challenge to get updated solve count
-				challenge, _ = s.challengeRepo.GetChallengeByID(challengeID)
+				// Also increment contest-specific solve count
+				if cID != "" && s.contestSolveRepo != nil {
+					s.contestSolveRepo.IncrementContestSolveCount(cID, challengeID)
+				}
 
-				// Calculate dynamic points
-				points := challenge.CurrentPoints()
-				result.Points = points
-				result.SolveCount = challenge.SolveCount
+				// Use contest-specific solve count for point calculation
+				if cID != "" && s.contestSolveRepo != nil {
+					contestSolves, _ := s.contestSolveRepo.GetContestSolveCount(cID, challengeID)
+					points := challenge.PointsForSolveCount(contestSolves)
+					result.Points = points
+					result.SolveCount = contestSolves
+				} else {
+					challenge, _ = s.challengeRepo.GetChallengeByID(challengeID)
+					result.Points = challenge.CurrentPoints()
+					result.SolveCount = challenge.SolveCount
+				}
 
-				// Award points to team
-				s.teamRepo.UpdateTeamScore(team.ID, points)
+				// Award points to team (global score still tracks cumulative)
+				s.teamRepo.UpdateTeamScore(team.ID, result.Points)
 
 				result.Message = "Flag correct! Points awarded to team " + team.Name
 			} else {
-				// Team already solved, but this user just solved it
-				result.AlreadySolved = true // From team perspective
-				result.Points = challenge.CurrentPoints()
-				result.SolveCount = challenge.SolveCount
+				result.AlreadySolved = true
+				if cID != "" && s.contestSolveRepo != nil {
+					contestSolves, _ := s.contestSolveRepo.GetContestSolveCount(cID, challengeID)
+					result.Points = challenge.PointsForSolveCount(contestSolves)
+					result.SolveCount = contestSolves
+				} else {
+					result.Points = challenge.CurrentPoints()
+					result.SolveCount = challenge.SolveCount
+				}
 				result.Message = "Flag correct! (Team already solved)"
 			}
 		}
@@ -194,12 +225,11 @@ func (s *ChallengeService) SubmitFlag(userID string, challengeID string, flag st
 	}
 
 	// Individual submission (no team)
-	// Hash the submitted flag for storage
 	flagHash := utils.HashFlag(flag)
 
 	submission := &models.Submission{
 		UserID:      userID,
-		ChallengeID: cid,
+		ChallengeID: challengeID,
 		ContestID:   cID,
 		Flag:        flagHash,
 		IsCorrect:   isCorrect,
@@ -212,14 +242,18 @@ func (s *ChallengeService) SubmitFlag(userID string, challengeID string, flag st
 	}
 
 	if isCorrect {
-		// Increment solve count
 		s.challengeRepo.IncrementSolveCount(challengeID)
 
-		// Refresh challenge to get updated solve count
-		challenge, _ = s.challengeRepo.GetChallengeByID(challengeID)
-
-		result.Points = challenge.CurrentPoints()
-		result.SolveCount = challenge.SolveCount
+		if cID != "" && s.contestSolveRepo != nil {
+			s.contestSolveRepo.IncrementContestSolveCount(cID, challengeID)
+			contestSolves, _ := s.contestSolveRepo.GetContestSolveCount(cID, challengeID)
+			result.Points = challenge.PointsForSolveCount(contestSolves)
+			result.SolveCount = contestSolves
+		} else {
+			challenge, _ = s.challengeRepo.GetChallengeByID(challengeID)
+			result.Points = challenge.CurrentPoints()
+			result.SolveCount = challenge.SolveCount
+		}
 		s.invalidateScoreboardCache()
 	}
 

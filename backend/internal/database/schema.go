@@ -234,6 +234,13 @@ func BootstrapSchema(db *sql.DB) {
 			registered_at TEXT NOT NULL,
 			UNIQUE(team_id, contest_id)
 		);`,
+		// Contest Challenge Solves (per-contest solve counts for dynamic scoring isolation)
+		`CREATE TABLE IF NOT EXISTS contest_challenge_solves (
+			contest_id TEXT NOT NULL REFERENCES contests(id) ON DELETE CASCADE,
+			challenge_id TEXT NOT NULL REFERENCES challenges(id) ON DELETE CASCADE,
+			solve_count INTEGER NOT NULL DEFAULT 0,
+			PRIMARY KEY (contest_id, challenge_id)
+		);`,
 		// User IP History
 		`CREATE TABLE IF NOT EXISTS user_ip_history (
 			user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
