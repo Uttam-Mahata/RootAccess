@@ -345,7 +345,7 @@ func (h *AuthHandler) GetMe(c *gin.Context) {
 	claims, _ := token.Claims.(jwt.MapClaims)
 	userID, _ := claims["user_id"].(string)
 	if userID != "" {
-		go h.authService.RecordUserLoginIP(userID, c.ClientIP())
+		go h.authService.RecordUserLoginIP(userID, utils.GetClientIP(c))
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"authenticated": true,
