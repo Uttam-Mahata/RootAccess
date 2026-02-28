@@ -10,7 +10,6 @@ import (
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/database"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type TeamService struct {
@@ -87,7 +86,7 @@ func (s *TeamService) CreateTeam(leaderID, name, description string) (*models.Te
 		return nil, errors.New("failed to generate invite code")
 	}
 
-	leaderObjID, err := primitive.ObjectIDFromHex(leaderID)
+	leaderObjID := leaderID
 	if err != nil {
 		return nil, errors.New("invalid user ID")
 	}
@@ -96,7 +95,6 @@ func (s *TeamService) CreateTeam(leaderID, name, description string) (*models.Te
 		Name:        name,
 		Description: description,
 		LeaderID:    leaderObjID,
-		MemberIDs:   []primitive.ObjectID{leaderObjID}, // Leader is also a member
 		InviteCode:  inviteCode,
 		Score:       0,
 	}
@@ -109,7 +107,7 @@ func (s *TeamService) CreateTeam(leaderID, name, description string) (*models.Te
 }
 
 // Helper to calculate real-time dynamic score for a team
-func (s *TeamService) calculateTeamScore(teamID primitive.ObjectID) int {
+func (s *TeamService) calculateTeamScore(teamID string) int {
 	// Get all correct submissions for the team
 	submissions, err := s.submissionRepo.GetTeamSubmissions(teamID)
 	if err != nil {
@@ -125,7 +123,7 @@ func (s *TeamService) calculateTeamScore(teamID primitive.ObjectID) int {
 	seenChallenges := make(map[string]bool)
 
 	for _, sub := range submissions {
-		challengeID := sub.ChallengeID.Hex()
+		challengeID := sub.ChallengeID
 		if seenChallenges[challengeID] {
 			continue
 		}
@@ -147,10 +145,10 @@ func (s *TeamService) GetTeamByID(teamID string) (*models.Team, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Recalculate score dynamically
 	team.Score = s.calculateTeamScore(team.ID)
-	
+
 	return team, nil
 }
 
@@ -174,7 +172,7 @@ func (s *TeamService) UpdateTeam(teamID, leaderID, name, description string) (*m
 		return nil, errors.New("team not found")
 	}
 
-	if team.LeaderID.Hex() != leaderID {
+	if team.LeaderID != leaderID {
 		return nil, errors.New("only the team leader can update the team")
 	}
 
@@ -204,11 +202,12 @@ func (s *TeamService) DeleteTeam(teamID, leaderID string) error {
 		return errors.New("team not found")
 	}
 
-	if team.LeaderID.Hex() != leaderID {
+	if team.LeaderID != leaderID {
 		return errors.New("only the team leader can delete the team")
 	}
 
-	if len(team.MemberIDs) >= models.MinTeamSize {
+	count, _ := s.teamRepo.GetTeamMemberCount(team.ID)
+	if count >= models.MinTeamSize {
 		return errors.New("cannot delete team with 2 or more members")
 	}
 
@@ -227,12 +226,13 @@ func (s *TeamService) InviteByUsername(teamID, inviterID, username string) (*mod
 		return nil, errors.New("team not found")
 	}
 
-	if team.LeaderID.Hex() != inviterID {
+	if team.LeaderID != inviterID {
 		return nil, errors.New("only the team leader can invite members")
 	}
 
 	// Check team size
-	if len(team.MemberIDs) >= models.MaxTeamSize {
+	count, _ := s.teamRepo.GetTeamMemberCount(team.ID)
+	if count >= models.MaxTeamSize {
 		return nil, errors.New("team is already at maximum capacity")
 	}
 
@@ -243,13 +243,13 @@ func (s *TeamService) InviteByUsername(teamID, inviterID, username string) (*mod
 	}
 
 	// Check if user is already in a team
-	existingTeam, _ := s.teamRepo.FindTeamByMemberID(invitee.ID.Hex())
+	existingTeam, _ := s.teamRepo.FindTeamByMemberID(invitee.ID)
 	if existingTeam != nil {
 		return nil, errors.New("user is already in a team")
 	}
 
 	// Check if there's already a pending invitation
-	hasPending, _ := s.invitationRepo.HasPendingInvitation(teamID, invitee.ID.Hex(), "")
+	hasPending, _ := s.invitationRepo.HasPendingInvitation(teamID, invitee.ID, "")
 	if hasPending {
 		return nil, errors.New("invitation already sent to this user")
 	}
@@ -288,12 +288,13 @@ func (s *TeamService) InviteByEmail(teamID, inviterID, email string) (*models.Te
 		return nil, errors.New("team not found")
 	}
 
-	if team.LeaderID.Hex() != inviterID {
+	if team.LeaderID != inviterID {
 		return nil, errors.New("only the team leader can invite members")
 	}
 
 	// Check team size
-	if len(team.MemberIDs) >= models.MaxTeamSize {
+	count, _ := s.teamRepo.GetTeamMemberCount(team.ID)
+	if count >= models.MaxTeamSize {
 		return nil, errors.New("team is already at maximum capacity")
 	}
 
@@ -301,7 +302,7 @@ func (s *TeamService) InviteByEmail(teamID, inviterID, email string) (*models.Te
 	invitee, _ := s.userRepo.FindByEmail(email)
 	if invitee != nil {
 		// Check if user is already in a team
-		existingTeam, _ := s.teamRepo.FindTeamByMemberID(invitee.ID.Hex())
+		existingTeam, _ := s.teamRepo.FindTeamByMemberID(invitee.ID)
 		if existingTeam != nil {
 			return nil, errors.New("user is already in a team")
 		}
@@ -375,19 +376,20 @@ func (s *TeamService) JoinByInviteCode(userID, inviteCode string) (*models.Team,
 	}
 
 	// Check team size
-	if len(team.MemberIDs) >= models.MaxTeamSize {
+	count, _ := s.teamRepo.GetTeamMemberCount(team.ID)
+	if count >= models.MaxTeamSize {
 		return nil, errors.New("team is already at maximum capacity")
 	}
 
 	// Add user to team
-	if err := s.teamRepo.AddMemberToTeam(team.ID.Hex(), userID); err != nil {
+	if err := s.teamRepo.AddMemberToTeam(team.ID, userID); err != nil {
 		return nil, err
 	}
 
 	s.invalidateScoreboardCache()
 
 	// Refresh team data
-	return s.teamRepo.FindTeamByID(team.ID.Hex())
+	return s.teamRepo.FindTeamByID(team.ID)
 }
 
 // GetPendingInvitations returns all pending invitations for a user
@@ -411,7 +413,7 @@ func (s *TeamService) AcceptInvitation(invitationID, userID string) (*models.Tea
 		return nil, errors.New("user not found")
 	}
 
-	if !invitation.InviteeUserID.IsZero() && invitation.InviteeUserID.Hex() != userID {
+	if invitation.InviteeUserID != "" && invitation.InviteeUserID != userID {
 		if invitation.InviteeEmail != user.Email {
 			return nil, errors.New("invitation is not for you")
 		}
@@ -435,17 +437,18 @@ func (s *TeamService) AcceptInvitation(invitationID, userID string) (*models.Tea
 	}
 
 	// Get team and check capacity
-	team, err := s.teamRepo.FindTeamByID(invitation.TeamID.Hex())
+	team, err := s.teamRepo.FindTeamByID(invitation.TeamID)
 	if err != nil {
 		return nil, errors.New("team no longer exists")
 	}
 
-	if len(team.MemberIDs) >= models.MaxTeamSize {
+	count, _ := s.teamRepo.GetTeamMemberCount(team.ID)
+	if count >= models.MaxTeamSize {
 		return nil, errors.New("team is already at maximum capacity")
 	}
 
 	// Add user to team
-	if err := s.teamRepo.AddMemberToTeam(invitation.TeamID.Hex(), userID); err != nil {
+	if err := s.teamRepo.AddMemberToTeam(invitation.TeamID, userID); err != nil {
 		return nil, err
 	}
 
@@ -457,7 +460,7 @@ func (s *TeamService) AcceptInvitation(invitationID, userID string) (*models.Tea
 	s.invalidateScoreboardCache()
 
 	// Refresh team data
-	return s.teamRepo.FindTeamByID(invitation.TeamID.Hex())
+	return s.teamRepo.FindTeamByID(invitation.TeamID)
 }
 
 // RejectInvitation rejects a team invitation
@@ -473,7 +476,7 @@ func (s *TeamService) RejectInvitation(invitationID, userID string) error {
 		return errors.New("user not found")
 	}
 
-	if !invitation.InviteeUserID.IsZero() && invitation.InviteeUserID.Hex() != userID {
+	if invitation.InviteeUserID != "" && invitation.InviteeUserID != userID {
 		if invitation.InviteeEmail != user.Email {
 			return errors.New("invitation is not for you")
 		}
@@ -495,7 +498,7 @@ func (s *TeamService) RemoveMember(teamID, leaderID, memberID string) error {
 		return errors.New("team not found")
 	}
 
-	if team.LeaderID.Hex() != leaderID {
+	if team.LeaderID != leaderID {
 		return errors.New("only the team leader can remove members")
 	}
 
@@ -504,13 +507,14 @@ func (s *TeamService) RemoveMember(teamID, leaderID, memberID string) error {
 	}
 
 	// Verify member is in the team
-	memberObjID, err := primitive.ObjectIDFromHex(memberID)
+	memberObjID := memberID
 	if err != nil {
 		return errors.New("invalid member ID")
 	}
 
 	found := false
-	for _, id := range team.MemberIDs {
+	members, _ := s.teamRepo.GetTeamMembers(team.ID)
+	for _, id := range members {
 		if id == memberObjID {
 			found = true
 			break
@@ -535,8 +539,9 @@ func (s *TeamService) LeaveTeam(teamID, userID string) error {
 	}
 
 	// Check if user is the leader
-	if team.LeaderID.Hex() == userID {
-		if len(team.MemberIDs) > 1 {
+	if team.LeaderID == userID {
+		count, _ := s.teamRepo.GetTeamMemberCount(team.ID)
+		if count > 1 {
 			return errors.New("leader cannot leave team with other members. Transfer leadership or remove members first")
 		}
 		// Leader is the only member, delete the team
@@ -544,13 +549,14 @@ func (s *TeamService) LeaveTeam(teamID, userID string) error {
 	}
 
 	// Verify user is in the team
-	userObjID, err := primitive.ObjectIDFromHex(userID)
+	userObjID := userID
 	if err != nil {
 		return errors.New("invalid user ID")
 	}
 
 	found := false
-	for _, id := range team.MemberIDs {
+	members, _ := s.teamRepo.GetTeamMembers(team.ID)
+	for _, id := range members {
 		if id == userObjID {
 			found = true
 			break
@@ -574,7 +580,7 @@ func (s *TeamService) RegenerateInviteCode(teamID, leaderID string) (string, err
 		return "", errors.New("team not found")
 	}
 
-	if team.LeaderID.Hex() != leaderID {
+	if team.LeaderID != leaderID {
 		return "", errors.New("only the team leader can regenerate the invite code")
 	}
 
@@ -598,15 +604,16 @@ func (s *TeamService) GetTeamMembers(teamID string) ([]map[string]interface{}, e
 		return nil, errors.New("team not found")
 	}
 
-	members := make([]map[string]interface{}, 0, len(team.MemberIDs))
-	for _, memberID := range team.MemberIDs {
-		user, err := s.userRepo.FindByID(memberID.Hex())
+	memberIDs, _ := s.teamRepo.GetTeamMembers(team.ID)
+	members := make([]map[string]interface{}, 0, len(memberIDs))
+	for _, memberID := range memberIDs {
+		user, err := s.userRepo.FindByID(memberID)
 		if err != nil {
 			continue
 		}
 
 		member := map[string]interface{}{
-			"id":        user.ID.Hex(),
+			"id":        user.ID,
 			"username":  user.Username,
 			"is_leader": user.ID == team.LeaderID,
 		}
@@ -623,7 +630,7 @@ func (s *TeamService) GetTeamPendingInvitations(teamID, leaderID string) ([]mode
 		return nil, errors.New("team not found")
 	}
 
-	if team.LeaderID.Hex() != leaderID {
+	if team.LeaderID != leaderID {
 		return nil, errors.New("only the team leader can view pending invitations")
 	}
 
@@ -637,12 +644,12 @@ func (s *TeamService) CancelInvitation(invitationID, leaderID string) error {
 		return errors.New("invitation not found")
 	}
 
-	team, err := s.teamRepo.FindTeamByID(invitation.TeamID.Hex())
+	team, err := s.teamRepo.FindTeamByID(invitation.TeamID)
 	if err != nil {
 		return errors.New("team not found")
 	}
 
-	if team.LeaderID.Hex() != leaderID {
+	if team.LeaderID != leaderID {
 		return errors.New("only the team leader can cancel invitations")
 	}
 

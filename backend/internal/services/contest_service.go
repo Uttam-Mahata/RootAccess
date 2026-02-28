@@ -39,6 +39,11 @@ func (s *ContestService) UpdateContestConfig(title string, startTime, endTime ti
 		scoreboardVisibility = "public"
 	}
 
+	ft := ""
+	if freezeTime != nil {
+		ft = freezeTime.Format(time.RFC3339)
+	}
+
 	existing, err := s.contestRepo.GetActiveContest()
 	if err != nil {
 		// Create new config
@@ -46,7 +51,7 @@ func (s *ContestService) UpdateContestConfig(title string, startTime, endTime ti
 			Title:                title,
 			StartTime:            startTime,
 			EndTime:              endTime,
-			FreezeTime:           freezeTime,
+			FreezeTime:           ft,
 			IsActive:             isActive,
 			IsPaused:             isPaused,
 			ScoreboardVisibility: scoreboardVisibility,
@@ -61,7 +66,7 @@ func (s *ContestService) UpdateContestConfig(title string, startTime, endTime ti
 	existing.Title = title
 	existing.StartTime = startTime
 	existing.EndTime = endTime
-	existing.FreezeTime = freezeTime
+	existing.FreezeTime = ft
 	existing.IsActive = isActive
 	existing.IsPaused = isPaused
 	existing.ScoreboardVisibility = scoreboardVisibility

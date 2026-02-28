@@ -2,43 +2,38 @@ package models
 
 import (
 	"math"
-	"time"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// Scoring type constants
 const (
-	ScoringStatic  = "static"  // Fixed points, never changes
-	ScoringLinear  = "linear"  // Points decrease linearly with solves
-	ScoringDynamic = "dynamic" // Points decrease quadratically (CTFd formula)
+	ScoringStatic  = "static"
+	ScoringLinear  = "linear"
+	ScoringDynamic = "dynamic"
 )
 
 type Challenge struct {
-	ID                primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	Title             string             `bson:"title" json:"title"`
-	Description       string             `bson:"description" json:"description"`
-	DescriptionFormat string             `bson:"description_format" json:"description_format"` // "markdown" or "html"
-	Category          string             `bson:"category" json:"category"`
-	Difficulty        string             `bson:"difficulty" json:"difficulty"` // easy, medium, hard
-	MaxPoints         int                `bson:"max_points" json:"max_points"` // Maximum/initial points
-	MinPoints         int                `bson:"min_points" json:"min_points"` // Minimum floor points
-	Decay             int                `bson:"decay" json:"decay"`           // Decay factor (solves to reach midpoint)
-	ScoringType       string             `bson:"scoring_type" json:"scoring_type"` // static, linear, dynamic
-	SolveCount        int                `bson:"solve_count" json:"solve_count"`
-	FlagHash          string             `bson:"flag_hash" json:"-"` // SHA-256 hashed flag (hidden from API)
-	Files             []string           `bson:"files" json:"files"`
-	Tags              []string           `bson:"tags" json:"tags"`
-	ScheduledAt             *time.Time         `bson:"scheduled_at,omitempty" json:"scheduled_at,omitempty"`
-	IsPublished             bool               `bson:"is_published" json:"is_published"`
-	Hints                   []Hint             `bson:"hints,omitempty" json:"hints,omitempty"` // Embedded hints
-	ContestID               *primitive.ObjectID `bson:"contest_id,omitempty" json:"contest_id,omitempty"`
-	OfficialWriteup         string             `bson:"official_writeup,omitempty" json:"official_writeup,omitempty"`
-	OfficialWriteupFormat   string             `bson:"official_writeup_format,omitempty" json:"official_writeup_format,omitempty"` // "markdown" or "html"
-	OfficialWriteupPublished bool              `bson:"official_writeup_published" json:"official_writeup_published"`
+	ID                       string   `json:"id"`
+	Title                    string   `json:"title"`
+	Description              string   `json:"description"`
+	DescriptionFormat        string   `json:"description_format"`
+	Category                 string   `json:"category"`
+	Difficulty               string   `json:"difficulty"`
+	MaxPoints                int      `json:"max_points"`
+	MinPoints                int      `json:"min_points"`
+	Decay                    int      `json:"decay"`
+	ScoringType              string   `json:"scoring_type"`
+	SolveCount               int      `json:"solve_count"`
+	FlagHash                 string   `json:"-"`
+	Files                    []string `json:"files"`
+	Tags                     []string `json:"tags"`
+	ScheduledAt              string   `json:"scheduled_at,omitempty"`
+	IsPublished              bool     `json:"is_published"`
+	Hints                    []Hint   `json:"hints,omitempty"`
+	ContestID                string   `json:"contest_id,omitempty"`
+	OfficialWriteup          string   `json:"official_writeup,omitempty"`
+	OfficialWriteupFormat    string   `json:"official_writeup_format,omitempty"`
+	OfficialWriteupPublished bool     `json:"official_writeup_published"`
 }
 
-// CurrentPoints calculates points based on scoring type and solve count
 func (c *Challenge) CurrentPoints() int {
 	switch c.ScoringType {
 	case ScoringStatic:
@@ -48,13 +43,10 @@ func (c *Challenge) CurrentPoints() int {
 	case ScoringDynamic:
 		return c.dynamicPoints()
 	default:
-		// Default to dynamic for backward compatibility
 		return c.dynamicPoints()
 	}
 }
 
-// dynamicPoints calculates points using CTFd formula
-// Formula: value = ((min - max) / decay^2) * solves^2 + max
 func (c *Challenge) dynamicPoints() int {
 	if c.SolveCount <= 0 {
 		return c.MaxPoints
@@ -62,13 +54,13 @@ func (c *Challenge) dynamicPoints() int {
 
 	decay := c.Decay
 	if decay <= 0 {
-		decay = 10 // Default decay
+		decay = 10
 	}
 
 	decaySquared := float64(decay * decay)
 	solvesSquared := float64(c.SolveCount * c.SolveCount)
 
-	value := ((float64(c.MinPoints) - float64(c.MaxPoints)) / decaySquared) * solvesSquared + float64(c.MaxPoints)
+	value := ((float64(c.MinPoints)-float64(c.MaxPoints))/decaySquared)*solvesSquared + float64(c.MaxPoints)
 
 	points := int(math.Round(value))
 	if points < c.MinPoints {
@@ -78,8 +70,6 @@ func (c *Challenge) dynamicPoints() int {
 	return points
 }
 
-// linearPoints calculates points using a linear decay formula
-// Points decrease linearly from MaxPoints to MinPoints over Decay solves
 func (c *Challenge) linearPoints() int {
 	if c.SolveCount <= 0 {
 		return c.MaxPoints

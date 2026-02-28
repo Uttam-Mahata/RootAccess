@@ -6,7 +6,7 @@ import (
 
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -42,7 +42,7 @@ func (s *AdminService) CreateAdminUser(username, email, password string) error {
 
 	// Create admin user
 	user := &models.User{
-		ID:            primitive.NewObjectID(),
+		ID:            uuid.New().String(),
 		Username:      username,
 		Email:         email,
 		PasswordHash:  string(hashedPassword),

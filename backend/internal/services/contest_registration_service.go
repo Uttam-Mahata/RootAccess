@@ -6,13 +6,12 @@ import (
 
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type ContestRegistrationService struct {
-	contestEntityRepo      *repositories.ContestEntityRepository
-	registrationRepo       *repositories.TeamContestRegistrationRepository
-	teamRepo               *repositories.TeamRepository
+	contestEntityRepo *repositories.ContestEntityRepository
+	registrationRepo  *repositories.TeamContestRegistrationRepository
+	teamRepo          *repositories.TeamRepository
 }
 
 func NewContestRegistrationService(
@@ -47,13 +46,13 @@ func (s *ContestRegistrationService) GetUpcomingContests() ([]models.Contest, er
 
 // RegisterTeamForContest registers a team for a contest
 func (s *ContestRegistrationService) RegisterTeamForContest(teamID, contestID string) error {
-	teamOID, err := primitive.ObjectIDFromHex(teamID)
-	if err != nil {
+	teamOID := teamID
+	if teamOID == "" {
 		return errors.New("invalid team ID")
 	}
 
-	contestOID, err := primitive.ObjectIDFromHex(contestID)
-	if err != nil {
+	contestOID := contestID
+	if contestOID == "" {
 		return errors.New("invalid contest ID")
 	}
 
@@ -80,13 +79,13 @@ func (s *ContestRegistrationService) RegisterTeamForContest(teamID, contestID st
 
 // UnregisterTeamFromContest unregisters a team from a contest
 func (s *ContestRegistrationService) UnregisterTeamFromContest(teamID, contestID string) error {
-	teamOID, err := primitive.ObjectIDFromHex(teamID)
-	if err != nil {
+	teamOID := teamID
+	if teamOID == "" {
 		return errors.New("invalid team ID")
 	}
 
-	contestOID, err := primitive.ObjectIDFromHex(contestID)
-	if err != nil {
+	contestOID := contestID
+	if contestOID == "" {
 		return errors.New("invalid contest ID")
 	}
 
@@ -106,13 +105,13 @@ func (s *ContestRegistrationService) UnregisterTeamFromContest(teamID, contestID
 
 // IsTeamRegistered checks if a team is registered for a contest
 func (s *ContestRegistrationService) IsTeamRegistered(teamID, contestID string) (bool, error) {
-	teamOID, err := primitive.ObjectIDFromHex(teamID)
-	if err != nil {
+	teamOID := teamID
+	if teamOID == "" {
 		return false, errors.New("invalid team ID")
 	}
 
-	contestOID, err := primitive.ObjectIDFromHex(contestID)
-	if err != nil {
+	contestOID := contestID
+	if contestOID == "" {
 		return false, errors.New("invalid contest ID")
 	}
 
@@ -121,8 +120,8 @@ func (s *ContestRegistrationService) IsTeamRegistered(teamID, contestID string) 
 
 // GetRegisteredTeamsCount returns the number of teams registered for a contest
 func (s *ContestRegistrationService) GetRegisteredTeamsCount(contestID string) (int64, error) {
-	contestOID, err := primitive.ObjectIDFromHex(contestID)
-	if err != nil {
+	contestOID := contestID
+	if contestOID == "" {
 		return 0, errors.New("invalid contest ID")
 	}
 	return s.registrationRepo.CountContestTeams(contestOID)
@@ -130,8 +129,8 @@ func (s *ContestRegistrationService) GetRegisteredTeamsCount(contestID string) (
 
 // GetTeamRegisteredContests returns all contests a team is registered for
 func (s *ContestRegistrationService) GetTeamRegisteredContests(teamID string) ([]models.Contest, error) {
-	teamOID, err := primitive.ObjectIDFromHex(teamID)
-	if err != nil {
+	teamOID := teamID
+	if teamOID == "" {
 		return nil, errors.New("invalid team ID")
 	}
 
@@ -142,7 +141,7 @@ func (s *ContestRegistrationService) GetTeamRegisteredContests(teamID string) ([
 
 	var contests []models.Contest
 	for _, contestID := range contestIDs {
-		contest, err := s.contestEntityRepo.FindByID(contestID.Hex())
+		contest, err := s.contestEntityRepo.FindByID(contestID)
 		if err == nil {
 			contests = append(contests, *contest)
 		}

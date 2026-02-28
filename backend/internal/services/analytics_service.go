@@ -9,15 +9,14 @@ import (
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/database"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type AnalyticsService struct {
-	userRepo        *repositories.UserRepository
-	submissionRepo  *repositories.SubmissionRepository
-	challengeRepo   *repositories.ChallengeRepository
-	teamRepo        *repositories.TeamRepository
-	adjustmentRepo  *repositories.ScoreAdjustmentRepository
+	userRepo       *repositories.UserRepository
+	submissionRepo *repositories.SubmissionRepository
+	challengeRepo  *repositories.ChallengeRepository
+	teamRepo       *repositories.TeamRepository
+	adjustmentRepo *repositories.ScoreAdjustmentRepository
 }
 
 func NewAnalyticsService(
@@ -136,7 +135,7 @@ func (s *AnalyticsService) GetPlatformAnalytics() (*models.AdminAnalytics, error
 	// Count attempts per challenge
 	attemptCounts := make(map[string]int)
 	for _, sub := range allSubmissions {
-		attemptCounts[sub.ChallengeID.Hex()]++
+		attemptCounts[sub.ChallengeID]++
 	}
 
 	challengePopularity := make([]models.ChallengePopularity, 0, len(challenges))
@@ -144,7 +143,7 @@ func (s *AnalyticsService) GetPlatformAnalytics() (*models.AdminAnalytics, error
 	difficultyBreakdown := make(map[string]int)
 
 	for _, c := range challenges {
-		attempts := attemptCounts[c.ID.Hex()]
+		attempts := attemptCounts[c.ID]
 		var rate float64
 		if attempts > 0 {
 			rate = float64(c.SolveCount) / float64(attempts)
@@ -179,12 +178,12 @@ func (s *AnalyticsService) GetPlatformAnalytics() (*models.AdminAnalytics, error
 	}
 	userMap := make(map[string]string)
 	for _, u := range users {
-		userMap[u.ID.Hex()] = u.Username
+		userMap[u.ID] = u.Username
 	}
 
 	challengeMap := make(map[string]string)
 	for _, c := range challenges {
-		challengeMap[c.ID.Hex()] = c.Title
+		challengeMap[c.ID] = c.Title
 	}
 
 	recentActivity := make([]models.RecentActivityEntry, 0, len(recentActivitySubs))
@@ -195,10 +194,10 @@ func (s *AnalyticsService) GetPlatformAnalytics() (*models.AdminAnalytics, error
 		}
 		recentActivity = append(recentActivity, models.RecentActivityEntry{
 			UserID:        sub.UserID,
-			Username:      userMap[sub.UserID.Hex()],
+			Username:      userMap[sub.UserID],
 			Action:        action,
 			ChallengeID:   sub.ChallengeID,
-			ChallengeName: challengeMap[sub.ChallengeID.Hex()],
+			ChallengeName: challengeMap[sub.ChallengeID],
 			Timestamp:     sub.Timestamp,
 		})
 	}
@@ -264,7 +263,8 @@ func (s *AnalyticsService) GetPlatformAnalytics() (*models.AdminAnalytics, error
 	teamDayCounts := make(map[string]int)
 	totalMembers := 0
 	for _, t := range allTeams {
-		totalMembers += len(t.MemberIDs)
+		count, _ := s.teamRepo.GetTeamMemberCount(t.ID)
+		totalMembers += count
 		if t.CreatedAt.After(since) {
 			day := t.CreatedAt.Format("2006-01-02")
 			teamDayCounts[day]++
@@ -297,11 +297,12 @@ func (s *AnalyticsService) GetPlatformAnalytics() (*models.AdminAnalytics, error
 		if i >= 10 {
 			break
 		}
+		count, _ := s.teamRepo.GetTeamMemberCount(t.ID)
 		topTeams = append(topTeams, models.TeamStats{
 			TeamID:      t.ID,
 			Name:        t.Name,
 			Score:       t.Score,
-			MemberCount: len(t.MemberIDs),
+			MemberCount: count,
 		})
 	}
 
@@ -312,19 +313,19 @@ func (s *AnalyticsService) GetPlatformAnalytics() (*models.AdminAnalytics, error
 	userChallengeSolved := make(map[string]map[string]bool) // userID -> challengeID -> solved
 	challengeScores := make(map[string]int)
 	for _, c := range challenges {
-		challengeScores[c.ID.Hex()] = c.CurrentPoints()
+		challengeScores[c.ID] = c.CurrentPoints()
 	}
 
 	for _, sub := range allSubmissions {
 		if sub.IsCorrect {
-			userID := sub.UserID.Hex()
-			challengeID := sub.ChallengeID.Hex()
-			
+			userID := sub.UserID
+			challengeID := sub.ChallengeID
+
 			// Initialize the inner map if needed
 			if userChallengeSolved[userID] == nil {
 				userChallengeSolved[userID] = make(map[string]bool)
 			}
-			
+
 			// Only count each user-challenge pair once
 			if !userChallengeSolved[userID][challengeID] {
 				userChallengeSolved[userID][challengeID] = true
@@ -336,9 +337,9 @@ func (s *AnalyticsService) GetPlatformAnalytics() (*models.AdminAnalytics, error
 
 	// Apply manual user score adjustments (if any) to analytics as well
 	if s.adjustmentRepo != nil && len(userScores) > 0 {
-		userIDs := make([]primitive.ObjectID, 0, len(userScores))
+		userIDs := make([]string, 0, len(userScores))
 		for uid := range userScores {
-			if oid, err := primitive.ObjectIDFromHex(uid); err == nil {
+			if oid := uid; err == nil {
 				userIDs = append(userIDs, oid)
 			}
 		}
@@ -360,10 +361,10 @@ func (s *AnalyticsService) GetPlatformAnalytics() (*models.AdminAnalytics, error
 	userEntries := make([]userScoreEntry, 0, len(users))
 	for _, u := range users {
 		userEntries = append(userEntries, userScoreEntry{
-			ID:         u.ID.Hex(),
+			ID:         u.ID,
 			Username:   u.Username,
-			Score:      userScores[u.ID.Hex()],
-			SolveCount: userSolveCounts[u.ID.Hex()],
+			Score:      userScores[u.ID],
+			SolveCount: userSolveCounts[u.ID],
 		})
 	}
 	sort.Slice(userEntries, func(i, j int) bool {
@@ -375,9 +376,8 @@ func (s *AnalyticsService) GetPlatformAnalytics() (*models.AdminAnalytics, error
 		if i >= 10 {
 			break
 		}
-		userID, _ := primitive.ObjectIDFromHex(e.ID)
 		topUsers = append(topUsers, models.UserStats{
-			UserID:     userID,
+			UserID:     e.ID,
 			Username:   e.Username,
 			Score:      e.Score,
 			SolveCount: e.SolveCount,

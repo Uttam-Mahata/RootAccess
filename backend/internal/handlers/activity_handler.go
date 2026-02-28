@@ -3,10 +3,9 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/services"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/utils"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"github.com/gin-gonic/gin"
 )
 
 type ActivityHandler struct {
@@ -32,8 +31,8 @@ func (h *ActivityHandler) GetMyActivity(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	userID, err := primitive.ObjectIDFromHex(userIDStr.(string))
-	if err != nil {
+	userID := userIDStr.(string)
+	if userID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return
 	}

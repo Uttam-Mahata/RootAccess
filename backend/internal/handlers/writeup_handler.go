@@ -4,15 +4,14 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/services"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/utils"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"github.com/gin-gonic/gin"
 )
 
 type WriteupHandler struct {
-	writeupService     *services.WriteupService
+	writeupService      *services.WriteupService
 	contestAdminService *services.ContestAdminService
 }
 
@@ -55,7 +54,7 @@ func (h *WriteupHandler) CreateWriteup(c *gin.Context) {
 	}
 	username, _ := c.Get("username")
 
-	userID, _ := primitive.ObjectIDFromHex(userIDStr.(string))
+	userID := userIDStr.(string)
 
 	var req CreateWriteupRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -134,7 +133,7 @@ func (h *WriteupHandler) GetMyWriteups(c *gin.Context) {
 		return
 	}
 
-	userID, _ := primitive.ObjectIDFromHex(userIDStr.(string))
+	userID := userIDStr.(string)
 
 	writeups, err := h.writeupService.GetMyWriteups(userID)
 	if err != nil {
@@ -244,7 +243,7 @@ func (h *WriteupHandler) UpdateWriteup(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	userID, _ := primitive.ObjectIDFromHex(userIDStr.(string))
+	userID := userIDStr.(string)
 
 	var req CreateWriteupRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -286,7 +285,7 @@ func (h *WriteupHandler) ToggleUpvote(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	userID, _ := primitive.ObjectIDFromHex(userIDStr.(string))
+	userID := userIDStr.(string)
 
 	upvoted, err := h.writeupService.ToggleUpvote(id, userID)
 	if err != nil {

@@ -4,10 +4,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/services"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/utils"
+	"github.com/gin-gonic/gin"
 )
 
 type ScoreboardHandler struct {
@@ -172,7 +172,7 @@ func (h *ScoreboardHandler) GetScoreboardContests(c *gin.Context) {
 	// Also include the contest referenced by the active ContestConfig, even if its
 	// is_active flag was not set (e.g. activated before the is_active fix was deployed).
 	if h.contestRepo != nil {
-		if cfg, err := h.contestRepo.GetActiveContest(); err == nil && cfg != nil && !cfg.ContestID.IsZero() {
+		if cfg, err := h.contestRepo.GetActiveContest(); err == nil && cfg != nil && cfg.ContestID != "" {
 			alreadyIncluded := false
 			for _, c := range contests {
 				if c.ID == cfg.ContestID {
@@ -181,7 +181,7 @@ func (h *ScoreboardHandler) GetScoreboardContests(c *gin.Context) {
 				}
 			}
 			if !alreadyIncluded {
-				if activeContest, err := h.contestEntityRepo.FindByID(cfg.ContestID.Hex()); err == nil && activeContest != nil {
+				if activeContest, err := h.contestEntityRepo.FindByID(cfg.ContestID); err == nil && activeContest != nil {
 					contests = append(contests, *activeContest)
 				}
 			}
@@ -195,7 +195,7 @@ func (h *ScoreboardHandler) GetScoreboardContests(c *gin.Context) {
 			continue
 		}
 		result = append(result, gin.H{
-			"id":                    contest.ID.Hex(),
+			"id":                    contest.ID,
 			"name":                  contest.Name,
 			"description":           contest.Description,
 			"start_time":            contest.StartTime,

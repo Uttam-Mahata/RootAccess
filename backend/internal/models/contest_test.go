@@ -73,11 +73,11 @@ func TestContestIsScoreboardFrozen_NoFreezeTime(t *testing.T) {
 }
 
 func TestContestIsScoreboardFrozen_BeforeFreezeTime(t *testing.T) {
-	ft := time.Now().Add(30 * time.Minute)
+	ft := time.Now().Add(30 * time.Minute).Format(time.RFC3339)
 	c := &ContestConfig{
 		StartTime:  time.Now().Add(-1 * time.Hour),
 		EndTime:    time.Now().Add(1 * time.Hour),
-		FreezeTime: &ft,
+		FreezeTime: ft,
 		IsActive:   true,
 	}
 	if c.IsScoreboardFrozen() {
@@ -86,11 +86,11 @@ func TestContestIsScoreboardFrozen_BeforeFreezeTime(t *testing.T) {
 }
 
 func TestContestIsScoreboardFrozen_AfterFreezeTime(t *testing.T) {
-	ft := time.Now().Add(-30 * time.Minute)
+	ft := time.Now().Add(-30 * time.Minute).Format(time.RFC3339)
 	c := &ContestConfig{
 		StartTime:  time.Now().Add(-1 * time.Hour),
 		EndTime:    time.Now().Add(1 * time.Hour),
-		FreezeTime: &ft,
+		FreezeTime: ft,
 		IsActive:   true,
 	}
 	if !c.IsScoreboardFrozen() {

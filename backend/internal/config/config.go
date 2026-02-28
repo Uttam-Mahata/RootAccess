@@ -16,8 +16,8 @@ import (
 type Config struct {
 	Port           string
 	Environment    string // "development" or "production"
-	MongoURI       string
-	DBName         string
+	TursoURL       string
+	TursoAuthToken string
 	JWTSecret      string
 	FrontendURL    string
 	TrustedProxies string
@@ -27,18 +27,18 @@ type Config struct {
 	SMTPPass       string
 	SMTPFrom       string
 	// Upstash Redis URLs (rediss://default:token@host:6379)
-	RedisURLAuth       string
-	RedisURLScoreboard string
-	RedisURLChallenge  string
-	RedisURLWebSocket  string
-	RedisURLAnalytics  string
-	RedisURLGeneral    string
-	GoogleClientID     string
-	GoogleClientSecret string
-	GoogleRedirectURL  string
-	GitHubClientID     string
-	GitHubClientSecret string
-	GitHubRedirectURL  string
+	RedisURLAuth        string
+	RedisURLScoreboard  string
+	RedisURLChallenge   string
+	RedisURLWebSocket   string
+	RedisURLAnalytics   string
+	RedisURLGeneral     string
+	GoogleClientID      string
+	GoogleClientSecret  string
+	GoogleRedirectURL   string
+	GitHubClientID      string
+	GitHubClientSecret  string
+	GitHubRedirectURL   string
 	DiscordClientID     string
 	DiscordClientSecret string
 	DiscordRedirectURL  string
@@ -74,35 +74,35 @@ func LoadConfig() *Config {
 	}
 
 	return &Config{
-		Port:           getEnv("PORT", "8080"),
-		Environment:    environment,
-		MongoURI:       getEnv("MONGO_URI", "mongodb://localhost:27017"),
-		DBName:         getEnv("DB_NAME", "go_ctf"),
-		JWTSecret:      jwtSecret,
-		FrontendURL:    getEnv("FRONTEND_URL", "http://localhost:4200"),
-		TrustedProxies: getEnv("TRUSTED_PROXIES", ""),
-		SMTPHost:       getEnv("SMTP_HOST", "smtp.gmail.com"),
-		SMTPPort:     smtpPort,
-		SMTPUser:     getEnv("SMTP_USER", ""),
-		SMTPPass:     getEnv("SMTP_PASS", ""),
-		SMTPFrom:     getEnv("SMTP_FROM", "noreply@rootaccess.live"),
-		RedisURLAuth:       getEnv("REDIS_URL_AUTH", ""),
-		RedisURLScoreboard: getEnv("REDIS_URL_SCOREBOARD", ""),
-		RedisURLChallenge:  getEnv("REDIS_URL_CHALLENGE", ""),
-		RedisURLWebSocket:  getEnv("REDIS_URL_WEBSOCKET", ""),
-		RedisURLAnalytics:  getEnv("REDIS_URL_ANALYTICS", ""),
-		RedisURLGeneral:    getEnv("REDIS_URL_GENERAL", ""),
-		GoogleClientID:     getEnv("GOOGLE_CLIENT_ID", ""),
-		GoogleClientSecret: getEnv("GOOGLE_CLIENT_SECRET", ""),
-		GoogleRedirectURL:  getEnv("GOOGLE_REDIRECT_URL", "https://rootaccess.live/auth/google/callback"),
-		GitHubClientID:     getEnv("GITHUB_CLIENT_ID", ""),
-		GitHubClientSecret: getEnv("GITHUB_CLIENT_SECRET", ""),
-		GitHubRedirectURL:  getEnv("GITHUB_REDIRECT_URL", "https://rootaccess.live/auth/github/callback"),
-		DiscordClientID:     getEnv("DISCORD_CLIENT_ID", ""),
-		DiscordClientSecret: getEnv("DISCORD_CLIENT_SECRET", ""),
-		DiscordRedirectURL:  getEnv("DISCORD_REDIRECT_URL", "https://rootaccess.live/auth/discord/callback"),
-		WsCallbackURL:       getEnv("WS_CALLBACK_URL", ""),
-		CORSAllowedOrigins:  getEnv("CORS_ALLOWED_ORIGINS", ""),
+		Port:                       getEnv("PORT", "8080"),
+		Environment:                environment,
+		TursoURL:                   getEnv("TURSO_URL", "file:./local.db"),
+		TursoAuthToken:             getEnv("TURSO_AUTH_TOKEN", ""),
+		JWTSecret:                  jwtSecret,
+		FrontendURL:                getEnv("FRONTEND_URL", "http://localhost:4200"),
+		TrustedProxies:             getEnv("TRUSTED_PROXIES", ""),
+		SMTPHost:                   getEnv("SMTP_HOST", "smtp.gmail.com"),
+		SMTPPort:                   smtpPort,
+		SMTPUser:                   getEnv("SMTP_USER", ""),
+		SMTPPass:                   getEnv("SMTP_PASS", ""),
+		SMTPFrom:                   getEnv("SMTP_FROM", "noreply@rootaccess.live"),
+		RedisURLAuth:               getEnv("REDIS_URL_AUTH", ""),
+		RedisURLScoreboard:         getEnv("REDIS_URL_SCOREBOARD", ""),
+		RedisURLChallenge:          getEnv("REDIS_URL_CHALLENGE", ""),
+		RedisURLWebSocket:          getEnv("REDIS_URL_WEBSOCKET", ""),
+		RedisURLAnalytics:          getEnv("REDIS_URL_ANALYTICS", ""),
+		RedisURLGeneral:            getEnv("REDIS_URL_GENERAL", ""),
+		GoogleClientID:             getEnv("GOOGLE_CLIENT_ID", ""),
+		GoogleClientSecret:         getEnv("GOOGLE_CLIENT_SECRET", ""),
+		GoogleRedirectURL:          getEnv("GOOGLE_REDIRECT_URL", "https://rootaccess.live/auth/google/callback"),
+		GitHubClientID:             getEnv("GITHUB_CLIENT_ID", ""),
+		GitHubClientSecret:         getEnv("GITHUB_CLIENT_SECRET", ""),
+		GitHubRedirectURL:          getEnv("GITHUB_REDIRECT_URL", "https://rootaccess.live/auth/github/callback"),
+		DiscordClientID:            getEnv("DISCORD_CLIENT_ID", ""),
+		DiscordClientSecret:        getEnv("DISCORD_CLIENT_SECRET", ""),
+		DiscordRedirectURL:         getEnv("DISCORD_REDIRECT_URL", "https://rootaccess.live/auth/discord/callback"),
+		WsCallbackURL:              getEnv("WS_CALLBACK_URL", ""),
+		CORSAllowedOrigins:         getEnv("CORS_ALLOWED_ORIGINS", ""),
 		RegistrationMode:           getEnv("REGISTRATION_MODE", "open"),
 		RegistrationAllowedDomains: getEnv("REGISTRATION_ALLOWED_DOMAINS", ""),
 	}

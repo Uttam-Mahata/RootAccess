@@ -10,7 +10,6 @@ import (
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/database"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type ScoreboardService struct {
@@ -79,7 +78,7 @@ func (s *ScoreboardService) getContestChallengeIDs(contestID string) (map[string
 		return map[string]bool{}, nil
 	}
 
-	roundIDs := make([]primitive.ObjectID, len(rounds))
+	roundIDs := make([]string, len(rounds))
 	for i := range rounds {
 		roundIDs[i] = rounds[i].ID
 	}
@@ -91,16 +90,16 @@ func (s *ScoreboardService) getContestChallengeIDs(contestID string) (map[string
 
 	result := make(map[string]bool, len(challengeOIDs))
 	for _, oid := range challengeOIDs {
-		result[oid.Hex()] = true
+		result[oid] = true
 	}
 	return result, nil
 }
 
 // getContestTeamIDs returns the set of team IDs registered for a contest
 func (s *ScoreboardService) getContestTeamIDs(contestID string) (map[string]bool, error) {
-	contestOID, err := primitive.ObjectIDFromHex(contestID)
-	if err != nil {
-		return nil, err
+	contestOID := contestID
+	if contestOID == "" {
+		return nil, nil
 	}
 
 	teamOIDs, err := s.registrationRepo.GetContestTeams(contestOID)
@@ -110,7 +109,7 @@ func (s *ScoreboardService) getContestTeamIDs(contestID string) (map[string]bool
 
 	result := make(map[string]bool, len(teamOIDs))
 	for _, oid := range teamOIDs {
-		result[oid.Hex()] = true
+		result[oid] = true
 	}
 	return result, nil
 }
@@ -125,8 +124,9 @@ func (s *ScoreboardService) getFreezeInfoForContest(contestID string) *time.Time
 		return nil
 	}
 	now := time.Now()
-	if contest.IsScoreboardFrozen(now) {
-		return contest.FreezeTime
+	if contest.IsScoreboardFrozen(now) && contest.FreezeTime != "" {
+		t, _ := time.Parse(time.RFC3339, contest.FreezeTime)
+		return &t
 	}
 	return nil
 }
@@ -185,12 +185,13 @@ func (s *ScoreboardService) GetScoreboard(contestID string) ([]UserScore, error)
 	registeredUserIDs := make(map[string]bool)
 	userTeamMap := make(map[string]string)
 	for _, team := range allTeams {
-		tid := team.ID.Hex()
+		tid := team.ID
 		if !contestTeams[tid] {
 			continue
 		}
-		for _, mid := range team.MemberIDs {
-			uid := mid.Hex()
+		members, _ := s.teamRepo.GetTeamMembers(team.ID)
+		for _, mid := range members {
+			uid := mid
 			registeredUserIDs[uid] = true
 			userTeamMap[uid] = team.Name
 		}
@@ -204,8 +205,8 @@ func (s *ScoreboardService) GetScoreboard(contestID string) ([]UserScore, error)
 
 	challengePoints := make(map[string]int)
 	for _, c := range challenges {
-		if contestChallenges[c.ID.Hex()] {
-			challengePoints[c.ID.Hex()] = c.CurrentPoints()
+		if contestChallenges[c.ID] {
+			challengePoints[c.ID] = c.CurrentPoints()
 		}
 	}
 
@@ -217,8 +218,8 @@ func (s *ScoreboardService) GetScoreboard(contestID string) ([]UserScore, error)
 
 	userScores := make(map[string]int)
 	for _, sub := range submissions {
-		userID := sub.UserID.Hex()
-		challengeID := sub.ChallengeID.Hex()
+		userID := sub.UserID
+		challengeID := sub.ChallengeID
 
 		// Only count if user belongs to a registered team AND challenge is in contest
 		if !registeredUserIDs[userID] {
@@ -233,9 +234,9 @@ func (s *ScoreboardService) GetScoreboard(contestID string) ([]UserScore, error)
 
 	// Apply manual user score adjustments
 	if s.adjustmentRepo != nil && len(userScores) > 0 {
-		userIDs := make([]primitive.ObjectID, 0, len(userScores))
+		userIDs := make([]string, 0, len(userScores))
 		for uid := range userScores {
-			if oid, err := primitive.ObjectIDFromHex(uid); err == nil {
+			if oid := uid; err == nil {
 				userIDs = append(userIDs, oid)
 			}
 		}
@@ -256,7 +257,7 @@ func (s *ScoreboardService) GetScoreboard(contestID string) ([]UserScore, error)
 
 	usernameMap := make(map[string]string)
 	for _, u := range users {
-		usernameMap[u.ID.Hex()] = u.Username
+		usernameMap[u.ID] = u.Username
 	}
 
 	var scores []UserScore
@@ -341,8 +342,8 @@ func (s *ScoreboardService) GetTeamScoreboard(contestID string) ([]TeamScore, er
 
 	challengePoints := make(map[string]int)
 	for _, c := range challenges {
-		if contestChallenges[c.ID.Hex()] {
-			challengePoints[c.ID.Hex()] = c.CurrentPoints()
+		if contestChallenges[c.ID] {
+			challengePoints[c.ID] = c.CurrentPoints()
 		}
 	}
 
@@ -355,11 +356,11 @@ func (s *ScoreboardService) GetTeamScoreboard(contestID string) ([]TeamScore, er
 	// Map TeamID -> Set of ChallengeIDs solved (only contest challenges)
 	teamSolves := make(map[string]map[string]bool)
 	for _, sub := range submissions {
-		if sub.TeamID.IsZero() {
+		if sub.TeamID == "" {
 			continue
 		}
-		tid := sub.TeamID.Hex()
-		cid := sub.ChallengeID.Hex()
+		tid := sub.TeamID
+		cid := sub.ChallengeID
 
 		if !contestTeams[tid] || !contestChallenges[cid] {
 			continue
@@ -373,7 +374,7 @@ func (s *ScoreboardService) GetTeamScoreboard(contestID string) ([]TeamScore, er
 
 	var scores []TeamScore
 	for _, team := range allTeams {
-		tid := team.ID.Hex()
+		tid := team.ID
 		if !contestTeams[tid] {
 			continue
 		}
@@ -385,9 +386,9 @@ func (s *ScoreboardService) GetTeamScoreboard(contestID string) ([]TeamScore, er
 			}
 		}
 
-		memberIDs := make([]string, len(team.MemberIDs))
-		for i, mid := range team.MemberIDs {
-			memberIDs[i] = mid.Hex()
+		memberIDs, _ := s.teamRepo.GetTeamMembers(team.ID)
+		for i, mid := range memberIDs {
+			memberIDs[i] = mid
 		}
 
 		scores = append(scores, TeamScore{
@@ -396,7 +397,7 @@ func (s *ScoreboardService) GetTeamScoreboard(contestID string) ([]TeamScore, er
 			Description: team.Description,
 			Score:       totalScore,
 			MemberIDs:   memberIDs,
-			LeaderID:    team.LeaderID.Hex(),
+			LeaderID:    team.LeaderID,
 			CreatedAt:   team.CreatedAt,
 			UpdatedAt:   team.UpdatedAt,
 		})
@@ -404,9 +405,10 @@ func (s *ScoreboardService) GetTeamScoreboard(contestID string) ([]TeamScore, er
 
 	// Apply manual team score adjustments
 	if s.adjustmentRepo != nil && len(scores) > 0 {
-		teamIDs := make([]primitive.ObjectID, 0, len(scores))
+		teamIDs := make([]string, 0, len(scores))
 		for _, ts := range scores {
-			if oid, err := primitive.ObjectIDFromHex(ts.ID); err == nil {
+			oid := ts.ID
+			if true {
 				teamIDs = append(teamIDs, oid)
 			}
 		}
@@ -503,8 +505,8 @@ func (s *ScoreboardService) GetTeamScoreProgression(days int, contestID string) 
 
 	challengePoints := make(map[string]int)
 	for _, c := range challenges {
-		if contestChallenges[c.ID.Hex()] {
-			challengePoints[c.ID.Hex()] = c.CurrentPoints()
+		if contestChallenges[c.ID] {
+			challengePoints[c.ID] = c.CurrentPoints()
 		}
 	}
 
@@ -522,12 +524,12 @@ func (s *ScoreboardService) GetTeamScoreProgression(days int, contestID string) 
 	teamSolvesByDate := make(map[string]map[string]map[string]bool)
 	since := time.Now().AddDate(0, 0, -days)
 	for _, sub := range submissions {
-		if sub.TeamID.IsZero() || sub.Timestamp.Before(since) {
+		if sub.TeamID == "" || sub.Timestamp.Before(since) {
 			continue
 		}
 
-		teamID := sub.TeamID.Hex()
-		challengeID := sub.ChallengeID.Hex()
+		teamID := sub.TeamID
+		challengeID := sub.ChallengeID
 
 		if !contestTeams[teamID] || !contestChallenges[challengeID] {
 			continue
@@ -546,7 +548,7 @@ func (s *ScoreboardService) GetTeamScoreProgression(days int, contestID string) 
 	// Build progression for registered teams
 	var progressions []TeamScoreProgression
 	for _, team := range allTeams {
-		teamID := team.ID.Hex()
+		teamID := team.ID
 		if !contestTeams[teamID] {
 			continue
 		}
@@ -585,9 +587,10 @@ func (s *ScoreboardService) GetTeamScoreProgression(days int, contestID string) 
 
 	// Apply manual team score adjustments as a flat offset
 	if s.adjustmentRepo != nil && len(progressions) > 0 {
-		teamIDs := make([]primitive.ObjectID, 0, len(progressions))
+		teamIDs := make([]string, 0, len(progressions))
 		for _, p := range progressions {
-			if oid, err := primitive.ObjectIDFromHex(p.TeamID); err == nil {
+			oid := p.TeamID
+			if true {
 				teamIDs = append(teamIDs, oid)
 			}
 		}

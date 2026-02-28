@@ -8,9 +8,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/config"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/services"
+	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -170,13 +170,13 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 	isProd := h.config.Environment == "production"
 	c.SetSameSite(http.SameSiteLaxMode)
 	c.SetCookie(
-		"auth_token",   // name
-		token,          // value
-		7*24*60*60,     // maxAge (7 days in seconds)
-		"/",            // path
-		"",             // domain (empty = current domain)
-		isProd,         // secure (set to true in production with HTTPS)
-		true,           // httpOnly
+		"auth_token", // name
+		token,        // value
+		7*24*60*60,   // maxAge (7 days in seconds)
+		"/",          // path
+		"",           // domain (empty = current domain)
+		isProd,       // secure (set to true in production with HTTPS)
+		true,         // httpOnly
 	)
 
 	// Redirect to frontend success page

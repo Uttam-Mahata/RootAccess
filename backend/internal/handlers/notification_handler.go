@@ -3,23 +3,22 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/services"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/utils"
 	wsHub "github.com/Uttam-Mahata/RootAccess/backend/internal/websocket"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"github.com/gin-gonic/gin"
 )
 
 type NotificationHandler struct {
 	notificationService *services.NotificationService
-	hub                wsHub.Hub
+	hub                 wsHub.Hub
 }
 
 func NewNotificationHandler(notificationService *services.NotificationService, hub wsHub.Hub) *NotificationHandler {
 	return &NotificationHandler{
 		notificationService: notificationService,
-		hub:                hub,
+		hub:                 hub,
 	}
 }
 
@@ -55,11 +54,7 @@ func (h *NotificationHandler) CreateNotification(c *gin.Context) {
 		return
 	}
 
-	userID, err := primitive.ObjectIDFromHex(userIDStr.(string))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
-		return
-	}
+	userID := userIDStr.(string)
 
 	notification, err := h.notificationService.CreateNotification(req.Title, req.Content, req.Type, userID)
 	if err != nil {

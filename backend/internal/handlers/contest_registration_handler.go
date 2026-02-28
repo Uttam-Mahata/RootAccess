@@ -4,9 +4,9 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/services"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/utils"
+	"github.com/gin-gonic/gin"
 )
 
 type ContestRegistrationHandler struct {
@@ -71,7 +71,7 @@ func (h *ContestRegistrationHandler) RegisterTeamForContest(c *gin.Context) {
 		return
 	}
 
-	err = h.registrationService.RegisterTeamForContest(team.ID.Hex(), contestID)
+	err = h.registrationService.RegisterTeamForContest(team.ID, contestID)
 	if err != nil {
 		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
@@ -111,7 +111,7 @@ func (h *ContestRegistrationHandler) UnregisterTeamFromContest(c *gin.Context) {
 		return
 	}
 
-	err = h.registrationService.UnregisterTeamFromContest(team.ID.Hex(), contestID)
+	err = h.registrationService.UnregisterTeamFromContest(team.ID, contestID)
 	if err != nil {
 		utils.RespondWithError(c, http.StatusBadRequest, err.Error(), err)
 		return
@@ -176,7 +176,7 @@ func (h *ContestRegistrationHandler) GetTeamRegistrationStatus(c *gin.Context) {
 		return
 	}
 
-	registered, err := h.registrationService.IsTeamRegistered(team.ID.Hex(), contestID)
+	registered, err := h.registrationService.IsTeamRegistered(team.ID, contestID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check registration status"})
 		return

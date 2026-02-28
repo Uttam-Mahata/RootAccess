@@ -1,82 +1,74 @@
 package repositories
 
 import (
-	"context"
+	"database/sql"
+	"fmt"
+	"strings"
 	"time"
 
-	"github.com/Uttam-Mahata/RootAccess/backend/internal/database"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
+	"github.com/google/uuid"
 )
 
 type ScoreAdjustmentRepository struct {
-	collection *mongo.Collection
+	db *sql.DB
 }
 
-func NewScoreAdjustmentRepository() *ScoreAdjustmentRepository {
-	return &ScoreAdjustmentRepository{
-		collection: database.DB.Collection("score_adjustments"),
-	}
+func NewScoreAdjustmentRepository(db *sql.DB) *ScoreAdjustmentRepository {
+	return &ScoreAdjustmentRepository{db: db}
 }
 
-func (r *ScoreAdjustmentRepository) Create(adjustment *models.ScoreAdjustment) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+func (r *ScoreAdjustmentRepository) Create(adj *models.ScoreAdjustment) error {
+	if adj.ID == "" {
+		adj.ID = uuid.New().String()
+	}
+	adj.CreatedAt = time.Now()
 
-	adjustment.CreatedAt = time.Now()
-	res, err := r.collection.InsertOne(ctx, adjustment)
-	if err != nil {
-		return err
-	}
-	if oid, ok := res.InsertedID.(primitive.ObjectID); ok {
-		adjustment.ID = oid
-	}
-	return nil
+	query := `INSERT INTO score_adjustments (id, target_type, target_id, delta, reason, created_by, created_at)
+			  VALUES (?, ?, ?, ?, ?, ?, ?)`
+	_, err := r.db.Exec(query, adj.ID, adj.TargetType, adj.TargetID, adj.Delta, adj.Reason, adj.CreatedBy, adj.CreatedAt.Format(time.RFC3339))
+	return err
 }
 
-// GetAdjustmentsForUsers returns a map of userID(hex) -> total delta.
-func (r *ScoreAdjustmentRepository) GetAdjustmentsForUsers(userIDs []primitive.ObjectID) (map[string]int, error) {
+func (r *ScoreAdjustmentRepository) GetAdjustmentsForUsers(userIDs []string) (map[string]int, error) {
 	return r.getAdjustmentsByTargets(models.ScoreAdjustmentTargetUser, userIDs)
 }
 
-// GetAdjustmentsForTeams returns a map of teamID(hex) -> total delta.
-func (r *ScoreAdjustmentRepository) GetAdjustmentsForTeams(teamIDs []primitive.ObjectID) (map[string]int, error) {
+func (r *ScoreAdjustmentRepository) GetAdjustmentsForTeams(teamIDs []string) (map[string]int, error) {
 	return r.getAdjustmentsByTargets(models.ScoreAdjustmentTargetTeam, teamIDs)
 }
 
-func (r *ScoreAdjustmentRepository) getAdjustmentsByTargets(targetType string, ids []primitive.ObjectID) (map[string]int, error) {
+func (r *ScoreAdjustmentRepository) getAdjustmentsByTargets(targetType string, ids []string) (map[string]int, error) {
 	result := make(map[string]int)
 	if len(ids) == 0 {
 		return result, nil
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	filter := bson.M{
-		"target_type": targetType,
-		"target_id": bson.M{
-			"$in": ids,
-		},
+	placeholders := make([]string, len(ids))
+	args := make([]interface{}, len(ids)+1)
+	args[0] = targetType
+	for i, id := range ids {
+		placeholders[i] = "?"
+		args[i+1] = id
 	}
 
-	cursor, err := r.collection.Find(ctx, filter)
+	query := fmt.Sprintf(`SELECT target_id, SUM(delta) FROM score_adjustments 
+						  WHERE target_type=? AND target_id IN (%s) GROUP BY target_id`, strings.Join(placeholders, ","))
+
+	rows, err := r.db.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close(ctx)
+	defer rows.Close()
 
-	for cursor.Next(ctx) {
-		var adj models.ScoreAdjustment
-		if err := cursor.Decode(&adj); err != nil {
+	for rows.Next() {
+		var targetID string
+		var sum int
+		if err := rows.Scan(&targetID, &sum); err != nil {
 			return nil, err
 		}
-		key := adj.TargetID.Hex()
-		result[key] += adj.Delta
+		result[targetID] = sum
 	}
 
-	return result, cursor.Err()
+	return result, nil
 }
-

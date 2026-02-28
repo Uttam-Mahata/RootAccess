@@ -1,40 +1,33 @@
 package repositories
 
 import (
-	"context"
+	"database/sql"
 	"time"
 
-	"github.com/Uttam-Mahata/RootAccess/backend/internal/database"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"github.com/google/uuid"
 )
 
 type AuditLogRepository struct {
-	collection *mongo.Collection
+	db *sql.DB
 }
 
-func NewAuditLogRepository() *AuditLogRepository {
-	return &AuditLogRepository{
-		collection: database.DB.Collection("audit_logs"),
-	}
+func NewAuditLogRepository(db *sql.DB) *AuditLogRepository {
+	return &AuditLogRepository{db: db}
 }
 
 func (r *AuditLogRepository) CreateLog(log *models.AuditLog) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
+	if log.ID == "" {
+		log.ID = uuid.New().String()
+	}
 	log.CreatedAt = time.Now()
 
-	_, err := r.collection.InsertOne(ctx, log)
+	_, err := r.db.Exec("INSERT INTO audit_logs (id, user_id, username, action, resource, details, ip_address, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+		log.ID, log.UserID, log.Username, log.Action, log.Resource, log.Details, log.IPAddress, log.CreatedAt.Format(time.RFC3339))
 	return err
 }
 
 func (r *AuditLogRepository) GetLogs(limit int, page int) ([]models.AuditLog, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
 	if limit <= 0 {
 		limit = 50
 	}
@@ -43,27 +36,27 @@ func (r *AuditLogRepository) GetLogs(limit int, page int) ([]models.AuditLog, er
 	}
 	skip := (page - 1) * limit
 
-	opts := options.Find().
-		SetSort(bson.M{"created_at": -1}).
-		SetLimit(int64(limit)).
-		SetSkip(int64(skip))
-
-	cursor, err := r.collection.Find(ctx, bson.M{}, opts)
+	rows, err := r.db.Query("SELECT id, user_id, username, action, resource, details, ip_address, created_at FROM audit_logs ORDER BY created_at DESC LIMIT ? OFFSET ?", limit, skip)
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close(ctx)
+	defer rows.Close()
 
 	var logs []models.AuditLog
-	if err = cursor.All(ctx, &logs); err != nil {
-		return nil, err
+	for rows.Next() {
+		var l models.AuditLog
+		var created string
+		if err := rows.Scan(&l.ID, &l.UserID, &l.Username, &l.Action, &l.Resource, &l.Details, &l.IPAddress, &created); err != nil {
+			return nil, err
+		}
+		l.CreatedAt, _ = time.Parse(time.RFC3339, created)
+		logs = append(logs, l)
 	}
 	return logs, nil
 }
 
 func (r *AuditLogRepository) GetLogCount() (int64, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	return r.collection.CountDocuments(ctx, bson.M{})
+	var count int64
+	err := r.db.QueryRow("SELECT COUNT(*) FROM audit_logs").Scan(&count)
+	return count, err
 }

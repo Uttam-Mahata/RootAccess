@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/services"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/utils"
+	"github.com/gin-gonic/gin"
 )
 
 type ContestHandler struct {
@@ -44,7 +44,7 @@ func (h *ContestHandler) GetContestStatus(c *gin.Context) {
 		response["is_active"] = config.IsActive
 		response["is_paused"] = config.IsPaused
 		response["scoreboard_visibility"] = config.ScoreboardVisibility
-		if config.FreezeTime != nil {
+		if config.FreezeTime != "" {
 			response["freeze_time"] = config.FreezeTime
 			response["is_frozen"] = config.IsScoreboardFrozen()
 		}

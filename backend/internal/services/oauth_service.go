@@ -318,20 +318,18 @@ func (s *OAuthService) findOrCreateOAuthUser(provider, providerID, email, userna
 		}
 
 		user = &models.User{
-			Username:      username,
-			Email:         email,
-			PasswordHash:  "",
-			Role:          "user",
-			EmailVerified: true,
-			OAuth: &models.OAuth{
-				Provider:     provider,
-				ProviderID:   providerID,
-				AccessToken:  token.AccessToken,
-				RefreshToken: token.RefreshToken,
-				ExpiresAt:    token.Expiry,
-			},
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
+			Username:          username,
+			Email:             email,
+			PasswordHash:      "",
+			Role:              "user",
+			EmailVerified:     true,
+			OAuthProvider:     provider,
+			OAuthProviderID:   providerID,
+			OAuthAccessToken:  token.AccessToken,
+			OAuthRefreshToken: token.RefreshToken,
+			OAuthExpiresAt:    token.Expiry.Format(time.RFC3339),
+			CreatedAt:         time.Now(),
+			UpdatedAt:         time.Now(),
 		}
 
 		if err := s.userRepo.CreateUser(user); err != nil {
@@ -341,14 +339,12 @@ func (s *OAuthService) findOrCreateOAuthUser(provider, providerID, email, userna
 	}
 
 	// User exists, link or update OAuth
-	if user.OAuth == nil || user.OAuth.Provider != provider {
-		user.OAuth = &models.OAuth{
-			Provider:     provider,
-			ProviderID:   providerID,
-			AccessToken:  token.AccessToken,
-			RefreshToken: token.RefreshToken,
-			ExpiresAt:    token.Expiry,
-		}
+	if user.OAuthProvider == "" || user.OAuthProvider != provider {
+		user.OAuthProvider = provider
+		user.OAuthProviderID = providerID
+		user.OAuthAccessToken = token.AccessToken
+		user.OAuthRefreshToken = token.RefreshToken
+		user.OAuthExpiresAt = token.Expiry.Format(time.RFC3339)
 		user.EmailVerified = true
 		user.UpdatedAt = time.Now()
 
@@ -356,9 +352,9 @@ func (s *OAuthService) findOrCreateOAuthUser(provider, providerID, email, userna
 			return nil, fmt.Errorf("failed to link OAuth account: %w", err)
 		}
 	} else {
-		user.OAuth.AccessToken = token.AccessToken
-		user.OAuth.RefreshToken = token.RefreshToken
-		user.OAuth.ExpiresAt = token.Expiry
+		user.OAuthAccessToken = token.AccessToken
+		user.OAuthRefreshToken = token.RefreshToken
+		user.OAuthExpiresAt = token.Expiry.Format(time.RFC3339)
 		user.UpdatedAt = time.Now()
 
 		if err := s.userRepo.UpdateUser(user); err != nil {
@@ -372,7 +368,7 @@ func (s *OAuthService) findOrCreateOAuthUser(provider, providerID, email, userna
 // generateJWTAndUserInfo creates a JWT token and UserInfo response for a user
 func (s *OAuthService) generateJWTAndUserInfo(user *models.User) (string, *UserInfo, error) {
 	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"user_id":  user.ID.Hex(),
+		"user_id":  user.ID,
 		"username": user.Username,
 		"email":    user.Email,
 		"role":     user.Role,
@@ -385,7 +381,7 @@ func (s *OAuthService) generateJWTAndUserInfo(user *models.User) (string, *UserI
 	}
 
 	userInfo := &UserInfo{
-		ID:       user.ID.Hex(),
+		ID:       user.ID,
 		Username: user.Username,
 		Email:    user.Email,
 		Role:     user.Role,

@@ -4,13 +4,13 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/services"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/utils"
 	websocketPkg "github.com/Uttam-Mahata/RootAccess/backend/internal/websocket"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 type ChallengeHandler struct {
@@ -37,12 +37,12 @@ func NewChallengeHandlerWithRepos(challengeService *services.ChallengeService, a
 	return &ChallengeHandler{
 		challengeService:    challengeService,
 		achievementService:  achievementService,
-		contestService:     contestService,
+		contestService:      contestService,
 		contestAdminService: contestAdminService,
-		submissionRepo:     submissionRepo,
-		userRepo:           userRepo,
-		teamRepo:           teamRepo,
-		wsHub:              wsHub,
+		submissionRepo:      submissionRepo,
+		userRepo:            userRepo,
+		teamRepo:            teamRepo,
+		wsHub:               wsHub,
 	}
 }
 
@@ -120,7 +120,7 @@ func (h *ChallengeHandler) CreateChallenge(c *gin.Context) {
 			order = i + 1
 		}
 		hints = append(hints, models.Hint{
-			ID:      primitive.NewObjectID(),
+			ID:      uuid.New().String(),
 			Content: h.Content,
 			Cost:    h.Cost,
 			Order:   order,
@@ -198,7 +198,7 @@ func (h *ChallengeHandler) UpdateChallenge(c *gin.Context) {
 			order = i + 1
 		}
 		hints = append(hints, models.Hint{
-			ID:      primitive.NewObjectID(),
+			ID:      uuid.New().String(),
 			Content: hint.Content,
 			Cost:    hint.Cost,
 			Order:   order,
@@ -277,7 +277,7 @@ func (h *ChallengeHandler) GetAllChallengesWithFlags(c *gin.Context) {
 	var result []ChallengeAdminResponse
 	for _, ch := range challenges {
 		result = append(result, ChallengeAdminResponse{
-			ID:                ch.ID.Hex(),
+			ID:                ch.ID,
 			Title:             ch.Title,
 			Description:       ch.Description, // empty when list=1 (projection excluded it)
 			DescriptionFormat: ch.DescriptionFormat,
@@ -329,12 +329,12 @@ type ChallengePublicResponse struct {
 // @Router /challenges [get]
 func (h *ChallengeHandler) GetAllChallenges(c *gin.Context) {
 	// Determine current user and their team
-	var userID primitive.ObjectID
-	var teamID *primitive.ObjectID
+	var userID string
+	var teamID *string
 	if userIDStr, exists := c.Get("user_id"); exists {
-		userID, _ = primitive.ObjectIDFromHex(userIDStr.(string))
-		if h.teamRepo != nil && !userID.IsZero() {
-			if team, err := h.teamRepo.FindTeamByMemberID(userID.Hex()); err == nil && team != nil {
+		userID = userIDStr.(string)
+		if h.teamRepo != nil && userID != "" {
+			if team, err := h.teamRepo.FindTeamByMemberID(userID); err == nil && team != nil {
 				teamID = &team.ID
 			}
 		}
@@ -360,18 +360,18 @@ func (h *ChallengeHandler) GetAllChallenges(c *gin.Context) {
 	var result []ChallengePublicResponse
 	for _, ch := range challenges {
 		isSolved := false
-		if h.submissionRepo != nil && !userID.IsZero() {
+		if h.submissionRepo != nil && userID != "" {
 			if sub, _ := h.submissionRepo.FindByChallengeAndUser(ch.ID, userID); sub != nil {
 				isSolved = true
 			}
-			if !isSolved && teamID != nil && !teamID.IsZero() {
+			if !isSolved && teamID != nil && *teamID != "" {
 				if teamSub, _ := h.submissionRepo.FindByChallengeAndTeam(ch.ID, *teamID); teamSub != nil {
 					isSolved = true
 				}
 			}
 		}
 		result = append(result, ChallengePublicResponse{
-			ID:                ch.ID.Hex(),
+			ID:                ch.ID,
 			Title:             ch.Title,
 			Description:       ch.Description,
 			DescriptionFormat: ch.DescriptionFormat,
@@ -403,10 +403,10 @@ func (h *ChallengeHandler) GetChallengeByID(c *gin.Context) {
 	if h.contestAdminService != nil {
 		role, _ := c.Get("role")
 		if role != "admin" {
-			var teamID *primitive.ObjectID
+			var teamID *string
 			if userIDStr, exists := c.Get("user_id"); exists && h.teamRepo != nil {
-				userID, _ := primitive.ObjectIDFromHex(userIDStr.(string))
-				if !userID.IsZero() {
+				userID := userIDStr.(string)
+				if userID != "" {
 					if team, err := h.teamRepo.FindTeamByMemberID(userIDStr.(string)); err == nil && team != nil {
 						teamID = &team.ID
 					}
@@ -423,13 +423,13 @@ func (h *ChallengeHandler) GetChallengeByID(c *gin.Context) {
 	// Determine if the current user (or their team) has already solved this challenge
 	isSolved := false
 	if userIDStr, exists := c.Get("user_id"); exists && h.submissionRepo != nil {
-		userID, _ := primitive.ObjectIDFromHex(userIDStr.(string))
-		if !userID.IsZero() {
+		userID := userIDStr.(string)
+		if userID != "" {
 			if sub, _ := h.submissionRepo.FindByChallengeAndUser(challenge.ID, userID); sub != nil {
 				isSolved = true
 			}
 			if !isSolved && h.teamRepo != nil {
-				if team, err := h.teamRepo.FindTeamByMemberID(userID.Hex()); err == nil && team != nil {
+				if team, err := h.teamRepo.FindTeamByMemberID(userID); err == nil && team != nil {
 					if teamSub, _ := h.submissionRepo.FindByChallengeAndTeam(challenge.ID, team.ID); teamSub != nil {
 						isSolved = true
 					}
@@ -440,7 +440,7 @@ func (h *ChallengeHandler) GetChallengeByID(c *gin.Context) {
 
 	// Build public response (no flag hash)
 	response := ChallengePublicResponse{
-		ID:                challenge.ID.Hex(),
+		ID:                challenge.ID,
 		Title:             challenge.Title,
 		Description:       challenge.Description,
 		DescriptionFormat: challenge.DescriptionFormat,
@@ -560,7 +560,7 @@ func (h *ChallengeHandler) SubmitFlag(c *gin.Context) {
 
 	// Reject submissions to non-visible challenges (not in active contest/round or team not registered)
 	if h.contestAdminService != nil {
-		var teamID *primitive.ObjectID
+		var teamID *string
 		if h.teamRepo != nil {
 			if team, err := h.teamRepo.FindTeamByMemberID(userIDStr.(string)); err == nil && team != nil {
 				teamID = &team.ID
@@ -574,7 +574,7 @@ func (h *ChallengeHandler) SubmitFlag(c *gin.Context) {
 	}
 
 	// Convert interface{} to string then ObjectID
-	userID, _ := primitive.ObjectIDFromHex(userIDStr.(string))
+	userID := userIDStr.(string)
 
 	var req SubmitFlagRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -585,9 +585,9 @@ func (h *ChallengeHandler) SubmitFlag(c *gin.Context) {
 	clientIP := c.ClientIP()
 
 	// Resolve active contest ID for submission tracking
-	var contestID *primitive.ObjectID
+	var contestID *string
 	if h.contestAdminService != nil {
-		if cfg, err := h.contestAdminService.GetActiveContestConfig(); err == nil && cfg != nil && !cfg.ContestID.IsZero() {
+		if cfg, err := h.contestAdminService.GetActiveContestConfig(); err == nil && cfg != nil && cfg.ContestID != "" {
 			id := cfg.ContestID
 			contestID = &id
 		}
@@ -617,7 +617,7 @@ func (h *ChallengeHandler) SubmitFlag(c *gin.Context) {
 
 		// Broadcast solve event via WebSocket
 		if h.wsHub != nil {
-			challengeObjID, _ := primitive.ObjectIDFromHex(challengeID)
+			challengeObjID := challengeID
 			username, _ := c.Get("username")
 			h.wsHub.BroadcastMessage("solve_feed", gin.H{
 				"user_id":      userIDStr,
@@ -633,7 +633,7 @@ func (h *ChallengeHandler) SubmitFlag(c *gin.Context) {
 
 			// Check and award achievements
 			if h.achievementService != nil {
-				teamID := primitive.NilObjectID
+				teamID := ""
 				go h.achievementService.CheckAndAwardAchievements(userID, teamID, challengeObjID)
 			}
 		}
@@ -644,18 +644,18 @@ func (h *ChallengeHandler) SubmitFlag(c *gin.Context) {
 
 // SolveEntryResponse represents a single solve for the challenge solves endpoint
 type SolveEntryResponse struct {
-	UserID    string    `json:"user_id"`
-	Username  string    `json:"username"`
-	TeamID    string    `json:"team_id,omitempty"`
-	TeamName  string    `json:"team_name,omitempty"`
-	SolvedAt  time.Time `json:"solved_at"`
+	UserID   string    `json:"user_id"`
+	Username string    `json:"username"`
+	TeamID   string    `json:"team_id,omitempty"`
+	TeamName string    `json:"team_name,omitempty"`
+	SolvedAt time.Time `json:"solved_at"`
 }
 
 // GetChallengeSolves returns the list of users/teams that solved a challenge
 func (h *ChallengeHandler) GetChallengeSolves(c *gin.Context) {
 	challengeID := c.Param("id")
-	cid, err := primitive.ObjectIDFromHex(challengeID)
-	if err != nil {
+	cid := challengeID
+	if cid == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid challenge ID"})
 		return
 	}
@@ -675,9 +675,9 @@ func (h *ChallengeHandler) GetChallengeSolves(c *gin.Context) {
 	seen := make(map[string]bool)
 	var solves []SolveEntryResponse
 	for _, sub := range submissions {
-		key := sub.UserID.Hex()
-		if !sub.TeamID.IsZero() {
-			key = "team:" + sub.TeamID.Hex()
+		key := sub.UserID
+		if sub.TeamID != "" {
+			key = "team:" + sub.TeamID
 		}
 		if seen[key] {
 			continue
@@ -685,23 +685,23 @@ func (h *ChallengeHandler) GetChallengeSolves(c *gin.Context) {
 		seen[key] = true
 
 		entry := SolveEntryResponse{
-			UserID:   sub.UserID.Hex(),
+			UserID:   sub.UserID,
 			SolvedAt: sub.Timestamp,
 		}
 
 		// Look up username
 		if h.userRepo != nil {
-			user, err := h.userRepo.FindByID(sub.UserID.Hex())
+			user, err := h.userRepo.FindByID(sub.UserID)
 			if err == nil && user != nil {
 				entry.Username = user.Username
 			}
 		}
 
 		// Look up team name
-		if !sub.TeamID.IsZero() && h.teamRepo != nil {
-			team, err := h.teamRepo.FindTeamByID(sub.TeamID.Hex())
+		if sub.TeamID != "" && h.teamRepo != nil {
+			team, err := h.teamRepo.FindTeamByID(sub.TeamID)
 			if err == nil && team != nil {
-				entry.TeamID = team.ID.Hex()
+				entry.TeamID = team.ID
 				entry.TeamName = team.Name
 			}
 		}

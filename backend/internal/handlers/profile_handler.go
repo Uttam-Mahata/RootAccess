@@ -3,9 +3,9 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
+	"github.com/gin-gonic/gin"
 )
 
 type ProfileHandler struct {
@@ -31,12 +31,12 @@ func NewProfileHandler(
 
 // SolvedChallenge represents a challenge solved by the user
 type SolvedChallenge struct {
-	ID            string `json:"id"`
-	Title         string `json:"title"`
-	Category      string `json:"category"`
-	Difficulty    string `json:"difficulty"`
-	Points        int    `json:"points"`
-	SolvedAt      string `json:"solved_at"`
+	ID         string `json:"id"`
+	Title      string `json:"title"`
+	Category   string `json:"category"`
+	Difficulty string `json:"difficulty"`
+	Points     int    `json:"points"`
+	SolvedAt   string `json:"solved_at"`
 }
 
 // CategoryStats represents solve statistics by category
@@ -48,15 +48,15 @@ type CategoryStats struct {
 
 // UserProfileResponse represents the user profile data
 type UserProfileResponse struct {
-	Username          string            `json:"username"`
-	JoinedAt          string            `json:"joined_at"`
-	TeamID            string            `json:"team_id,omitempty"`
-	TeamName          string            `json:"team_name,omitempty"`
-	TotalPoints       int               `json:"total_points"`
-	SolveCount        int               `json:"solve_count"`
-	TotalSubmissions  int64             `json:"total_submissions"`
-	SolvedChallenges  []SolvedChallenge `json:"solved_challenges"`
-	CategoryStats     []CategoryStats   `json:"category_stats"`
+	Username         string            `json:"username"`
+	JoinedAt         string            `json:"joined_at"`
+	TeamID           string            `json:"team_id,omitempty"`
+	TeamName         string            `json:"team_name,omitempty"`
+	TotalPoints      int               `json:"total_points"`
+	SolveCount       int               `json:"solve_count"`
+	TotalSubmissions int64             `json:"total_submissions"`
+	SolvedChallenges []SolvedChallenge `json:"solved_challenges"`
+	CategoryStats    []CategoryStats   `json:"category_stats"`
 }
 
 // GetUserProfile returns the public profile of a user by username
@@ -88,7 +88,7 @@ func (h *ProfileHandler) GetUserProfile(c *gin.Context) {
 	// Create a map of challenge ID to challenge
 	challengeMap := make(map[string]models.Challenge)
 	for _, ch := range challenges {
-		challengeMap[ch.ID.Hex()] = ch
+		challengeMap[ch.ID] = ch
 	}
 
 	// Get user's correct submissions
@@ -107,7 +107,7 @@ func (h *ProfileHandler) GetUserProfile(c *gin.Context) {
 	seenChallenges := make(map[string]bool) // To avoid duplicates
 
 	for _, sub := range submissions {
-		challengeID := sub.ChallengeID.Hex()
+		challengeID := sub.ChallengeID
 		if seenChallenges[challengeID] {
 			continue
 		}
@@ -149,9 +149,9 @@ func (h *ProfileHandler) GetUserProfile(c *gin.Context) {
 	// Check if user is in a team
 	teamID := ""
 	teamName := ""
-	team, _ := h.teamRepo.FindTeamByMemberID(user.ID.Hex())
+	team, _ := h.teamRepo.FindTeamByMemberID(user.ID)
 	if team != nil {
-		teamID = team.ID.Hex()
+		teamID = team.ID
 		teamName = team.Name
 	}
 

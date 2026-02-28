@@ -4,10 +4,10 @@
 package routes
 
 import (
+	_ "github.com/Uttam-Mahata/RootAccess/backend/docs"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
-	_ "github.com/Uttam-Mahata/RootAccess/backend/docs"
 )
 
 func registerSwagger(r *gin.Engine) {

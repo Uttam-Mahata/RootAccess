@@ -5,7 +5,6 @@ import (
 
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type WriteupService struct {
@@ -27,9 +26,9 @@ func NewWriteupService(
 }
 
 // CreateWriteup creates a new writeup (user must have solved the challenge)
-func (s *WriteupService) CreateWriteup(userID primitive.ObjectID, username string, challengeID string, content string, contentFormat string) (*models.Writeup, error) {
-	cid, err := primitive.ObjectIDFromHex(challengeID)
-	if err != nil {
+func (s *WriteupService) CreateWriteup(userID string, username string, challengeID string, content string, contentFormat string) (*models.Writeup, error) {
+	cid := challengeID
+	if cid == "" {
 		return nil, errors.New("invalid challenge ID")
 	}
 
@@ -54,7 +53,7 @@ func (s *WriteupService) CreateWriteup(userID primitive.ObjectID, username strin
 	}
 
 	// Check if user is in a team and if team has participated (solved any challenges)
-	team, _ := s.teamRepo.FindTeamByMemberID(userID.Hex())
+	team, _ := s.teamRepo.FindTeamByMemberID(userID)
 	if team != nil {
 		// Check if team has any correct submissions (has participated)
 		teamSubmissions, _ := s.submissionRepo.GetTeamSubmissions(team.ID)
@@ -73,8 +72,8 @@ func (s *WriteupService) CreateWriteup(userID primitive.ObjectID, username strin
 
 // GetWriteupsByChallenge returns approved writeups for a challenge
 func (s *WriteupService) GetWriteupsByChallenge(challengeID string) ([]models.Writeup, error) {
-	cid, err := primitive.ObjectIDFromHex(challengeID)
-	if err != nil {
+	cid := challengeID
+	if cid == "" {
 		return nil, errors.New("invalid challenge ID")
 	}
 	return s.writeupRepo.GetWriteupsByChallenge(cid, true)
@@ -102,12 +101,12 @@ func (s *WriteupService) DeleteWriteup(id string) error {
 }
 
 // GetMyWriteups returns writeups for a specific user
-func (s *WriteupService) GetMyWriteups(userID primitive.ObjectID) ([]models.Writeup, error) {
+func (s *WriteupService) GetMyWriteups(userID string) ([]models.Writeup, error) {
 	return s.writeupRepo.GetWriteupsByUser(userID)
 }
 
 // UpdateWriteupContent allows authors to edit their own writeup content
-func (s *WriteupService) UpdateWriteupContent(writeupID string, userID primitive.ObjectID, content string, contentFormat string) error {
+func (s *WriteupService) UpdateWriteupContent(writeupID string, userID string, content string, contentFormat string) error {
 	writeup, err := s.writeupRepo.GetWriteupByID(writeupID)
 	if err != nil {
 		return errors.New("writeup not found")
@@ -119,6 +118,6 @@ func (s *WriteupService) UpdateWriteupContent(writeupID string, userID primitive
 }
 
 // ToggleUpvote toggles a user's upvote on a writeup
-func (s *WriteupService) ToggleUpvote(writeupID string, userID primitive.ObjectID) (bool, error) {
+func (s *WriteupService) ToggleUpvote(writeupID string, userID string) (bool, error) {
 	return s.writeupRepo.ToggleUpvote(writeupID, userID)
 }

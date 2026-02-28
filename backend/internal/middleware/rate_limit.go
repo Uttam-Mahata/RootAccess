@@ -7,9 +7,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Uttam-Mahata/RootAccess/backend/internal/database"
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
-	"github.com/Uttam-Mahata/RootAccess/backend/internal/database"
 )
 
 // localLimiter is an in-memory fallback for when Redis is unavailable.

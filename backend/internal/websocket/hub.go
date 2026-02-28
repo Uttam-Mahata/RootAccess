@@ -132,12 +132,12 @@ func (h *MemoryHub) SendToUser(userID string, msgType string, payload interface{
 
 // Stub AWS methods for MemoryHub
 func (h *MemoryHub) RegisterConnection(ctx context.Context, c string, u string) error { return nil }
-func (h *MemoryHub) UnregisterConnection(ctx context.Context, c string) error        { return nil }
+func (h *MemoryHub) UnregisterConnection(ctx context.Context, c string) error         { return nil }
 
 // RedisHub: Distributed implementation for persistent servers (EC2/Containers)
 type RedisHub struct {
 	*MemoryHub
-	redisClient *redis.Client
+	redisClient      *redis.Client
 	broadcastChannel string
 	userChannel      string
 }
@@ -196,11 +196,11 @@ func (h *RedisHub) SendToUser(userID string, msgType string, payload interface{}
 
 // AwsLambdaHub: Stateless implementation using API Gateway WebSocket API + Redis
 type AwsLambdaHub struct {
-	redisClient *redis.Client
-	awsClient   *apigatewaymanagementapi.Client
-	callbackURL string
+	redisClient       *redis.Client
+	awsClient         *apigatewaymanagementapi.Client
+	callbackURL       string
 	connectionsSetKey string // Redis set key for all connection IDs
-	userPrefixKey      string // Redis key prefix for user-to-connections mapping
+	userPrefixKey     string // Redis key prefix for user-to-connections mapping
 }
 
 func NewAwsLambdaHub(redisClient *redis.Client, awsCfg aws.Config, callbackURL string) Hub {
@@ -216,11 +216,11 @@ func NewAwsLambdaHub(redisClient *redis.Client, awsCfg aws.Config, callbackURL s
 		awsClient:         apiClient,
 		callbackURL:       callbackURL,
 		connectionsSetKey: "ws:active_connections",
-		userPrefixKey:      "ws:user_connections:",
+		userPrefixKey:     "ws:user_connections:",
 	}
 }
 
-func (h *AwsLambdaHub) Run() { /* Stateless - no loop needed */ }
+func (h *AwsLambdaHub) Run()                    { /* Stateless - no loop needed */ }
 func (h *AwsLambdaHub) Register(client *Client) { /* Handled by API Gateway $connect */ }
 
 func (h *AwsLambdaHub) RegisterConnection(ctx context.Context, connectionID string, userID string) error {

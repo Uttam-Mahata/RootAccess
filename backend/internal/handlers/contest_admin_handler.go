@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/services"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/utils"
+	"github.com/gin-gonic/gin"
 )
 
 type ContestAdminHandler struct {
@@ -437,7 +437,7 @@ func (h *ContestAdminHandler) GetRoundChallenges(c *gin.Context) {
 
 	strIDs := make([]string, len(ids))
 	for i, id := range ids {
-		strIDs[i] = id.Hex()
+		strIDs[i] = id
 	}
 	c.JSON(http.StatusOK, strIDs)
 }

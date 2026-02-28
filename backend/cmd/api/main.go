@@ -47,7 +47,8 @@ func main() {
 	cfg := appConfig
 
 	// Connect to Database
-	database.ConnectDB(cfg.MongoURI, cfg.DBName)
+	database.ConnectTurso(cfg.TursoURL, cfg.TursoAuthToken)
+	database.BootstrapSchema(database.TursoDB)
 
 	// Connect to 6 Upstash Redis instances
 	database.ConnectRedisRegistry(map[string]string{

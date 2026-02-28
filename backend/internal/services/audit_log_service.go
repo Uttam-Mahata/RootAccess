@@ -3,7 +3,6 @@ package services
 import (
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type AuditLogService struct {
@@ -17,7 +16,7 @@ func NewAuditLogService(auditRepo *repositories.AuditLogRepository) *AuditLogSer
 }
 
 // Log records an audit event
-func (s *AuditLogService) Log(userID primitive.ObjectID, username, action, resource, details, ipAddress string) {
+func (s *AuditLogService) Log(userID string, username, action, resource, details, ipAddress string) {
 	log := &models.AuditLog{
 		UserID:    userID,
 		Username:  username,

@@ -3,12 +3,10 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/models"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/repositories"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/utils"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"github.com/gin-gonic/gin"
 )
 
 type AdminUserHandler struct {
@@ -33,21 +31,21 @@ func NewAdminUserHandlerWithRepos(userRepo *repositories.UserRepository, teamRep
 
 // AdminUserResponse represents a user with detailed admin info
 type AdminUserResponse struct {
-	ID             string      `json:"id"`
-	Username       string      `json:"username"`
-	Email          string      `json:"email"`
-	Role           string      `json:"role"`
-	Status         string      `json:"status"`
-	EmailVerified  bool        `json:"email_verified"`
-	LastIP         string      `json:"last_ip,omitempty"`
-	IPHistory      interface{} `json:"ip_history,omitempty"`
-	LastLoginAt    string      `json:"last_login_at,omitempty"`
-	TeamID         string      `json:"team_id,omitempty"`
-	TeamName       string      `json:"team_name,omitempty"`
-	BanReason      string      `json:"ban_reason,omitempty"`
-	OAuthProvider  string      `json:"oauth_provider,omitempty"`
-	CreatedAt      string      `json:"created_at"`
-	UpdatedAt      string      `json:"updated_at"`
+	ID            string      `json:"id"`
+	Username      string      `json:"username"`
+	Email         string      `json:"email"`
+	Role          string      `json:"role"`
+	Status        string      `json:"status"`
+	EmailVerified bool        `json:"email_verified"`
+	LastIP        string      `json:"last_ip,omitempty"`
+	IPHistory     interface{} `json:"ip_history,omitempty"`
+	LastLoginAt   string      `json:"last_login_at,omitempty"`
+	TeamID        string      `json:"team_id,omitempty"`
+	TeamName      string      `json:"team_name,omitempty"`
+	BanReason     string      `json:"ban_reason,omitempty"`
+	OAuthProvider string      `json:"oauth_provider,omitempty"`
+	CreatedAt     string      `json:"created_at"`
+	UpdatedAt     string      `json:"updated_at"`
 }
 
 // ListUsers returns all users with detailed information for admin
@@ -68,32 +66,32 @@ func (h *AdminUserHandler) ListUsers(c *gin.Context) {
 	result := make([]AdminUserResponse, 0, len(users))
 	for _, u := range users {
 		response := AdminUserResponse{
-			ID:            u.ID.Hex(),
+			ID:            u.ID,
 			Username:      u.Username,
 			Email:         u.Email,
 			Role:          u.Role,
 			Status:        u.Status,
 			EmailVerified: u.EmailVerified,
 			LastIP:        u.LastIP,
-			IPHistory:     u.IPHistory,
+			IPHistory:     nil,
 			BanReason:     u.BanReason,
 			CreatedAt:     u.CreatedAt.Format("2006-01-02T15:04:05Z"),
 			UpdatedAt:     u.UpdatedAt.Format("2006-01-02T15:04:05Z"),
 		}
 
-		if u.LastLoginAt != nil {
-			response.LastLoginAt = u.LastLoginAt.Format("2006-01-02T15:04:05Z")
+		if u.LastLoginAt != "" {
+			response.LastLoginAt = u.LastLoginAt
 		}
 
-		if u.OAuth != nil {
-			response.OAuthProvider = u.OAuth.Provider
+		if u.OAuthProvider != "" {
+			response.OAuthProvider = u.OAuthProvider
 		}
 
 		// Get team info if available
 		if h.teamRepo != nil {
-			team, err := h.teamRepo.FindTeamByMemberID(u.ID.Hex())
+			team, err := h.teamRepo.FindTeamByMemberID(u.ID)
 			if err == nil && team != nil {
-				response.TeamID = team.ID.Hex()
+				response.TeamID = team.ID
 				response.TeamName = team.Name
 			}
 		}
@@ -123,32 +121,32 @@ func (h *AdminUserHandler) GetUser(c *gin.Context) {
 	}
 
 	response := AdminUserResponse{
-		ID:            user.ID.Hex(),
+		ID:            user.ID,
 		Username:      user.Username,
 		Email:         user.Email,
 		Role:          user.Role,
 		Status:        user.Status,
 		EmailVerified: user.EmailVerified,
 		LastIP:        user.LastIP,
-		IPHistory:     user.IPHistory,
+		IPHistory:     nil,
 		BanReason:     user.BanReason,
 		CreatedAt:     user.CreatedAt.Format("2006-01-02T15:04:05Z"),
 		UpdatedAt:     user.UpdatedAt.Format("2006-01-02T15:04:05Z"),
 	}
 
-	if user.LastLoginAt != nil {
-		response.LastLoginAt = user.LastLoginAt.Format("2006-01-02T15:04:05Z")
+	if user.LastLoginAt != "" {
+		response.LastLoginAt = user.LastLoginAt
 	}
 
-	if user.OAuth != nil {
-		response.OAuthProvider = user.OAuth.Provider
+	if user.OAuthProvider != "" {
+		response.OAuthProvider = user.OAuthProvider
 	}
 
 	// Get team info if available
 	if h.teamRepo != nil {
-		team, err := h.teamRepo.FindTeamByMemberID(user.ID.Hex())
+		team, err := h.teamRepo.FindTeamByMemberID(user.ID)
 		if err == nil && team != nil {
-			response.TeamID = team.ID.Hex()
+			response.TeamID = team.ID
 			response.TeamName = team.Name
 		}
 	}
@@ -175,8 +173,8 @@ type UpdateUserStatusRequest struct {
 // @Router /admin/users/{id}/status [put]
 func (h *AdminUserHandler) UpdateUserStatus(c *gin.Context) {
 	id := c.Param("id")
-	objID, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
+	objID := id
+	if objID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return
 	}
@@ -189,8 +187,8 @@ func (h *AdminUserHandler) UpdateUserStatus(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid status. Must be 'active', 'banned', or 'suspended'"})
 		return
 	}
-	update := bson.M{"status": req.Status, "ban_reason": req.BanReason}
-	err = h.userRepo.UpdateFields(objID, update)
+	update := map[string]interface{}{"status": req.Status, "ban_reason": req.BanReason}
+	err := h.userRepo.UpdateFields(objID, update)
 	if err != nil {
 		utils.RespondWithError(c, http.StatusInternalServerError, err.Error(), err)
 		return
@@ -216,8 +214,8 @@ type UpdateUserRoleRequest struct {
 // @Router /admin/users/{id}/role [put]
 func (h *AdminUserHandler) UpdateUserRole(c *gin.Context) {
 	id := c.Param("id")
-	objID, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
+	objID := id
+	if objID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return
 	}
@@ -238,7 +236,7 @@ func (h *AdminUserHandler) UpdateUserRole(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid role. Must be 'admin' or 'user'"})
 		return
 	}
-	err = h.userRepo.UpdateFields(objID, bson.M{"role": req.Role})
+	err := h.userRepo.UpdateFields(objID, map[string]interface{}{"role": req.Role})
 	if err != nil {
 		utils.RespondWithError(c, http.StatusInternalServerError, err.Error(), err)
 		return
@@ -298,7 +296,7 @@ func (h *AdminUserHandler) AdjustUserScore(c *gin.Context) {
 
 	adminIDStr, _ := c.Get("user_id")
 	adminIDHex, _ := adminIDStr.(string)
-	adminID, _ := primitive.ObjectIDFromHex(adminIDHex)
+	adminID := adminIDHex
 
 	adj := &models.ScoreAdjustment{
 		TargetType: models.ScoreAdjustmentTargetUser,
@@ -331,8 +329,8 @@ func (h *AdminUserHandler) AdjustUserScore(c *gin.Context) {
 // @Router /admin/users/{id} [delete]
 func (h *AdminUserHandler) DeleteUser(c *gin.Context) {
 	userID := c.Param("id")
-	objID, err := primitive.ObjectIDFromHex(userID)
-	if err != nil {
+	objID := userID
+	if objID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return
 	}
@@ -362,7 +360,7 @@ func (h *AdminUserHandler) DeleteUser(c *gin.Context) {
 	// physically removing the record. This preserves data integrity for historical records
 	// like submissions and team memberships. The user will still appear in total counts.
 	// For a full purge, implement data cleanup in related tables (submissions, teams, etc.)
-	err = h.userRepo.UpdateFields(objID, bson.M{"status": "deleted"})
+	err = h.userRepo.UpdateFields(objID, map[string]interface{}{"status": "deleted"})
 	if err != nil {
 		utils.RespondWithError(c, http.StatusInternalServerError, err.Error(), err)
 		return

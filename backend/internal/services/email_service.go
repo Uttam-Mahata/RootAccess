@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/badoux/checkmail"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/config"
+	"github.com/badoux/checkmail"
 	mail "github.com/go-mail/mail/v2"
 )
 

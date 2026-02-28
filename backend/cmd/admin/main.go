@@ -17,10 +17,11 @@ var adminService *services.AdminService
 
 func main() {
 	cfg := config.LoadConfig()
-	database.ConnectDB(cfg.MongoURI, cfg.DBName)
+	database.ConnectTurso(cfg.TursoURL, cfg.TursoAuthToken)
+	database.BootstrapSchema(database.TursoDB)
 
 	// Initialize repository and service layers
-	userRepo := repositories.NewUserRepository()
+	userRepo := repositories.NewUserRepository(database.TursoDB)
 	adminService = services.NewAdminService(userRepo)
 
 	reader := bufio.NewReader(os.Stdin)

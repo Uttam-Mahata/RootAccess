@@ -13,7 +13,7 @@ func RespondWithError(c *gin.Context, code int, message string, err error) {
 	if err != nil {
 		log.Printf("[ERROR] %s: %v", message, err)
 	}
-	
+
 	// In production, we should avoid sending the raw error message
 	// for 500 Internal Server Errors.
 	responseMessage := message
