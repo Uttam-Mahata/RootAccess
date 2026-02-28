@@ -12,8 +12,8 @@ import (
 func TestIPRateLimitMiddleware(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	// Reset the global rate limiter for testing
-	ipRateLimiter = &IPRateLimiter{
+	// Reset the global local limiter for testing (no Redis in tests)
+	ipLocalLimiter = &localLimiter{
 		attempts: make(map[string][]time.Time),
 	}
 

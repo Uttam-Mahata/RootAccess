@@ -36,11 +36,15 @@ import (
 // @in header
 // @name Authorization
 
-var ginLambda *ginadapter.GinLambda
+var (
+	ginLambda *ginadapter.GinLambda
+	appConfig *config.Config
+)
 
 func main() {
 	// Local development or containerized deployment
-	cfg := config.LoadConfig()
+	appConfig = config.LoadConfig()
+	cfg := appConfig
 
 	// Connect to Database
 	database.ConnectDB(cfg.MongoURI, cfg.DBName)
@@ -71,7 +75,7 @@ func main() {
 
 // UnifiedHandler handles both REST and WebSocket API events
 func UnifiedHandler(ctx context.Context, event json.RawMessage) (interface{}, error) {
-	cfg := config.LoadConfig()
+	cfg := appConfig
 
 	// 1. Try to unmarshal as standard APIGatewayProxyRequest (REST)
 	var restReq events.APIGatewayProxyRequest

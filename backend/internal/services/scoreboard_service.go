@@ -283,7 +283,7 @@ func (s *ScoreboardService) GetScoreboard(contestID string) ([]UserScore, error)
 	if database.Registry != nil && database.Registry.Scoreboard != nil {
 		data, err := json.Marshal(scores)
 		if err == nil {
-			_ = database.Registry.Scoreboard.Set(ctx, cacheKey, data, 1*time.Minute).Err()
+			_ = database.Registry.Scoreboard.Set(ctx, cacheKey, data, 5*time.Minute).Err()
 		}
 	}
 
@@ -432,7 +432,7 @@ func (s *ScoreboardService) GetTeamScoreboard(contestID string) ([]TeamScore, er
 	if database.Registry != nil && database.Registry.Scoreboard != nil {
 		data, err := json.Marshal(scores)
 		if err == nil {
-			_ = database.Registry.Scoreboard.Set(ctx, cacheKey, data, 1*time.Minute).Err()
+			_ = database.Registry.Scoreboard.Set(ctx, cacheKey, data, 5*time.Minute).Err()
 		}
 	}
 
@@ -621,7 +621,7 @@ func (s *ScoreboardService) GetTeamScoreProgression(days int, contestID string) 
 
 	if database.Registry != nil && database.Registry.Scoreboard != nil {
 		if data, err := json.Marshal(progressions); err == nil {
-			_ = database.Registry.Scoreboard.Set(ctx, cacheKey, data, 1*time.Minute).Err()
+			_ = database.Registry.Scoreboard.Set(ctx, cacheKey, data, 5*time.Minute).Err()
 		}
 	}
 
