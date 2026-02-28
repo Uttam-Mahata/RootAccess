@@ -26,7 +26,7 @@
           <td class="py-3 px-4 text-slate-900 dark:text-white font-medium">{{ log.username }}</td>
           <td class="py-3 px-4 text-slate-700 dark:text-slate-300">{{ log.action }}</td>
           <td class="py-3 px-4 text-slate-500 dark:text-slate-400">{{ log.details }}</td>
-          <td class="py-3 px-4 text-slate-500 dark:text-slate-400 font-mono text-xs">{{ log.ip_address }}</td>
+          <td class="py-3 px-4 text-slate-500 dark:text-slate-400 font-mono text-xs">{{ log.ip_address || '-' }}</td>
         </tr>
       </tbody>
     </table>

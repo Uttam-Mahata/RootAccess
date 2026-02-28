@@ -121,6 +121,9 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 		return
 	}
 
+	// Record last IP and last login (non-blocking)
+	go h.oauthService.RecordUserLoginIP(userInfo.ID, c.ClientIP())
+
 	// If it's a CLI login, return the token in a simple HTML page
 	if val == "cli" {
 		c.Header("Content-Type", "text/html")
@@ -251,6 +254,8 @@ func (h *OAuthHandler) GitHubCallback(c *gin.Context) {
 		return
 	}
 
+	go h.oauthService.RecordUserLoginIP(userInfo.ID, c.ClientIP())
+
 	isProd := h.config.Environment == "production"
 	c.SetSameSite(http.SameSiteLaxMode)
 	c.SetCookie("auth_token", token, 7*24*60*60, "/", "", isProd, true)
@@ -326,6 +331,8 @@ func (h *OAuthHandler) DiscordCallback(c *gin.Context) {
 		h.redirectToFrontendWithError(c, fmt.Sprintf("OAuth authentication failed: %s", err.Error()))
 		return
 	}
+
+	go h.oauthService.RecordUserLoginIP(userInfo.ID, c.ClientIP())
 
 	isProd := h.config.Environment == "production"
 	c.SetSameSite(http.SameSiteLaxMode)

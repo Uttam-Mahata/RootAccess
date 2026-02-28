@@ -103,6 +103,11 @@ func NewOAuthService(userRepo *repositories.UserRepository, cfg *config.Config) 
 	}
 }
 
+// RecordUserLoginIP records the user's IP and last login time after OAuth login.
+func (s *OAuthService) RecordUserLoginIP(userID string, ip string) error {
+	return s.userRepo.RecordUserIP(userID, ip, "login")
+}
+
 // GetGoogleAuthURL generates the Google OAuth consent URL with CSRF state token
 func (s *OAuthService) GetGoogleAuthURL(state string) string {
 	return s.googleConfig.AuthCodeURL(state, oauth2.AccessTypeOffline)

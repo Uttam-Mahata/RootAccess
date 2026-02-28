@@ -283,7 +283,15 @@ export class TeamDashboardComponent implements OnInit {
           next: () => {
             this.isLoading = false;
             this.success = 'Member removed';
-            this.loadTeamData();
+            // Optimistically update UI - avoids infinite loader if loadTeamData hangs
+            this.members = this.members.filter(m => m.id !== memberId);
+            if (this.team?.member_ids) {
+              this.team = {
+                ...this.team,
+                member_ids: this.team.member_ids.filter(id => id !== memberId)
+              };
+            }
+            this.loadTeamPendingInvitations();
           },
           error: (err) => {
             this.isLoading = false;
