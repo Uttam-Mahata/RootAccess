@@ -247,8 +247,31 @@ func (r *ChallengeRepository) UpdateChallenge(id string, challenge *models.Chall
 }
 
 func (r *ChallengeRepository) DeleteChallenge(id string) error {
-	_, err := r.db.Exec("DELETE FROM challenges WHERE id=?", id)
-	return err
+	tx, err := r.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// Turso/libSQL may not support ON DELETE CASCADE; delete dependent rows explicitly
+	// Order matters: delete children before parents
+	queries := []string{
+		"DELETE FROM hint_reveals WHERE challenge_id=?",
+		"DELETE FROM hints WHERE challenge_id=?",
+		"DELETE FROM writeup_upvotes WHERE writeup_id IN (SELECT id FROM writeups WHERE challenge_id=?)",
+		"DELETE FROM writeups WHERE challenge_id=?",
+		"UPDATE achievements SET challenge_id=NULL WHERE challenge_id=?",
+		"DELETE FROM round_challenges WHERE challenge_id=?",
+		"DELETE FROM contest_challenge_solves WHERE challenge_id=?",
+		"DELETE FROM submissions WHERE challenge_id=?",
+		"DELETE FROM challenges WHERE id=?",
+	}
+	for _, q := range queries {
+		if _, err := tx.Exec(q, id); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
 }
 
 func (r *ChallengeRepository) IncrementSolveCount(id string) error {

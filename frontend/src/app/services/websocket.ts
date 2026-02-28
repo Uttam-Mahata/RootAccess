@@ -55,7 +55,6 @@ export class WebSocketService implements OnDestroy {
       this.socket = new WebSocket(wsUrl);
 
       this.socket.onopen = () => {
-        console.log('WebSocket connected');
         this.connectedSubject.next(true);
         if (this.reconnectTimer) {
           clearTimeout(this.reconnectTimer);
