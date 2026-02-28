@@ -1,3 +1,46 @@
+<!-- Tabs: Challenges | New Challenge -->
+<nav class="flex items-center gap-1 mb-6 p-1 rounded-xl bg-slate-100 dark:bg-slate-800/50 w-fit border border-slate-200 dark:border-slate-700">
+  <button
+    type="button"
+    (click)="switchView('manage')"
+    class="px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200"
+    [class.bg-white]="activeView === 'manage'"
+    [class.text-red-600]="activeView === 'manage'"
+    [class.dark:bg-slate-700]="activeView === 'manage'"
+    [class.dark:text-red-400]="activeView === 'manage'"
+    [class.shadow-sm]="activeView === 'manage'"
+    [class.text-slate-600]="activeView !== 'manage'"
+    [class.dark:text-slate-400]="activeView !== 'manage'"
+    [class.hover:bg-slate-200]="activeView !== 'manage'"
+    [class.dark:hover:bg-slate-700]="activeView !== 'manage'">
+    <span class="flex items-center gap-2">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+      </svg>
+      Challenges
+      <span *ngIf="challenges.length > 0" class="text-xs px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400">{{ challenges.length }}</span>
+    </span>
+  </button>
+  <button
+    type="button"
+    (click)="switchView('create')"
+    class="px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 flex items-center gap-2"
+    [class.bg-white]="activeView === 'create'"
+    [class.text-red-600]="activeView === 'create'"
+    [class.dark:bg-slate-700]="activeView === 'create'"
+    [class.dark:text-red-400]="activeView === 'create'"
+    [class.shadow-sm]="activeView === 'create'"
+    [class.text-slate-600]="activeView !== 'create'"
+    [class.dark:text-slate-400]="activeView !== 'create'"
+    [class.hover:bg-slate-200]="activeView !== 'create'"
+    [class.dark:hover:bg-slate-700]="activeView !== 'create'">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+    </svg>
+    New Challenge
+  </button>
+</nav>
+
 <!-- CREATE VIEW -->
 <div *ngIf="activeView === 'create'" class="w-full">
   <div class="relative group">

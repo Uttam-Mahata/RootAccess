@@ -1,6 +1,6 @@
 export const environment = {
   production: false,
-  apiUrl: 'API_URL_PLACEHOLDER',
-  wsUrl: 'WS_URL_PLACEHOLDER',
-  googleAuthUrl: 'API_URL_PLACEHOLDER/auth/google'
+  apiUrl: 'https://ctfapis.rootaccess.live',
+  wsUrl: 'wss://ctfapis.rootaccess.live',
+  googleAuthUrl: 'https://ctfapis.rootaccess.live/auth/google/callback'
 };

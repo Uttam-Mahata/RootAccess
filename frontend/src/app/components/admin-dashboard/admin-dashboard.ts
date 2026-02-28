@@ -46,11 +46,6 @@ export class AdminDashboardComponent implements OnInit {
     }
   }
 
-  showCreateChallenge(): void {
-    this.adminState.challengesInitialView.set('create');
-    this.mobileMenuOpen = false;
-  }
-
   toggleSidebar(): void {
     this.sidebarOpen = !this.sidebarOpen;
   }
