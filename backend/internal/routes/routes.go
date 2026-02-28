@@ -16,7 +16,6 @@ import (
 	websocketPkg "github.com/Uttam-Mahata/RootAccess/backend/internal/websocket"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -208,39 +207,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 			c.JSON(200, gin.H{"status": "healthy", "time": time.Now().Format(time.RFC3339)})
 		})
 
-		rg.GET("/auth/me", func(c *gin.Context) {
-			tokenString, err := c.Cookie("auth_token")
-			if err != nil || tokenString == "" {
-				// Also check Authorization header for CLI support
-				authHeader := c.GetHeader("Authorization")
-				if strings.HasPrefix(authHeader, "Bearer ") {
-					tokenString = strings.TrimPrefix(authHeader, "Bearer ")
-				}
-			}
-
-			if tokenString == "" {
-				c.JSON(401, gin.H{"authenticated": false})
-				return
-			}
-
-			token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-				return []byte(cfg.JWTSecret), nil
-			})
-			if err != nil || !token.Valid {
-				c.JSON(401, gin.H{"authenticated": false})
-				return
-			}
-			claims, _ := token.Claims.(jwt.MapClaims)
-			c.JSON(200, gin.H{
-				"authenticated": true,
-				"user": gin.H{
-					"id":       claims["user_id"],
-					"username": claims["username"],
-					"email":    claims["email"],
-					"role":     claims["role"],
-				},
-			})
-		})
+		rg.GET("/auth/me", authHandler.GetMe)
 
 		rg.GET("/leaderboard/category", leaderboardHandler.GetCategoryLeaderboard)
 		rg.GET("/leaderboard/time", leaderboardHandler.GetTimeBasedLeaderboard)

@@ -2,10 +2,12 @@ package handlers
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/services"
 	"github.com/Uttam-Mahata/RootAccess/backend/internal/utils"
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 type AuthHandler struct {
@@ -316,6 +318,43 @@ func (h *AuthHandler) UpdateUsername(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Username updated successfully!",
+	})
+}
+
+// GetMe returns current user info when authenticated via cookie or Bearer token.
+// Records last IP and last login on each successful check so admin sees up-to-date activity.
+func (h *AuthHandler) GetMe(c *gin.Context) {
+	tokenString, err := c.Cookie("auth_token")
+	if err != nil || tokenString == "" {
+		authHeader := c.GetHeader("Authorization")
+		if strings.HasPrefix(authHeader, "Bearer ") {
+			tokenString = strings.TrimPrefix(authHeader, "Bearer ")
+		}
+	}
+	if tokenString == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"authenticated": false})
+		return
+	}
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		return []byte(h.authService.GetJWTSecret()), nil
+	})
+	if err != nil || !token.Valid {
+		c.JSON(http.StatusUnauthorized, gin.H{"authenticated": false})
+		return
+	}
+	claims, _ := token.Claims.(jwt.MapClaims)
+	userID, _ := claims["user_id"].(string)
+	if userID != "" {
+		go h.authService.RecordUserLoginIP(userID, c.ClientIP())
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"authenticated": true,
+		"user": gin.H{
+			"id":       claims["user_id"],
+			"username": claims["username"],
+			"email":    claims["email"],
+			"role":     claims["role"],
+		},
 	})
 }
 

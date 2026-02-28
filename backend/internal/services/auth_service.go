@@ -26,6 +26,11 @@ func NewAuthService(userRepo *repositories.UserRepository, emailService *EmailSe
 	}
 }
 
+// GetJWTSecret returns the JWT secret for token validation (e.g. in GetMe handler).
+func (s *AuthService) GetJWTSecret() string {
+	return s.config.JWTSecret
+}
+
 // Register creates a new user account with email verification
 func (s *AuthService) Register(username, email, password string) error {
 	// Registration access control
