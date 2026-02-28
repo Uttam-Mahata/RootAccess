@@ -23,7 +23,10 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	r := gin.Default()
 
 	// Configure trusted proxies for accurate client IP detection
-	if cfg.TrustedProxies != "" {
+	// Use "*" to trust all proxies (required for cloud deployments like AWS API Gateway/ALB/CloudFront)
+	if cfg.TrustedProxies == "*" {
+		r.SetTrustedProxies(nil) // nil = trust all proxies, parse X-Forwarded-For from any source
+	} else if cfg.TrustedProxies != "" {
 		proxies := strings.Split(cfg.TrustedProxies, ",")
 		for i := range proxies {
 			proxies[i] = strings.TrimSpace(proxies[i])
