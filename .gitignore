@@ -67,3 +67,4 @@ backend/deploy_aws.sh
 .gemini/
 .cursor/
 gha-creds-*.json
+credentials/
