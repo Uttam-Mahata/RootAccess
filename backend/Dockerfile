@@ -12,19 +12,16 @@ RUN go mod download
 # Copy source code
 COPY . .
 
-# Build the application
+# Build the application only (admin tool is for local/dev; not shipped in prod)
 RUN CGO_ENABLED=0 GOOS=linux go build -tags production -o main ./cmd/api/main.go
-# Build the admin tool
-RUN CGO_ENABLED=0 GOOS=linux go build -o admin-tool ./cmd/admin/main.go
 
 # Final stage
 FROM alpine:latest
 
 WORKDIR /app
 
-# Copy binaries from builder
+# Copy API binary only (no admin-tool in production image)
 COPY --from=builder /app/main .
-COPY --from=builder /app/admin-tool .
 
 # Expose port 8080
 EXPOSE 8080
