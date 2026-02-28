@@ -58,7 +58,7 @@ func BootstrapSchema(db *sql.DB) {
 			inviter_id TEXT NOT NULL REFERENCES users(id),
 			inviter_name TEXT NOT NULL,
 			invitee_email TEXT,
-			invitee_user_id TEXT,
+			invitee_user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
 			token TEXT UNIQUE NOT NULL,
 			status TEXT NOT NULL,
 			expires_at TEXT NOT NULL,
@@ -82,7 +82,7 @@ func BootstrapSchema(db *sql.DB) {
 			tags TEXT,
 			scheduled_at TEXT,
 			is_published INTEGER NOT NULL DEFAULT 0,
-			contest_id TEXT,
+			contest_id TEXT REFERENCES contests(id) ON DELETE SET NULL,
 			official_writeup TEXT,
 			official_writeup_format TEXT,
 			official_writeup_published INTEGER NOT NULL DEFAULT 0
@@ -101,16 +101,16 @@ func BootstrapSchema(db *sql.DB) {
 			hint_id TEXT NOT NULL REFERENCES hints(id) ON DELETE CASCADE,
 			challenge_id TEXT NOT NULL REFERENCES challenges(id) ON DELETE CASCADE,
 			user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-			team_id TEXT,
+			team_id TEXT REFERENCES teams(id) ON DELETE CASCADE,
 			cost INTEGER NOT NULL
 		);`,
 		// Submissions
 		`CREATE TABLE IF NOT EXISTS submissions (
 			id TEXT PRIMARY KEY,
-			user_id TEXT NOT NULL REFERENCES users(id),
-			team_id TEXT,
-			challenge_id TEXT NOT NULL REFERENCES challenges(id),
-			contest_id TEXT,
+			user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+			team_id TEXT REFERENCES teams(id) ON DELETE SET NULL,
+			challenge_id TEXT NOT NULL REFERENCES challenges(id) ON DELETE CASCADE,
+			contest_id TEXT REFERENCES contests(id) ON DELETE SET NULL,
 			flag TEXT NOT NULL,
 			is_correct INTEGER NOT NULL,
 			ip_address TEXT,
@@ -130,7 +130,7 @@ func BootstrapSchema(db *sql.DB) {
 		`CREATE TABLE IF NOT EXISTS writeups (
 			id TEXT PRIMARY KEY,
 			challenge_id TEXT NOT NULL REFERENCES challenges(id) ON DELETE CASCADE,
-			user_id TEXT NOT NULL REFERENCES users(id),
+			user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 			username TEXT NOT NULL,
 			content TEXT NOT NULL,
 			content_format TEXT NOT NULL,
@@ -149,19 +149,19 @@ func BootstrapSchema(db *sql.DB) {
 		`CREATE TABLE IF NOT EXISTS achievements (
 			id TEXT PRIMARY KEY,
 			user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-			team_id TEXT,
+			team_id TEXT REFERENCES teams(id) ON DELETE CASCADE,
 			type TEXT NOT NULL,
 			name TEXT NOT NULL,
 			description TEXT NOT NULL,
 			icon TEXT NOT NULL,
-			challenge_id TEXT,
+			challenge_id TEXT REFERENCES challenges(id) ON DELETE SET NULL,
 			category TEXT,
 			earned_at TEXT NOT NULL
 		);`,
 		// Audit Logs
 		`CREATE TABLE IF NOT EXISTS audit_logs (
 			id TEXT PRIMARY KEY,
-			user_id TEXT NOT NULL REFERENCES users(id),
+			user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 			username TEXT NOT NULL,
 			action TEXT NOT NULL,
 			resource TEXT NOT NULL,
@@ -176,13 +176,13 @@ func BootstrapSchema(db *sql.DB) {
 			target_id TEXT NOT NULL,
 			delta INTEGER NOT NULL,
 			reason TEXT,
-			created_by TEXT NOT NULL REFERENCES users(id),
+			created_by TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 			created_at TEXT NOT NULL
 		);`,
 		// Contest Config
 		`CREATE TABLE IF NOT EXISTS contest_config (
 			id TEXT PRIMARY KEY,
-			contest_id TEXT,
+			contest_id TEXT REFERENCES contests(id) ON DELETE SET NULL,
 			start_time TEXT NOT NULL,
 			end_time TEXT NOT NULL,
 			freeze_time TEXT,
@@ -248,5 +248,5 @@ func BootstrapSchema(db *sql.DB) {
 			log.Fatalf("Failed to execute schema statement: %v\nQuery: %s", err, stmt)
 		}
 	}
-	log.Println("Database schema bootstrapped successfully")
+	log.Println("Database schema bootstrapped successfully with consistent relations")
 }
