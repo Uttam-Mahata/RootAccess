@@ -23,9 +23,10 @@ import (
 func SetupRouter(cfg *config.Config) *gin.Engine {
 	r := gin.Default()
 
-	// Configure trusted proxies for accurate client IP detection
-	// Use "*" to trust all proxies (required for cloud deployments like AWS API Gateway/ALB/CloudFront)
-	if cfg.TrustedProxies == "*" {
+	// Configure trusted proxies for accurate client IP detection.
+	// Behind API Gateway/ALB/CloudFront, X-Forwarded-For must be trusted to get the real client IP.
+	// Without this, clients behind additional proxies (corporate, VPN) get misidentified.
+	if cfg.TrustedProxies == "*" || os.Getenv("AWS_LAMBDA_FUNCTION_NAME") != "" {
 		r.SetTrustedProxies(nil) // nil = trust all proxies, parse X-Forwarded-For from any source
 	} else if cfg.TrustedProxies != "" {
 		proxies := strings.Split(cfg.TrustedProxies, ",")
