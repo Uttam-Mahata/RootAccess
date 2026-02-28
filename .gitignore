@@ -69,3 +69,7 @@ backend/deploy_aws.sh
 gha-creds-*.json
 credentials/
 backend/migrate-to-upstash.sh
+.aws-sam/
+backend/.aws-sam
+backend/build
+
