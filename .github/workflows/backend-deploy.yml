@@ -30,6 +30,22 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
+      - name: Mask infrastructure URLs from logs
+        run: |
+          python3 -c "
+          import boto3, subprocess, sys
+
+          cf = boto3.client('cloudformation', region_name='us-east-1')
+          try:
+              resp = cf.describe_stacks(StackName='rootaccess-backend')
+              for o in resp['Stacks'][0].get('Outputs', []):
+                  val = o['OutputValue']
+                  if val:
+                      print(f'::add-mask::{val}')
+          except Exception:
+              pass  # First deploy — no stack yet
+          "
+
       - name: Build and Package
         working-directory: backend
         run: |
@@ -50,6 +66,7 @@ jobs:
           python3 -c "
           import boto3
           import json
+          import subprocess
           import sys
 
           region = 'us-east-1'
@@ -62,11 +79,17 @@ jobs:
           try:
               response = cf_client.describe_stacks(StackName=stack_name)
               outputs = response['Stacks'][0]['Outputs']
-              
+
+              # Mask all output values so they don't leak in logs
+              for o in outputs:
+                  val = o.get('OutputValue', '')
+                  if val:
+                      print(f'::add-mask::{val}')
+
               redis_endpoint = next((o['OutputValue'] for o in outputs if o['OutputKey'] == 'RedisEndpoint'), None)
               redis_port = next((o['OutputValue'] for o in outputs if o['OutputKey'] == 'RedisPort'), None)
               ws_callback_url = next((o['OutputValue'] for o in outputs if o['OutputKey'] == 'WebSocketCallbackUrl'), None)
-              
+
               secret_value = sm_client.get_secret_value(SecretId=secret_name)
               secrets = json.loads(secret_value['SecretString'])
               updated = False
@@ -74,11 +97,11 @@ jobs:
               if redis_endpoint and redis_port:
                   secrets['REDIS_ADDR'] = f'{redis_endpoint}:{redis_port}'
                   updated = True
-              
+
               if ws_callback_url:
                   secrets['WS_CALLBACK_URL'] = ws_callback_url
                   updated = True
-                  
+
               if updated:
                   sm_client.put_secret_value(SecretId=secret_name, SecretString=json.dumps(secrets))
                   print('Successfully synced Secrets Manager with stack outputs.')
